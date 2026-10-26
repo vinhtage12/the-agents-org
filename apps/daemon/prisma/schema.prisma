@@ -1,0 +1,30 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Workspace {
+  id       Int       @id @default(autoincrement())
+  name     String    @db.VarChar(255)
+  code     String    @unique @db.VarChar(32)
+  projects Project[]
+
+  @@map("workspaces")
+}
+
+model Project {
+  id          Int       @id @default(autoincrement())
+  workspaceId Int       @map("workspace_id")
+  name        String    @db.VarChar(255)
+  // Also the ticket prefix (e.g. FMS-1), so unique system-wide.
+  code        String    @unique @db.VarChar(32)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId])
+  @@map("projects")
+}

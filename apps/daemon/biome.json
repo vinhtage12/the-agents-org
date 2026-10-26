@@ -1,4 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.2/schema.json",
-  "extends": ["@truyenmoinhu/biome-config/nest"]
+  "extends": ["@truyenmoinhu/biome-config/nest"],
+  "files": {
+    "includes": ["!src/generated"]
+  }
 }
