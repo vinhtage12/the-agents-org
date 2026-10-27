@@ -1,0 +1,27 @@
+{
+  "app_name": "The Agents Org",
+  "menu": {
+    "navigation": "Điều hướng",
+    "dashboard": "Tổng quan"
+  },
+  "common": {
+    "toggle_sidebar": "Ẩn/hiện thanh bên",
+    "language": "Ngôn ngữ",
+    "dark_mode": "Chế độ tối",
+    "light_mode": "Chế độ sáng"
+  },
+  "dashboard": {
+    "daemon": "Daemon",
+    "database": "Cơ sở dữ liệu",
+    "checking": "Đang kiểm tra…",
+    "ok": "Hoạt động",
+    "up": "Đã kết nối",
+    "down": "Mất kết nối",
+    "unreachable": "Không kết nối được"
+  },
+  "not_found": {
+    "title": "Không tìm thấy trang",
+    "description": "Trang bạn tìm không tồn tại hoặc đã bị chuyển đi.",
+    "go_home": "Về trang chủ"
+  }
+}

@@ -1,22 +1,16 @@
+import { RouterProvider } from '@tanstack/react-router';
 import ReactDOM from 'react-dom/client';
-import { RouterProvider, createRouter } from '@tanstack/react-router';
-import { routeTree } from './routeTree.gen';
 
-const router = createRouter({
-  routeTree,
-  defaultPreload: 'intent',
-  scrollRestoration: true
-});
+import { i18nReady } from '#i18n';
 
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router;
-  }
-}
+import { getRouter } from './router';
+
+const router = getRouter();
 
 const rootElement = document.getElementById('app');
 
 if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
-  root.render(<RouterProvider router={router} />);
+  // Wait for the persisted locale to load so the first paint is not in the fallback language.
+  i18nReady.then(() => root.render(<RouterProvider router={router} />));
 }

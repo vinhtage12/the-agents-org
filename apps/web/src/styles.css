@@ -1,8 +1,18 @@
-@import "tailwindcss";
+@layer theme, base, uikit, utilities, overwrites;
 
-* {
-  box-sizing: border-box;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "@truyenmoinhu/uikit/styles.css" layer(uikit);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@source "../node_modules/@truyenmoinhu/table/dist";
+@source "../node_modules/@truyenmoinhu/uikit/dist";
+
+:root {
+  color-scheme: light dark;
 }
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 html,
 body,
@@ -10,6 +20,5 @@ body,
   min-height: 100%;
 }
 
-body {
-  margin: 0;
+@layer overwrites {
 }

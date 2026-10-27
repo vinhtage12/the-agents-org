@@ -1,0 +1,27 @@
+{
+  "app_name": "The Agents Org",
+  "menu": {
+    "navigation": "Navigation",
+    "dashboard": "Dashboard"
+  },
+  "common": {
+    "toggle_sidebar": "Toggle sidebar",
+    "language": "Language",
+    "dark_mode": "Dark mode",
+    "light_mode": "Light mode"
+  },
+  "dashboard": {
+    "daemon": "Daemon",
+    "database": "Database",
+    "checking": "Checking…",
+    "ok": "Running",
+    "up": "Connected",
+    "down": "Disconnected",
+    "unreachable": "Unreachable"
+  },
+  "not_found": {
+    "title": "Page not found",
+    "description": "The page you are looking for does not exist or has moved.",
+    "go_home": "Go home"
+  }
+}

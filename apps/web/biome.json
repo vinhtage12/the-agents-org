@@ -1,7 +1,25 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.2/schema.json",
+  "root": false,
   "extends": ["@truyenmoinhu/biome-config"],
   "files": {
     "includes": ["!src/**/routeTree.gen.ts"]
+  },
+  "linter": {
+    "rules": {
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "patterns": [
+              {
+                "group": ["**/index", "**/index.ts", "**/index.tsx"],
+                "message": "Import the folder, not its index file: '#i18n', not '#i18n/index.ts'."
+              }
+            ]
+          }
+        }
+      }
+    }
   }
 }
