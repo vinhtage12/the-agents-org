@@ -1,0 +1,14 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        APP_ENV: ${APP_ENV:?APP_ENV is required}
+      secrets:
+        - npmrc
+    ports:
+      - "${WEB_PORT:-3000}:80"
+    restart: unless-stopped
+secrets:
+  npmrc:
+    environment: NPMRC

@@ -13,7 +13,16 @@
     "format": "biome format --write .",
     "lint": "biome lint --write ./*",
     "check": "biome check",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev:development": "vite dev --mode development",
+    "build:development": "vite build --mode development",
+    "preview:development": "vite preview --mode development",
+    "dev:staging": "vite dev --mode staging",
+    "build:staging": "vite build --mode staging",
+    "preview:staging": "vite preview --mode staging",
+    "dev:production": "vite dev --mode production",
+    "build:production": "vite build --mode production",
+    "preview:production": "vite preview --mode production"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
