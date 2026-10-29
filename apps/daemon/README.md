@@ -126,3 +126,26 @@ characters.
 
 Install the matching Herdr integrations for Claude Code, Codex, Copilot, and
 Antigravity if you need session restoration after a Herdr restart.
+
+## Dashboard API
+
+Workspace endpoints: GET/POST `/api/v1/workspaces`, GET `/api/v1/workspaces/:id`, POST `/api/v1/workspaces/:id/projects`, GET `/api/v1/workspaces/:id/projects/:projectId`. Create bodies contain `name` and `code`; duplicate codes return 409.
+
+GET `/api/v1/system/docker` runs Docker CLI with the daemon user's context and permissions. It only reads container status and stats.
+
+GET `/api/v1/system/agent-usage` reads optional quota caches. Configure `CODEX_USAGE_CACHE_PATH`, `CLAUDE_USAGE_CACHE_PATH`, `COPILOT_USAGE_CACHE_PATH`, `ANTIGRAVITY_USAGE_CACHE_PATH`; defaults are `~/.<provider>/usage-cache.json`. Expected JSON: `{"windows":[{"label":"weekly","usedPercent":25,"resetsAt":"2026-11-01T00:00:00Z"}]}`. File modification time is reported as sample time. Without an explicit Codex cache, the daemon reads the latest rate-limit events from `$CODEX_HOME/sessions` (default `~/.codex/sessions`). Reads are bounded to eight recent log tails, one MiB each, and cached for 60 seconds. Claude, Copilot and Antigravity currently require an explicit quota cache because their inspected local sources do not expose verified quota windows; absent caches are reported unavailable. No credentials are read.
+
+### Dashboard tests
+
+Run `pnpm --filter daemon test --runInBand` for unit tests. For PostgreSQL HTTP tests, migrate a **dedicated test database**, set `TEST_DATABASE_URL`, then run `pnpm --filter daemon test:e2e --runInBand workspaces`. The suite creates uniquely named records and removes only its own records. It is skipped when `TEST_DATABASE_URL` is absent.
+
+### Workspace/project CRUD and moves
+
+- `PATCH /api/v1/workspaces/:id`: partial `{name?, code?}`.
+- `DELETE /api/v1/workspaces/:id`: 204 on success, 409 when projects remain (no cascading deletion).
+- `PATCH /api/v1/workspaces/:id/projects/:projectId`: partial `{name?, code?, workspaceId?}`; `workspaceId` moves the project to an existing workspace. The source path must match the current owner; stale source paths return 404.
+- `DELETE /api/v1/workspaces/:id/projects/:projectId`: 204 on success.
+
+Moves preserve project ID/code and update ownership atomically. Invalid update values return 400; duplicate codes return 409. No Prisma migration is required.
+
+Docker snapshots include nullable `cpuPercent`, `memoryUsageBytes`, `memoryLimitBytes`, and `memoryPercent` alongside the original display strings. CPU is per-core and may exceed 100%; memory percentage is relative to each container limit. Missing stats remain null. Charts display the current sample, not historical data. Web dates use local time with `DD/MM/YYYY HH:mm` regardless of language.

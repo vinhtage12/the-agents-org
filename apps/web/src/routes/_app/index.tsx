@@ -4,6 +4,8 @@ import { TmnCard, TmnFlex, TmnText } from '@truyenmoinhu/uikit';
 
 import { useHealth } from '#hooks/health';
 import { trans } from '#i18n';
+import { SystemOverview } from '#modules/system';
+import { WorkspacePage } from '#modules/workspaces';
 
 export const Route = createFileRoute('/_app/')({ component: Dashboard });
 
@@ -36,19 +38,23 @@ function Dashboard() {
   const db = isLoading || !data ? '—' : trans(`dashboard.${data.db}`);
 
   return (
-    <TmnCard header={{ title: trans('menu.dashboard') }} className="max-w-md">
-      <TmnFlex direction="column" gap={2}>
-        <StatusRow
-          label={trans('dashboard.daemon')}
-          value={daemon}
-          ok={isLoading ? undefined : !!data}
-        />
-        <StatusRow
-          label={trans('dashboard.database')}
-          value={db}
-          ok={isLoading || !data ? undefined : data.db === 'up'}
-        />
-      </TmnFlex>
-    </TmnCard>
+    <>
+      <WorkspacePage />
+      <TmnCard header={{ title: trans('menu.dashboard') }} className="max-w-md">
+        <TmnFlex direction="column" gap={2}>
+          <StatusRow
+            label={trans('dashboard.daemon')}
+            value={daemon}
+            ok={isLoading ? undefined : !!data}
+          />
+          <StatusRow
+            label={trans('dashboard.database')}
+            value={db}
+            ok={isLoading || !data ? undefined : data.db === 'up'}
+          />
+        </TmnFlex>
+      </TmnCard>
+      <SystemOverview />
+    </>
   );
 }

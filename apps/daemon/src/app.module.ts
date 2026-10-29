@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
+import { AgentUsageService } from './agent-usage.service';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { validate } from './configuration/env.validation';
@@ -9,6 +10,8 @@ import { HerdrController } from './herdr/herdr.controller';
 import { HerdrGateway } from './herdr/herdr.gateway';
 import { HerdrService } from './herdr/herdr.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { SystemController } from './system.controller';
+import { WorkspacesController } from './workspaces.controller';
 
 @Module({
   imports: [
@@ -20,7 +23,18 @@ import { PrismaModule } from './prisma/prisma.module';
     }),
     PrismaModule
   ],
-  controllers: [AppController, HerdrController],
-  providers: [AppService, HerdrClient, HerdrService, HerdrGateway]
+  controllers: [
+    AppController,
+    HerdrController,
+    WorkspacesController,
+    SystemController
+  ],
+  providers: [
+    AgentUsageService,
+    AppService,
+    HerdrClient,
+    HerdrService,
+    HerdrGateway
+  ]
 })
 export class AppModule {}

@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import { type ReactNode, memo, useCallback } from 'react';
 import {
   Check,
   Languages,
@@ -86,7 +86,7 @@ const ThemeToggle = memo(() => {
   );
 });
 
-const Header = () => (
+const Header = ({ children }: { children?: ReactNode }) => (
   <TmnFlex
     asChild
     direction="row"
@@ -99,7 +99,7 @@ const Header = () => (
     <header>
       <ToggleSidebar />
       <TmnSeparator orientation="vertical" className="h-4 shrink-0" />
-      <div className="min-w-0 flex-1" />
+      {children}
       <LanguageSwitch />
       <ThemeToggle />
     </header>

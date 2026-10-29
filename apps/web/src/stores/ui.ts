@@ -10,7 +10,9 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     set => ({
-      sidebarOpen: true,
+      sidebarOpen:
+        typeof window === 'undefined' ||
+        window.matchMedia('(min-width: 768px)').matches,
       setSidebarOpen: sidebarOpen => set({ sidebarOpen }),
       toggleSidebar: () => set(state => ({ sidebarOpen: !state.sidebarOpen }))
     }),

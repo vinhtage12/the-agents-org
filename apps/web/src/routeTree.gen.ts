@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppWorkspacesSplatRouteImport } from './routes/_app/workspaces.$'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -21,24 +22,32 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppWorkspacesSplatRoute = AppWorkspacesSplatRouteImport.update({
+  id: '/workspaces/$',
+  path: '/workspaces/$',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/workspaces/$': typeof AppWorkspacesSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
+  '/workspaces/$': typeof AppWorkspacesSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_app/': typeof AppIndexRoute
+  '/_app/workspaces/$': typeof AppWorkspacesSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/workspaces/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/_app' | '/_app/'
+  to: '/' | '/workspaces/$'
+  id: '__root__' | '/_app' | '/_app/' | '/_app/workspaces/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -61,15 +70,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/workspaces/$': {
+      id: '/_app/workspaces/$'
+      path: '/workspaces/$'
+      fullPath: '/workspaces/$'
+      preLoaderRoute: typeof AppWorkspacesSplatRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
+  AppWorkspacesSplatRoute: typeof AppWorkspacesSplatRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
+  AppWorkspacesSplatRoute: AppWorkspacesSplatRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

@@ -3,8 +3,8 @@
   "include": ["**/*.ts", "**/*.tsx"],
   "compilerOptions": {
     "paths": {
-      "#types": ["src/@types"],
-      "#types/*": ["src/@types/*"],
+      "#types": ["./src/@types"],
+      "#types/*": ["./src/@types/*"],
       "#utils": ["./src/utils"],
       "#utils/*": ["./src/utils/*"],
       "#constants": ["./src/constants"],
