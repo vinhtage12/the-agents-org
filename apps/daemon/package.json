@@ -31,13 +31,15 @@
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.2.8",
+    "@nestjs/websockets": "^11.2.8",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "ws": "^8.22.0"
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.2",
@@ -49,7 +51,6 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",
     "@types/supertest": "^7.0.0",
-    "@types/ws": "^8.18.2",
     "globals": "^17.0.0",
     "jest": "^30.0.0",
     "prisma": "7.10.1",

@@ -1,106 +1,89 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { HttpAdapterHost } from '@nestjs/core';
-import { WebSocket, WebSocketServer } from 'ws';
+import {
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  OnGatewayInit,
+  WebSocketGateway
+} from '@nestjs/websockets';
 
 import { HerdrService } from './herdr.service';
 
-import type { IncomingMessage, Server } from 'node:http';
+import type { Namespace, Socket } from 'socket.io';
 import type { Env } from '../configuration/env.validation';
 
-@Injectable()
-export class HerdrGateway implements OnModuleInit, OnModuleDestroy {
-  private readonly wss = new WebSocketServer({ noServer: true });
-  private httpServer?: Server;
+const AGENT_ID_PATTERN = /^[A-Za-z0-9:_-]{1,128}$/;
+
+@WebSocketGateway({
+  namespace: '/api/v1/agents',
+  path: '/api/v1/socket.io',
+  transports: ['websocket']
+})
+export class HerdrGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
+  private readonly allowedOrigins: string[];
+  private readonly streamStops = new Map<string, () => void>();
 
   constructor(
-    private readonly adapterHost: HttpAdapterHost,
     private readonly herdr: HerdrService,
     config: ConfigService<Env, true>
   ) {
     this.allowedOrigins = config.get('CORS_ORIGIN', { infer: true });
   }
 
-  private readonly allowedOrigins: string[];
-
-  onModuleInit() {
-    this.httpServer = this.adapterHost.httpAdapter.getHttpServer() as Server;
-    this.httpServer.on('upgrade', this.handleUpgrade);
-  }
-
-  onModuleDestroy() {
-    this.httpServer?.off('upgrade', this.handleUpgrade);
-    for (const client of this.wss.clients)
-      client.close(1001, 'Daemon shutting down');
-    this.wss.close();
-  }
-
-  private readonly handleUpgrade = (
-    request: IncomingMessage,
-    socket: import('node:stream').Duplex,
-    head: Buffer
-  ) => {
-    const pathname = new URL(request.url ?? '/', 'http://localhost').pathname;
-    const match = pathname.match(/^\/api\/v1\/agents\/([^/]+)\/events$/);
-    if (!match) return;
-    const origin = request.headers.origin;
-    if (origin && !this.allowedOrigins.includes(origin)) {
-      socket.destroy();
-      return;
-    }
-
-    let id: string;
-    try {
-      id = decodeURIComponent(match[1]);
-    } catch {
-      socket.destroy();
-      return;
-    }
-    if (!/^[A-Za-z0-9:_-]{1,128}$/.test(id)) {
-      socket.destroy();
-      return;
-    }
-
-    this.wss.handleUpgrade(request, socket, head, ws => {
-      this.wss.emit('connection', ws, request, id);
-      void this.connectAgent(ws, id);
+  afterInit(namespace: Namespace) {
+    namespace.use((client, next) => {
+      const origin = client.handshake.headers.origin;
+      if (origin && !this.allowedOrigins.includes(origin)) {
+        next(new Error('Origin not allowed'));
+        return;
+      }
+      next();
     });
-  };
+  }
 
-  private async connectAgent(ws: WebSocket, id: string) {
-    let stop: (() => void) | undefined;
-    ws.once('close', () => stop?.());
-    ws.once('error', () => stop?.());
+  async handleConnection(client: Socket) {
+    const agentId: unknown = client.handshake.auth?.agentId;
+    if (typeof agentId !== 'string' || !AGENT_ID_PATTERN.test(agentId)) {
+      client.emit('agent-event', {
+        type: 'error',
+        message: 'A valid agentId is required in the Socket.IO auth payload'
+      });
+      client.disconnect(true);
+      return;
+    }
 
     try {
-      stop = await this.herdr.openStream(
-        id,
-        event => {
-          if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event));
-        },
+      const stop = await this.herdr.openStream(
+        agentId,
+        event => client.emit('agent-event', event),
         error => {
-          if (ws.readyState === WebSocket.OPEN) {
-            const code =
-              'code' in error && typeof error.code === 'string'
-                ? error.code
-                : undefined;
-            ws.send(
-              JSON.stringify({ type: 'error', code, message: error.message })
-            );
-            ws.close(1011, 'Herdr event stream ended');
-          }
+          const code =
+            'code' in error && typeof error.code === 'string'
+              ? error.code
+              : undefined;
+          client.emit('agent-event', {
+            type: 'error',
+            code,
+            message: error.message
+          });
+          client.disconnect(true);
         }
       );
-      if (ws.readyState !== WebSocket.OPEN) stop();
+      if (client.connected) this.streamStops.set(client.id, stop);
+      else stop();
     } catch (error) {
-      if (ws.readyState === WebSocket.OPEN) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Unable to open agent stream';
-        ws.send(JSON.stringify({ type: 'error', message }));
-        ws.close(1011, 'Unable to open agent stream');
-      }
+      client.emit('agent-event', {
+        type: 'error',
+        message:
+          error instanceof Error ? error.message : 'Unable to open agent stream'
+      });
+      client.disconnect(true);
     }
+  }
+
+  handleDisconnect(client: Socket) {
+    this.streamStops.get(client.id)?.();
+    this.streamStops.delete(client.id);
   }
 }

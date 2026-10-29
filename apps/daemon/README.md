@@ -107,10 +107,11 @@ is not on the daemon's `PATH`, set `HERDR_BIN_PATH` to its executable path.
 
 The API listens on `127.0.0.1`. `GET /api/v1/agents` lists detected agents,
 `GET /api/v1/agents/:id` reads one agent, and
-`POST /api/v1/agents/:id/prompts` accepts `{ "prompt": "..." }`. Connect to
-`ws://127.0.0.1:3001/api/v1/agents/:id/events` for status events and terminal
-output frames (`output.data` is base64 encoded ANSI data). Agent IDs are Herdr
-pane IDs, such as `w1:p2`.
+`POST /api/v1/agents/:id/prompts` accepts `{ "prompt": "..." }`. Agent
+updates use Socket.IO namespace `/api/v1/agents` with engine path
+`/api/v1/socket.io`. Connect with `auth: { agentId: "w1:p2" }` and listen for
+the `agent-event` event. Events include status and terminal output frames
+(`output.data` is base64 encoded ANSI data). Agent IDs are Herdr pane IDs.
 
 Create a pane and start an agent with `POST /api/v1/agents` and a JSON body such
 as `{ "agent": "claude", "parentPaneId": "w1:p2", "direction": "right" }`.

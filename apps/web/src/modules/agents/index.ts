@@ -1,3 +1,5 @@
+import { type Socket, io } from 'socket.io-client';
+
 import { BASE_API_URL, BASE_API_VERSION } from '#constants/env';
 
 import type { IAgent } from 'dto/types';
@@ -53,21 +55,15 @@ export const createAgent = (input: {
 export function openAgentEvents(
   id: string,
   onEvent: (event: AgentStreamEvent) => void,
-  onError?: (error: Event) => void
-): WebSocket {
-  const url = new URL(
-    `${apiBase}/agents/${encodeURIComponent(id)}/events`,
-    BASE_API_URL
-  );
-  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-  const socket = new WebSocket(url);
-  socket.addEventListener('message', message => {
-    try {
-      onEvent(JSON.parse(String(message.data)) as AgentStreamEvent);
-    } catch {
-      onEvent({ type: 'error', message: 'Daemon sent an invalid agent event' });
-    }
+  onError?: (error: Error) => void
+): Socket {
+  const namespace = `${apiBase}/agents`;
+  const socket = io(namespace, {
+    path: `/${BASE_API_VERSION.replace(/^\/+|\/+$/g, '')}/socket.io`,
+    transports: ['websocket'],
+    auth: { agentId: id }
   });
-  if (onError) socket.addEventListener('error', onError);
+  socket.on('agent-event', (event: AgentStreamEvent) => onEvent(event));
+  if (onError) socket.on('connect_error', onError);
   return socket;
 }
