@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 
@@ -14,8 +15,15 @@ async function bootstrap() {
     origin: config.get('CORS_ORIGIN', { infer: true }),
     credentials: true
   });
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true
+    })
+  );
   app.enableShutdownHooks();
 
-  await app.listen(config.get('PORT', { infer: true }));
+  await app.listen(config.get('PORT', { infer: true }), '127.0.0.1');
 }
 bootstrap();

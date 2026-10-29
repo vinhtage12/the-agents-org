@@ -96,3 +96,32 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Herdr Agent Bridge
+
+The daemon connects to a running Herdr session on the same machine. On Unix-like
+systems it defaults to `$XDG_CONFIG_HOME/herdr/herdr.sock` (or
+`~/.config/herdr/herdr.sock` when unset); set `HERDR_SOCKET_PATH` to
+override the socket. On Windows, set it to Herdr's named-pipe path. If `herdr`
+is not on the daemon's `PATH`, set `HERDR_BIN_PATH` to its executable path.
+
+The API listens on `127.0.0.1`. `GET /api/v1/agents` lists detected agents,
+`GET /api/v1/agents/:id` reads one agent, and
+`POST /api/v1/agents/:id/prompts` accepts `{ "prompt": "..." }`. Connect to
+`ws://127.0.0.1:3001/api/v1/agents/:id/events` for status events and terminal
+output frames (`output.data` is base64 encoded ANSI data). Agent IDs are Herdr
+pane IDs, such as `w1:p2`.
+
+Create a pane and start an agent with `POST /api/v1/agents` and a JSON body such
+as `{ "agent": "claude", "parentPaneId": "w1:p2", "direction": "right" }`.
+`parentPaneId` and `direction` are optional; without a parent ID, Herdr splits
+the currently focused pane. Supported values are `claude`, `codex`, `copilot`,
+and `antigravity` (`agy` in Herdr). The response includes the new `paneId`, a
+generated agent name, readiness status, and `ready` boolean.
+
+Request bodies are transformed and validated with DTO classes. Unknown body
+fields are rejected; prompt bodies require non-blank text of at most 30000
+characters.
+
+Install the matching Herdr integrations for Claude Code, Codex, Copilot, and
+Antigravity if you need session restoration after a Herdr restart.

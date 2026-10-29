@@ -14,7 +14,9 @@ const withGenerateEndpoint = (endpoint: string) => {
 };
 
 export const ENDPOINTS = {
-  health: withGenerateEndpoint('health')
+  health: withGenerateEndpoint('health'),
+  agents: withGenerateEndpoint('agents'),
+  agent: withGenerateEndpoint('agents')
 };
 
 export const apiManagerInstance = new ApiManager({

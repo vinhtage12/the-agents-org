@@ -4,6 +4,10 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { validate } from './configuration/env.validation';
+import { HerdrClient } from './herdr/herdr.client';
+import { HerdrController } from './herdr/herdr.controller';
+import { HerdrGateway } from './herdr/herdr.gateway';
+import { HerdrService } from './herdr/herdr.service';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -16,7 +20,7 @@ import { PrismaModule } from './prisma/prisma.module';
     }),
     PrismaModule
   ],
-  controllers: [AppController],
-  providers: [AppService]
+  controllers: [AppController, HerdrController],
+  providers: [AppService, HerdrClient, HerdrService, HerdrGateway]
 })
 export class AppModule {}
