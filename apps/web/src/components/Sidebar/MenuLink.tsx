@@ -11,7 +11,6 @@ interface MenuLinkProps {
   item: IMenuItem;
   isActive: boolean;
 }
-
 const MenuLink = ({ item, isActive }: MenuLinkProps) => (
   <TmnButton
     asChild
@@ -27,5 +26,4 @@ const MenuLink = ({ item, isActive }: MenuLinkProps) => (
     <Link to={item.to} aria-current={isActive ? 'page' : undefined} />
   </TmnButton>
 );
-
 export default memo(MenuLink);

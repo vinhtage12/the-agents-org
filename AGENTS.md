@@ -19,3 +19,7 @@ Name daemon unit tests `*.spec.ts` and e2e tests `*.e2e-spec.ts`. Add or update 
 ## Commits and Pull Requests
 
 Recent history uses short imperative summaries (for example, `Setup web`). Lefthook prefixes commit subjects with the branch name, such as `feat/abc` becoming `feat(abc): ...`. Keep pull requests focused, describe behavior and validation commands, link related issues, and include screenshots for visible frontend changes.
+
+## Scoped Agent Rules
+
+Before editing `apps/web`, read the applicable files in `.agent/rules/`: [architecture](.agent/rules/web-architecture.md), [TypeScript](.agent/rules/web-typescript.md), [UI/forms/i18n](.agent/rules/web-ui-forms.md), and [queries/mutations](.agent/rules/web-data.md). These rules apply to package `web` only; do not apply them to daemon, infrastructure or external packages. See each file's scope and exclusions.

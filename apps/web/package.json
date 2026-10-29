@@ -22,7 +22,8 @@
     "preview:staging": "vite preview --mode staging",
     "dev:production": "vite dev --mode production",
     "build:production": "vite build --mode production",
-    "preview:production": "vite preview --mode production"
+    "preview:production": "vite preview --mode production",
+    "audit:codestyle": "node scripts/audit-codestyle.cjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",

@@ -10,14 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
-import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppHomeRouteImport } from './routes/_app/home'
 import { Route as AppWorkspacesSplatRouteImport } from './routes/_app/workspaces.$'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppIndexRoute = AppIndexRouteImport.update({
+const AppHomeRoute = AppHomeRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
@@ -29,17 +29,17 @@ const AppWorkspacesSplatRoute = AppWorkspacesSplatRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AppIndexRoute
+  '/': typeof AppHomeRoute
   '/workspaces/$': typeof AppWorkspacesSplatRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof AppIndexRoute
+  '/': typeof AppHomeRoute
   '/workspaces/$': typeof AppWorkspacesSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
-  '/_app/': typeof AppIndexRoute
+  '/_app/': typeof AppHomeRoute
   '/_app/workspaces/$': typeof AppWorkspacesSplatRoute
 }
 export interface FileRouteTypes {
@@ -67,7 +67,7 @@ declare module '@tanstack/react-router' {
       id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AppIndexRouteImport
+      preLoaderRoute: typeof AppHomeRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/workspaces/$': {
@@ -81,12 +81,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
-  AppIndexRoute: typeof AppIndexRoute
+  AppHomeRoute: typeof AppHomeRoute
   AppWorkspacesSplatRoute: typeof AppWorkspacesSplatRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppIndexRoute: AppIndexRoute,
+  AppHomeRoute: AppHomeRoute,
   AppWorkspacesSplatRoute: AppWorkspacesSplatRoute,
 }
 

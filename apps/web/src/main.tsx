@@ -6,9 +6,7 @@ import { i18nReady } from '#i18n';
 import { getRouter } from './router';
 
 const router = getRouter();
-
 const rootElement = document.getElementById('app');
-
 if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   // Wait for the persisted locale to load so the first paint is not in the fallback language.

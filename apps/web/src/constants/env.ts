@@ -2,5 +2,4 @@ const {
   VITE_APP_BASE_API_URL: BASE_API_URL = '',
   VITE_APP_BASE_API_VERSION: BASE_API_VERSION = ''
 } = import.meta.env;
-
 export { BASE_API_URL, BASE_API_VERSION };

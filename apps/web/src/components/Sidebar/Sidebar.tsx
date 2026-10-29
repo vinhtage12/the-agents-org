@@ -1,4 +1,4 @@
-import { type ReactNode, memo } from 'react';
+import { memo } from 'react';
 import { X } from 'lucide-react';
 
 import {
@@ -13,13 +13,11 @@ import { trans } from '#i18n';
 
 import Menu from './Menu';
 
+import type { PropsWithChildren } from 'react';
 import type { IMenuItem } from 'ui/types';
-
-interface ISidebarProps {
+export interface ISidebarProps extends PropsWithChildren {
   items: IMenuItem[];
-  children?: ReactNode;
 }
-
 const Sidebar = ({ items, children }: ISidebarProps) => {
   const { close } = useSidebar();
   return (
@@ -61,5 +59,4 @@ const Sidebar = ({ items, children }: ISidebarProps) => {
     </TmnFlex>
   );
 };
-
 export default memo(Sidebar);

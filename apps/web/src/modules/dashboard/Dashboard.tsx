@@ -1,42 +1,20 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { memo } from 'react';
 
-import { TmnCard, TmnFlex, TmnText } from '@truyenmoinhu/uikit';
+import { TmnCard, TmnFlex } from '@truyenmoinhu/uikit';
 
 import { useHealth } from '#hooks/health';
 import { trans } from '#i18n';
 import { SystemOverview } from '#modules/system';
 import { WorkspacePage } from '#modules/workspaces';
 
-export const Route = createFileRoute('/_app/')({ component: Dashboard });
+import StatusRow from './StatusRow';
 
-const StatusRow = ({
-  label,
-  value,
-  ok
-}: {
-  label: string;
-  value: string;
-  ok?: boolean;
-}) => (
-  <TmnFlex direction="row" justify="between" align="center">
-    <TmnText muted>{label}</TmnText>
-    <TmnText
-      weight="medium"
-      color={ok === undefined ? undefined : ok ? 'green' : 'red'}
-    >
-      {value}
-    </TmnText>
-  </TmnFlex>
-);
-
-function Dashboard() {
+const Dashboard = () => {
   const { data, isLoading } = useHealth();
-
   const daemon = isLoading
     ? trans('dashboard.checking')
     : trans(data ? 'dashboard.ok' : 'dashboard.unreachable');
   const db = isLoading || !data ? '—' : trans(`dashboard.${data.db}`);
-
   return (
     <>
       <WorkspacePage />
@@ -57,4 +35,5 @@ function Dashboard() {
       <SystemOverview />
     </>
   );
-}
+};
+export default memo(Dashboard);

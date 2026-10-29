@@ -23,24 +23,26 @@ Chart.register(
   Tooltip,
   Legend
 );
-interface Props {
+export interface IMetricChartProps {
   title: string;
   labels: string[];
   values: (number | null)[];
   type?: 'doughnut' | 'bar';
   percent?: boolean;
 }
-export default function MetricChart({
+const MetricChart = ({
   title,
   labels,
   values,
   type = 'doughnut',
   percent = true
-}: Props) {
+}: IMetricChartProps) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const { appearance } = useTheme();
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current) {
+      return;
+    }
     const color = appearance === Appearance.DARK ? '#e2e8f0' : '#334155';
     const chart = new Chart(ref.current, {
       type,
@@ -113,4 +115,6 @@ export default function MetricChart({
       </TmnBox>
     </TmnBox>
   );
-}
+};
+
+export default MetricChart;

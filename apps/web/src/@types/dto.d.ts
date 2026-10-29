@@ -3,7 +3,6 @@ declare module 'dto/types' {
     status: 'ok';
     db: 'up' | 'down';
   }
-
   export interface IAgent {
     id: string;
     paneId: string;

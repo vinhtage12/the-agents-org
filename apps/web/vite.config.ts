@@ -12,7 +12,11 @@ const config = defineConfig({
   plugins: [
     devtools(),
     tailwindcss(),
-    tanstackRouter({ target: 'react', autoCodeSplitting: true }),
+    tanstackRouter({
+      target: 'react',
+      autoCodeSplitting: true,
+      indexToken: 'home'
+    }),
     viteReact()
   ],
   server: { port: 3000 }

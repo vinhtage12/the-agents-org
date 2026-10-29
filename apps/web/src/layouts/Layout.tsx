@@ -13,7 +13,6 @@ import { WorkspaceTree } from '#modules/workspaces';
 
 const Layout = () => {
   const { isOpen, close } = useSidebar();
-
   return (
     <TmnFlex
       direction="row"
@@ -51,5 +50,4 @@ const Layout = () => {
     </TmnFlex>
   );
 };
-
 export default Layout;

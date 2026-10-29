@@ -33,5 +33,4 @@ const NotFound = () => (
     </TmnButton>
   </TmnFlex>
 );
-
 export default memo(NotFound);

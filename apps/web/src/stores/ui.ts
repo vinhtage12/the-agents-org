@@ -6,7 +6,6 @@ interface UIState {
   setSidebarOpen: (open: boolean) => void;
   toggleSidebar: () => void;
 }
-
 export const useUIStore = create<UIState>()(
   persist(
     set => ({
