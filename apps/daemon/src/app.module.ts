@@ -1,3 +1,5 @@
+import { TicketsService } from './tickets/tickets.service';
+import { TicketsController } from './tickets/tickets.controller';
 import { JiraClient } from './jira/jira.client';
 import { JiraSyncService } from './jira/jira-sync.service';
 import { ProjectSettingsController } from './project-settings.controller';
@@ -29,6 +31,7 @@ import { WorkspacesController } from './workspaces.controller';
     PrismaModule
   ],
   controllers: [
+    TicketsController,
     ProjectSettingsController,
     AgentProfilesController,
     AppController,
@@ -37,6 +40,7 @@ import { WorkspacesController } from './workspaces.controller';
     SystemController
   ],
   providers: [
+    TicketsService,
     JiraClient,
     JiraSyncService,
     AgentProfilesService,
