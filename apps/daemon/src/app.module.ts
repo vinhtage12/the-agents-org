@@ -1,3 +1,5 @@
+import { JiraClient } from './jira/jira.client';
+import { JiraSyncService } from './jira/jira-sync.service';
 import { ProjectSettingsController } from './project-settings.controller';
 import { AgentProfilesService } from './agent-profiles/agent-profiles.service';
 import { AgentProfilesController } from './agent-profiles/agent-profiles.controller';
@@ -35,6 +37,8 @@ import { WorkspacesController } from './workspaces.controller';
     SystemController
   ],
   providers: [
+    JiraClient,
+    JiraSyncService,
     AgentProfilesService,
     AgentUsageService,
     AppService,
