@@ -6,4 +6,4 @@ dist
 !.env.example
 
 .remember
-.codegraph
+.codegraph.superpowers/
