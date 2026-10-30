@@ -1,3 +1,5 @@
+import { AgentProfilesService } from './agent-profiles/agent-profiles.service';
+import { AgentProfilesController } from './agent-profiles/agent-profiles.controller';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
@@ -24,12 +26,14 @@ import { WorkspacesController } from './workspaces.controller';
     PrismaModule
   ],
   controllers: [
+    AgentProfilesController,
     AppController,
     HerdrController,
     WorkspacesController,
     SystemController
   ],
   providers: [
+    AgentProfilesService,
     AgentUsageService,
     AppService,
     HerdrClient,

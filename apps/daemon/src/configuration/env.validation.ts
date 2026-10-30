@@ -1,4 +1,5 @@
 export interface Env {
+  AGENTS_DIR?: string;
   DATABASE_URL: string;
   PORT: number;
   CORS_ORIGIN: string[];
@@ -35,7 +36,10 @@ export function validate(config: Record<string, unknown>): Env {
     throw new Error('HERDR_BIN_PATH must be a string');
   }
 
+  if (config.AGENTS_DIR !== undefined && typeof config.AGENTS_DIR !== "string") throw new Error("AGENTS_DIR must be a string");
+
   return {
+    AGENTS_DIR: config.AGENTS_DIR as string | undefined,
     DATABASE_URL,
     PORT: port,
     CORS_ORIGIN: corsOrigin,
