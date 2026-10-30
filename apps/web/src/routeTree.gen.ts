@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
+import { Route as AppTicketsRouteImport } from './routes/_app/tickets'
 import { Route as AppWorkspacesSplatRouteImport } from './routes/_app/workspaces.$'
 
 const AppRoute = AppRouteImport.update({
@@ -22,6 +23,11 @@ const AppHomeRoute = AppHomeRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppTicketsRoute = AppTicketsRouteImport.update({
+  id: '/tickets',
+  path: '/tickets',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppWorkspacesSplatRoute = AppWorkspacesSplatRouteImport.update({
   id: '/workspaces/$',
   path: '/workspaces/$',
@@ -30,24 +36,27 @@ const AppWorkspacesSplatRoute = AppWorkspacesSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppHomeRoute
+  '/tickets': typeof AppTicketsRoute
   '/workspaces/$': typeof AppWorkspacesSplatRoute
 }
 export interface FileRoutesByTo {
+  '/tickets': typeof AppTicketsRoute
   '/': typeof AppHomeRoute
   '/workspaces/$': typeof AppWorkspacesSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/_app/tickets': typeof AppTicketsRoute
   '/_app/': typeof AppHomeRoute
   '/_app/workspaces/$': typeof AppWorkspacesSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/workspaces/$'
+  fullPaths: '/' | '/tickets' | '/workspaces/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/workspaces/$'
-  id: '__root__' | '/_app' | '/_app/' | '/_app/workspaces/$'
+  to: '/tickets' | '/' | '/workspaces/$'
+  id: '__root__' | '/_app' | '/_app/tickets' | '/_app/' | '/_app/workspaces/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -70,6 +79,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHomeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/tickets': {
+      id: '/_app/tickets'
+      path: '/tickets'
+      fullPath: '/tickets'
+      preLoaderRoute: typeof AppTicketsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/workspaces/$': {
       id: '/_app/workspaces/$'
       path: '/workspaces/$'
@@ -81,11 +97,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppTicketsRoute: typeof AppTicketsRoute
   AppHomeRoute: typeof AppHomeRoute
   AppWorkspacesSplatRoute: typeof AppWorkspacesSplatRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppTicketsRoute: AppTicketsRoute,
   AppHomeRoute: AppHomeRoute,
   AppWorkspacesSplatRoute: AppWorkspacesSplatRoute,
 }

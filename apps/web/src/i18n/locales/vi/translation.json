@@ -2,7 +2,8 @@
   "app_name": "The Agents Org",
   "menu": {
     "navigation": "Điều hướng",
-    "dashboard": "Tổng quan"
+    "dashboard": "Tổng quan",
+    "tickets": "Kho ticket"
   },
   "common": {
     "toggle_sidebar": "Ẩn/hiện thanh bên",
@@ -122,6 +123,25 @@
     "cancel": "Huỷ",
     "save_failed": "Không lưu được. Vui lòng thử lại.",
     "load_failed": "Không tải được cài đặt project",
+    "retry": "Thử lại"
+  },
+  "ticket": {
+    "store_title": "Kho ticket",
+    "sync": "Sync",
+    "syncing": "Đang sync…",
+    "synced": "Đã sync: {{created}} mới, {{updated}} cập nhật, {{canceled}} huỷ, {{reopened}} mở lại",
+    "sync_failed": "Không sync được từ Jira",
+    "jira_not_configured": "Chưa cấu hình Jira. Hãy đặt JIRA_BASE_URL, JIRA_EMAIL và JIRA_API_TOKEN cho daemon.",
+    "save": "Lưu ({{count}})",
+    "linked": "Đã gắn {{linked}} ticket",
+    "already_linked": "Một số ticket đã được gắn trước đó. Danh sách đã được tải lại.",
+    "save_failed": "Không lưu được. Vui lòng thử lại.",
+    "unassigned": "Chưa xác định",
+    "unassigned_hint": "Không khớp key project nào",
+    "project_hint": "Key {{code}}-…",
+    "suggested": "gợi ý",
+    "store_empty": "Không có ticket mới. Bấm Sync để kéo các ticket đang assign cho bạn.",
+    "load_failed": "Không tải được ticket",
     "retry": "Thử lại"
   }
 }

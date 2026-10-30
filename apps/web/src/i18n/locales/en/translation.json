@@ -2,7 +2,8 @@
   "app_name": "The Agents Org",
   "menu": {
     "navigation": "Navigation",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "tickets": "Ticket Store"
   },
   "common": {
     "toggle_sidebar": "Toggle sidebar",
@@ -122,6 +123,25 @@
     "cancel": "Cancel",
     "save_failed": "Could not save. Please try again.",
     "load_failed": "Could not load project settings",
+    "retry": "Retry"
+  },
+  "ticket": {
+    "store_title": "Ticket Store",
+    "sync": "Sync",
+    "syncing": "Syncing…",
+    "synced": "Synced: {{created}} new, {{updated}} updated, {{canceled}} canceled, {{reopened}} reopened",
+    "sync_failed": "Could not sync from Jira",
+    "jira_not_configured": "Jira is not configured. Set JIRA_BASE_URL, JIRA_EMAIL and JIRA_API_TOKEN for the daemon.",
+    "save": "Save ({{count}})",
+    "linked": "Linked {{linked}} tickets",
+    "already_linked": "Some tickets were already linked. The list has been refreshed.",
+    "save_failed": "Could not save. Please try again.",
+    "unassigned": "Undetermined",
+    "unassigned_hint": "No matching project key",
+    "project_hint": "Key {{code}}-…",
+    "suggested": "suggested",
+    "store_empty": "No new tickets. Press Sync to fetch tickets assigned to you.",
+    "load_failed": "Could not load tickets",
     "retry": "Retry"
   }
 }
