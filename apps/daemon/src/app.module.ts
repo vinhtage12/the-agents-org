@@ -1,3 +1,4 @@
+import { ProjectSettingsController } from './project-settings.controller';
 import { AgentProfilesService } from './agent-profiles/agent-profiles.service';
 import { AgentProfilesController } from './agent-profiles/agent-profiles.controller';
 import { Module } from '@nestjs/common';
@@ -26,6 +27,7 @@ import { WorkspacesController } from './workspaces.controller';
     PrismaModule
   ],
   controllers: [
+    ProjectSettingsController,
     AgentProfilesController,
     AppController,
     HerdrController,
