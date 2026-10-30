@@ -1,7 +1,7 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
-import { JiraClient, JiraIssue } from './jira.client';
+import { JiraClient, JiraHttpError, JiraIssue } from './jira.client';
 @Injectable()
 export class JiraSyncService {
   constructor(
@@ -69,9 +69,7 @@ export class JiraSyncService {
     ).filter(ticket => !keys.has(ticket.jiraKey));
     for (let i = 0; i < missing.length; i += 50) {
       const batch = missing.slice(i, i + 50);
-      const checked = await this.jira.search(
-        `key in (${batch.map(t => t.jiraKey).join(',')})`
-      );
+      const checked = await this.recheck(batch.map(t => t.jiraKey));
       for (const ticket of batch) {
         const issue = checked.find(value => value.key === ticket.jiraKey);
         if (!issue || issue.assigneeAccountId !== me.accountId) {
@@ -90,5 +88,18 @@ export class JiraSyncService {
       }
     }
     return result;
+  }
+  // JQL `key in (...)` fails with 400 if any key was deleted or is no longer visible.
+  private async recheck(keys: string[]): Promise<JiraIssue[]> {
+    try {
+      return await this.jira.search(`key in (${keys.join(',')})`);
+    } catch (error) {
+      if (!(error instanceof JiraHttpError && error.jiraStatus === 400))
+        throw error;
+      const issues = await Promise.all(
+        keys.map(key => this.jira.getIssue(key))
+      );
+      return issues.filter((issue): issue is JiraIssue => issue !== null);
+    }
   }
 }

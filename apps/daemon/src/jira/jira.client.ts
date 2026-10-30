@@ -10,19 +10,34 @@ export interface JiraIssue {
   status: string;
   assigneeAccountId: string | null;
 }
+interface RawIssue {
+  key: string;
+  fields: {
+    summary: string;
+    description: unknown;
+    issuetype: { name: string };
+    status: { name: string };
+    assignee: { accountId: string } | null;
+  };
+}
 interface SearchResponse {
-  issues: {
-    key: string;
-    fields: {
-      summary: string;
-      description: unknown;
-      issuetype: { name: string };
-      status: { name: string };
-      assignee: { accountId: string } | null;
-    };
-  }[];
+  issues: RawIssue[];
   nextPageToken?: string;
 }
+const FIELDS = ['summary', 'description', 'issuetype', 'status', 'assignee'];
+export class JiraHttpError extends BadGatewayException {
+  constructor(readonly jiraStatus: number) {
+    super(`Jira returned HTTP ${jiraStatus}`);
+  }
+}
+const toIssue = ({ key, fields }: RawIssue): JiraIssue => ({
+  key,
+  summary: fields.summary,
+  description: adfToText(fields.description),
+  issueType: fields.issuetype.name,
+  status: fields.status.name,
+  assigneeAccountId: fields.assignee?.accountId ?? null
+});
 @Injectable()
 export class JiraClient {
   constructor(private readonly config: ConfigService) {}
@@ -47,8 +62,7 @@ export class JiraClient {
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) })
       });
-      if (!response.ok)
-        throw new BadGatewayException(`Jira returned HTTP ${response.status}`);
+      if (!response.ok) throw new JiraHttpError(response.status);
       return (await response.json()) as T;
     } catch (error) {
       if (error instanceof BadGatewayException) throw error;
@@ -64,22 +78,27 @@ export class JiraClient {
     do {
       const page = await this.request<SearchResponse>('search/jql', {
         jql,
-        fields: ['summary', 'description', 'issuetype', 'status', 'assignee'],
+        fields: FIELDS,
         maxResults: 100,
         nextPageToken
       });
-      for (const { key, fields } of page.issues)
-        issues.push({
-          key,
-          summary: fields.summary,
-          description: adfToText(fields.description),
-          issueType: fields.issuetype.name,
-          status: fields.status.name,
-          assigneeAccountId: fields.assignee?.accountId ?? null
-        });
+      issues.push(...page.issues.map(toIssue));
       nextPageToken = page.nextPageToken;
     } while (nextPageToken);
     return issues;
+  }
+  async getIssue(key: string): Promise<JiraIssue | null> {
+    try {
+      return toIssue(
+        await this.request<RawIssue>(
+          `issue/${encodeURIComponent(key)}?fields=${FIELDS.join(',')}`
+        )
+      );
+    } catch (error) {
+      if (error instanceof JiraHttpError && error.jiraStatus === 404)
+        return null;
+      throw error;
+    }
   }
   browseUrl(key: string): string {
     return `${this.baseUrl}/browse/${key}`;

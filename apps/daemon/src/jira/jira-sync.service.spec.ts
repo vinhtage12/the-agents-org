@@ -1,7 +1,7 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
-import { JiraClient } from './jira.client';
+import { JiraClient, JiraHttpError } from './jira.client';
 import { JiraSyncService } from './jira-sync.service';
 
 describe('JiraSyncService', () => {
@@ -17,6 +17,7 @@ describe('JiraSyncService', () => {
     isConfigured: jest.fn(),
     myself: jest.fn(),
     search: jest.fn(),
+    getIssue: jest.fn(),
     browseUrl: jest.fn()
   };
   const prisma = {
@@ -119,5 +120,32 @@ describe('JiraSyncService', () => {
     prisma.ticket.findMany.mockResolvedValue([{ jiraKey: 'FMS-1' }]);
     jira.search.mockResolvedValue([]);
     expect((await service.sync()).canceled).toBe(1);
+  });
+  it('falls back to per-key lookup when the batch query rejects unknown keys', async () => {
+    prisma.ticket.findMany.mockResolvedValue([
+      { jiraKey: 'FMS-1' },
+      { jiraKey: 'FMS-2' }
+    ]);
+    jira.search
+      .mockResolvedValueOnce([])
+      .mockRejectedValueOnce(new JiraHttpError(400));
+    jira.getIssue.mockImplementation(async (key: string) =>
+      key === 'FMS-2' ? { ...issue, key: 'FMS-2' } : null
+    );
+    const result = await service.sync();
+    expect(jira.getIssue).toHaveBeenCalledTimes(2);
+    expect(prisma.ticket.update).toHaveBeenCalledWith({
+      where: { jiraKey: 'FMS-1' },
+      data: { status: 'CANCELED' }
+    });
+    expect(result).toMatchObject({ canceled: 1, updated: 1 });
+  });
+  it('still fails sync on other Jira errors in the re-check', async () => {
+    prisma.ticket.findMany.mockResolvedValue([{ jiraKey: 'FMS-1' }]);
+    jira.search
+      .mockResolvedValueOnce([])
+      .mockRejectedValueOnce(new JiraHttpError(500));
+    await expect(service.sync()).rejects.toBeInstanceOf(JiraHttpError);
+    expect(prisma.ticket.update).not.toHaveBeenCalled();
   });
 });

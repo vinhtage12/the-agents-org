@@ -68,4 +68,30 @@ describe('JiraClient', () => {
     fetchMock.mockResolvedValue({ ok: false, status: 401 });
     await expect(client.myself()).rejects.toBeInstanceOf(BadGatewayException);
   });
+  it('getIssue returns the issue, or null when Jira answers 404', async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          key: 'FMS-2',
+          fields: {
+            summary: 'S',
+            description: null,
+            issuetype: { name: 'Bug' },
+            status: { name: 'Done' },
+            assignee: { accountId: 'me' }
+          }
+        })
+      })
+      .mockResolvedValueOnce({ ok: false, status: 404 });
+    await expect(client.getIssue('FMS-2')).resolves.toMatchObject({
+      key: 'FMS-2',
+      status: 'Done',
+      assigneeAccountId: 'me'
+    });
+    await expect(client.getIssue('FMS-3')).resolves.toBeNull();
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://jira/rest/api/3/issue/FMS-2?fields=summary,description,issuetype,status,assignee'
+    );
+  });
 });
