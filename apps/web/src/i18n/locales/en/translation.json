@@ -142,6 +142,16 @@
     "suggested": "suggested",
     "store_empty": "No new tickets. Press Sync to fetch tickets assigned to you.",
     "load_failed": "Could not load tickets",
-    "retry": "Retry"
+    "retry": "Retry",
+    "status": {
+      "TODO": "To Do",
+      "IN_SPEC": "In Spec",
+      "IN_REVIEW_SPEC": "In Review Spec",
+      "IN_PROGRESS": "In Progress",
+      "IN_TESTING": "In Testing",
+      "IN_REVIEW": "In Review",
+      "DONE": "Done",
+      "CANCELED": "Canceled"
+    }
   }
 }

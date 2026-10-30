@@ -13,6 +13,7 @@ import {
 
 import { trans } from '#i18n';
 import { ProjectSettings } from '#modules/projects';
+import { ProjectBoard } from '#modules/tickets';
 
 import EntityActions from './EntityActions';
 import EntityForm from './EntityForm';
@@ -141,22 +142,7 @@ const WorkspacePage = () => {
         </TmnFlex>
       </TmnFlex>
       {project && workspace ? (
-        <TmnCard header={{ title: trans('workspace.details') }}>
-          <TmnFlex direction="column" gap={3}>
-            <TmnText>
-              {trans('workspace.name')}: {project.name}
-            </TmnText>
-            <TmnText>
-              {trans('workspace.code')}: {project.code}
-            </TmnText>
-            <TmnText>
-              {trans('workspace.parent')}:{' '}
-              <WorkspaceLink path={String(workspace.id)}>
-                {workspace.name}
-              </WorkspaceLink>
-            </TmnText>
-          </TmnFlex>
-        </TmnCard>
+        <ProjectBoard projectId={project.id} />
       ) : (
         <TmnBox className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {workspace

@@ -142,6 +142,16 @@
     "suggested": "gợi ý",
     "store_empty": "Không có ticket mới. Bấm Sync để kéo các ticket đang assign cho bạn.",
     "load_failed": "Không tải được ticket",
-    "retry": "Thử lại"
+    "retry": "Thử lại",
+    "status": {
+      "TODO": "To Do",
+      "IN_SPEC": "In Spec",
+      "IN_REVIEW_SPEC": "In Review Spec",
+      "IN_PROGRESS": "In Progress",
+      "IN_TESTING": "In Testing",
+      "IN_REVIEW": "In Review",
+      "DONE": "Done",
+      "CANCELED": "Canceled"
+    }
   }
 }

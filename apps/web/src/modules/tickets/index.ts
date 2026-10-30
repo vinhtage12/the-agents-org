@@ -1,6 +1,12 @@
+export * from './BoardCard';
+export { default as BoardCard } from './BoardCard';
+export * from './BoardColumn';
+export { default as BoardColumn } from './BoardColumn';
 export * from './constants';
 export * from './error';
 export * from './hooks';
+export * from './ProjectBoard';
+export { default as ProjectBoard } from './ProjectBoard';
 export * from './StoreColumn';
 export { default as StoreColumn } from './StoreColumn';
 export * from './StoreTicketCard';
