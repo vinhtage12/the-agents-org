@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useLocation } from '@tanstack/react-router';
-import { Plus } from 'lucide-react';
+import { Plus, Settings } from 'lucide-react';
 
 import {
   TmnBox,
@@ -12,6 +12,7 @@ import {
 } from '@truyenmoinhu/uikit';
 
 import { trans } from '#i18n';
+import { ProjectSettings } from '#modules/projects';
 
 import EntityActions from './EntityActions';
 import EntityForm from './EntityForm';
@@ -65,6 +66,18 @@ const WorkspacePage = () => {
       />
     );
   }
+  if (workspace && project && parts.length === 5 && parts[4] === 'settings') {
+    return (
+      <TmnFlex direction="column" gap={4}>
+        <TmnText size="6" weight="bold" asChild>
+          <h1>
+            {project.name} · {trans('project.settings')}
+          </h1>
+        </TmnText>
+        <ProjectSettings workspaceId={workspace.id} projectId={project.id} />
+      </TmnFlex>
+    );
+  }
   if (
     !overview &&
     (!workspace ||
@@ -111,6 +124,15 @@ const WorkspacePage = () => {
               {trans(
                 workspace ? 'workspace.create_project' : 'workspace.create'
               )}
+            </WorkspaceLink>
+          )}
+          {workspace && project && (
+            <WorkspaceLink
+              path={`${workspace.id}/projects/${project.id}/settings`}
+              button
+            >
+              <Settings size={14} />
+              {trans('project.settings')}
             </WorkspaceLink>
           )}
           {workspace && (
