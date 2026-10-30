@@ -16,8 +16,15 @@ export class JiraSyncService {
       const existing = await this.prisma.ticket.findUnique({ where: { jiraKey: issue.key } });
       const data = this.content(issue);
       if (!existing) {
-        await this.prisma.ticket.create({ data: { ...data, jiraKey: issue.key, status: 'TODO' } });
-        result.created++;
+        try {
+          await this.prisma.ticket.create({ data: { ...data, jiraKey: issue.key, status: 'TODO' } });
+          result.created++;
+        } catch (error) {
+          if (typeof error !== 'object' || error === null || !('code' in error) || error.code !== 'P2002') throw error;
+          // Another sync created this key; update only Jira content, preserving any link/status.
+          await this.prisma.ticket.update({ where: { jiraKey: issue.key }, data });
+          result.updated++;
+        }
       } else {
         const reopened = existing.status === 'CANCELED';
         await this.prisma.ticket.update({ where: { jiraKey: issue.key }, data: { ...data, ...(reopened ? { status: 'TODO' as const } : {}) } });

@@ -60,6 +60,12 @@ describe('JiraSyncService', () => {
     expect(data).not.toHaveProperty('status');
     expect(data).not.toHaveProperty('projectId');
   });
+  it('updates when a concurrent sync creates the same ticket first', async () => {
+    prisma.ticket.create.mockRejectedValueOnce({ code: 'P2002' });
+    await expect(service.sync()).resolves.toMatchObject({ created: 0, updated: 1 });
+    expect(prisma.ticket.update).toHaveBeenCalledWith({ where: { jiraKey: 'FMS-1' }, data: expect.objectContaining({ summary: 'A' }) });
+    expect(prisma.ticket.update.mock.calls[0][0].data).not.toHaveProperty('status');
+  });
   it('cancels tickets reassigned to someone else', async () => {
     prisma.ticket.findMany.mockResolvedValue([
       { jiraKey: 'FMS-1', status: 'IN_PROGRESS' }
