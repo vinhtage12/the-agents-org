@@ -1,4 +1,5 @@
 import { adfToText } from './adf';
+
 it('flattens paragraphs and hard breaks', () => {
   expect(
     adfToText({

@@ -1,7 +1,8 @@
 import { ServiceUnavailableException } from '@nestjs/common';
-import { JiraSyncService } from './jira-sync.service';
-import { JiraClient } from './jira.client';
+
 import { PrismaService } from '../prisma/prisma.service';
+import { JiraClient } from './jira.client';
+import { JiraSyncService } from './jira-sync.service';
 
 describe('JiraSyncService', () => {
   const issue = {
@@ -62,9 +63,17 @@ describe('JiraSyncService', () => {
   });
   it('updates when a concurrent sync creates the same ticket first', async () => {
     prisma.ticket.create.mockRejectedValueOnce({ code: 'P2002' });
-    await expect(service.sync()).resolves.toMatchObject({ created: 0, updated: 1 });
-    expect(prisma.ticket.update).toHaveBeenCalledWith({ where: { jiraKey: 'FMS-1' }, data: expect.objectContaining({ summary: 'A' }) });
-    expect(prisma.ticket.update.mock.calls[0][0].data).not.toHaveProperty('status');
+    await expect(service.sync()).resolves.toMatchObject({
+      created: 0,
+      updated: 1
+    });
+    expect(prisma.ticket.update).toHaveBeenCalledWith({
+      where: { jiraKey: 'FMS-1' },
+      data: expect.objectContaining({ summary: 'A' })
+    });
+    expect(prisma.ticket.update.mock.calls[0][0].data).not.toHaveProperty(
+      'status'
+    );
   });
   it('cancels tickets reassigned to someone else', async () => {
     prisma.ticket.findMany.mockResolvedValue([

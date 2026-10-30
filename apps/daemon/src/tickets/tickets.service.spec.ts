@@ -1,6 +1,7 @@
 import { ConflictException } from '@nestjs/common';
-import { TicketsService, suggestProjectId } from './tickets.service';
+
 import { PrismaService } from '../prisma/prisma.service';
+import { TicketsService, suggestProjectId } from './tickets.service';
 
 describe('TicketsService', () => {
   const tx = {

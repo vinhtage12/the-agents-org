@@ -42,12 +42,16 @@ export function validate(config: Record<string, unknown>): Env {
   if (config.AGENTS_DIR !== undefined && typeof config.AGENTS_DIR !== 'string')
     throw new Error('AGENTS_DIR must be a string');
 
-  for (const key of ["JIRA_BASE_URL", "JIRA_EMAIL", "JIRA_API_TOKEN"]) {
-    if (config[key] !== undefined && typeof config[key] !== "string") throw new Error(`${key} must be a string`);
+  for (const key of ['JIRA_BASE_URL', 'JIRA_EMAIL', 'JIRA_API_TOKEN']) {
+    if (config[key] !== undefined && typeof config[key] !== 'string')
+      throw new Error(`${key} must be a string`);
   }
 
   return {
-    JIRA_BASE_URL: (config.JIRA_BASE_URL as string | undefined)?.replace(/\/+$/, ""),
+    JIRA_BASE_URL: (config.JIRA_BASE_URL as string | undefined)?.replace(
+      /\/+$/,
+      ''
+    ),
     JIRA_EMAIL: config.JIRA_EMAIL as string | undefined,
     JIRA_API_TOKEN: config.JIRA_API_TOKEN as string | undefined,
     AGENTS_DIR: config.AGENTS_DIR as string | undefined,

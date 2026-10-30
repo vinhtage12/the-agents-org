@@ -15,6 +15,7 @@ import {
   Min,
   ValidateNested
 } from 'class-validator';
+
 import { JiraSyncService } from '../jira/jira-sync.service';
 import { TicketsService } from './tickets.service';
 export class LinkTicketDto {
