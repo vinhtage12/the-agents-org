@@ -16,7 +16,7 @@ describe('HerdrService', () => {
   let service: HerdrService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     service = new HerdrService(
       herdr as unknown as HerdrClient,
       { get: () => 'herdr' } as never
@@ -48,6 +48,30 @@ describe('HerdrService', () => {
         cwd: '/workspace'
       }
     ]);
+    expect(herdr.request).toHaveBeenCalledWith('agent.list');
+  });
+
+  it('reads recent agent output as text', async () => {
+    herdr.request
+      .mockResolvedValueOnce({ agents: [{ pane_id: 'w1:p2', agent: 'codex' }] })
+      .mockResolvedValueOnce({ read: { text: 'hello' } });
+
+    await expect(service.readAgent('w1:p2', 200)).resolves.toBe('hello');
+    expect(herdr.request).toHaveBeenNthCalledWith(1, 'agent.list');
+    expect(herdr.request).toHaveBeenLastCalledWith('agent.read', {
+      target: 'w1:p2',
+      source: 'recent',
+      lines: 200,
+      strip_ansi: true
+    });
+  });
+
+  it('rejects reading an unknown agent', async () => {
+    herdr.request.mockResolvedValueOnce({ agents: [] });
+    await expect(service.readAgent('w1:p2', 200)).rejects.toBeInstanceOf(
+      NotFoundException
+    );
+    expect(herdr.request).toHaveBeenCalledTimes(1);
     expect(herdr.request).toHaveBeenCalledWith('agent.list');
   });
 

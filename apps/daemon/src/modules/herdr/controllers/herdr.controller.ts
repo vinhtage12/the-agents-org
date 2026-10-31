@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  DefaultValuePipe,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { CreateAgentDto } from '../dtos/create-agent.dto';
@@ -23,6 +33,17 @@ export class HerdrController {
   @Get(':id')
   getAgent(@Param('id') id: string) {
     return this.herdr.getAgent(id);
+  }
+
+  @Get(':id/output')
+  async readAgent(
+    @Param('id') id: string,
+    @Query('lines', new DefaultValuePipe(200), ParseIntPipe) lines: number
+  ) {
+    if (lines < 1 || lines > 1000) {
+      throw new BadRequestException('lines must be between 1 and 1000');
+    }
+    return { text: await this.herdr.readAgent(id, lines) };
   }
 
   @Post(':id/prompts')
