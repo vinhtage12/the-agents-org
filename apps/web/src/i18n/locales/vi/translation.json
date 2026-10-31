@@ -158,6 +158,55 @@
       "running": "đang chạy",
       "approved": "đã duyệt",
       "needs_you": "cần bạn"
+    },
+    "open_ticket": "Mở ticket {{key}}",
+    "open_jira": "Mở trên Jira",
+    "tab": {
+      "spec": "Spec",
+      "edit": "Sửa",
+      "settings": "Cài đặt",
+      "agents": "Agent"
+    },
+    "spec_empty": "Chưa có spec. Kéo ticket sang In Spec để agent Spec viết.",
+    "spec_edited": "đã sửa tay",
+    "spec_from_feedback": "Viết lại theo feedback: {{feedback}}",
+    "spec_markdown": "Spec (markdown)",
+    "save_spec": "Lưu chỉnh sửa",
+    "spec_saved": "Đã lưu spec",
+    "edit_locked": "Chỉ sửa được khi ticket ở In Review Spec.",
+    "feedback": "Feedback",
+    "feedback_placeholder": "Viết điều agent Spec cần sửa…",
+    "send_feedback": "Gửi feedback",
+    "feedback_sent": "Đã gửi feedback, agent Spec đang viết lại",
+    "approve": "Approve",
+    "spec_approved": "Đã duyệt spec",
+    "request_failed": "Yêu cầu thất bại. Vui lòng thử lại.",
+    "none": "Không chọn",
+    "project": "Project",
+    "repo": "Repo",
+    "specAgent": "Agent Spec",
+    "devAgent": "Agent Dev",
+    "testAgent": "Agent Testing",
+    "extra_skills": "Skills thêm",
+    "extra_skills_hint": "Tên skill đã cài cho provider, cách nhau bằng dấu phẩy",
+    "extra_skills_invalid": "Tên skill chỉ gồm chữ, số và : . _ -",
+    "extra_instructions": "Rules và mô tả thêm",
+    "save_settings": "Lưu cài đặt",
+    "settings_saved": "Đã lưu cài đặt ticket",
+    "agent_missing": "Không tìm thấy agent {{slug}}. Bước dùng agent này sẽ bị chặn.",
+    "locked_running": "Đang có agent chạy: không đổi được repo và agent Spec.",
+    "runs_empty": "Chưa có agent nào chạy cho ticket này.",
+    "pane": "pane {{paneId}}",
+    "step": {
+      "SPEC": "Spec",
+      "DEV": "Dev",
+      "TEST": "Testing"
+    },
+    "run_status": {
+      "RUNNING": "đang chạy",
+      "COMPLETED": "xong",
+      "FAILED": "lỗi",
+      "STOPPED": "đã dừng"
     }
   }
 }

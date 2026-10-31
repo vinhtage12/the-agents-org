@@ -16,7 +16,10 @@ import type {
   ILinkTicket,
   IMoveTicket,
   ISyncResult,
-  ITicketStore
+  ITicketDetail,
+  ITicketRequest,
+  ITicketStore,
+  IUpdateTicket
 } from './types';
 export const useTicketStore = () =>
   useQueryEnhancer<ITicketStore>({
@@ -147,3 +150,52 @@ export const useBoardEvents = (projectId: number) => {
     };
   }, [projectId, queryClient]);
 };
+export const useTicketDetail = (ticketId: number) =>
+  useQueryEnhancer<ITicketDetail>({
+    queryKey: [TICKET_QUERY_KEYS.detail, ticketId],
+    queryFn: async ({ apiManager }) => {
+      const result = await apiManager?.sendRequest<ITicketDetail>({
+        url: TICKET_ENDPOINTS.tickets(String(ticketId)),
+        suppressNotifyOnError: true
+      });
+      if (!result?.success || !result.payload) {
+        throw new TicketError(result?.code, result?.message);
+      }
+      return result.payload;
+    }
+  });
+const useTicketRequest = <TData>(path: string, method: RequestMethods) => {
+  const queryClient = useQueryClient();
+  return useMutationEnhancer<ITicketDetail, ITicketRequest<TData>>({
+    mutationFn: async ({ apiManager, variables }) => {
+      if (!apiManager || !variables) {
+        throw new TicketError();
+      }
+      const result = await apiManager.sendRequest<ITicketDetail>({
+        url: TICKET_ENDPOINTS.tickets(`${variables.ticketId}${path}`),
+        method,
+        data: variables.data,
+        suppressNotifyOnError: true
+      });
+      // Failed spec runs roll the card back, so refetch either way.
+      await queryClient.invalidateQueries({
+        queryKey: [TICKET_QUERY_KEYS.detail, variables.ticketId]
+      });
+      await queryClient.invalidateQueries({
+        queryKey: [TICKET_QUERY_KEYS.board]
+      });
+      if (!result.success || !result.payload) {
+        throw new TicketError(result.code, result.message);
+      }
+      return result.payload;
+    }
+  });
+};
+export const useUpdateTicket = () =>
+  useTicketRequest<IUpdateTicket>('', RequestMethods.PATCH);
+export const useSaveSpec = () =>
+  useTicketRequest<{ content: string }>('/spec', RequestMethods.PUT);
+export const useSpecFeedback = () =>
+  useTicketRequest<{ feedback: string }>('/spec/feedback', RequestMethods.POST);
+export const useApproveSpec = () =>
+  useTicketRequest<undefined>('/spec/approve', RequestMethods.POST);

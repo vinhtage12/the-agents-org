@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { type KeyboardEvent, memo } from 'react';
 
 import { TmnChip, TmnDnD, TmnFlex, TmnText } from '@truyenmoinhu/uikit';
 
@@ -10,8 +10,9 @@ import type { IBoardTicket } from './types';
 export interface IBoardCardProps {
   ticket: IBoardTicket;
   pending: boolean;
+  onOpen: (ticketId: number) => void;
 }
-const BoardCard = ({ ticket, pending }: IBoardCardProps) => (
+const BoardCard = ({ ticket, pending, onOpen }: IBoardCardProps) => (
   <TmnDnD.Draggable
     id={`board-ticket-${ticket.id}`}
     type="board-ticket"
@@ -22,6 +23,16 @@ const BoardCard = ({ ticket, pending }: IBoardCardProps) => (
       <TmnFlex
         direction="column"
         gap={1}
+        role="button"
+        tabIndex={0}
+        aria-label={trans('ticket.open_ticket', { key: ticket.jiraKey })}
+        onClick={() => onOpen(ticket.id)}
+        onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onOpen(ticket.id);
+          }
+        }}
         className={`rounded-md border border-border bg-card p-2 ${MOVABLE[ticket.status] ? 'cursor-grab' : ''} ${isDragging || pending ? 'opacity-40' : ''}`}
       >
         <TmnFlex direction="row" align="center" gap={2} className="min-w-0">

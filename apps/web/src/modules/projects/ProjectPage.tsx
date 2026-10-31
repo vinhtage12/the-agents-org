@@ -20,10 +20,12 @@ import {
   useWorkspaces
 } from '#modules/workspaces';
 
+import { useAgentProfiles } from './hooks';
 import ProjectSettings from './ProjectSettings';
 
 const ProjectPage = () => {
   const { data, isLoading, error, refetch } = useWorkspaces();
+  const agentProfiles = useAgentProfiles();
   const pathname = useLocation({ select: l => l.pathname });
   const { workspaceId, _splat = '' } = useParams({ strict: false });
   const parts = _splat.split('/').filter(Boolean);
@@ -107,7 +109,10 @@ const ProjectPage = () => {
           <EntityActions workspace={workspace} project={project} />
         </TmnFlex>
       </TmnFlex>
-      <ProjectBoard projectId={project.id} />
+      <ProjectBoard
+        projectId={project.id}
+        profiles={agentProfiles.data?.profiles ?? []}
+      />
     </TmnFlex>
   );
 };

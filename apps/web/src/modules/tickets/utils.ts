@@ -1,6 +1,13 @@
 import { UNASSIGNED_COLUMN } from './constants';
 
-import type { ILinkTicket, IStoreTicket, TicketPlacement } from './types';
+import type {
+  ILinkTicket,
+  IStoreTicket,
+  ITicketDetail,
+  ITicketSettingsValues,
+  IUpdateTicket,
+  TicketPlacement
+} from './types';
 
 export const buildInitialPlacement = (
   tickets: IStoreTicket[]
@@ -26,3 +33,27 @@ export const applyMoves = (
       Number(id) in moved ? (moved[Number(id)] ?? null) : projectId
     ])
   );
+
+const toNullable = (value: string) => value || null;
+
+// A project change resets repo and agents to the new project's defaults on the daemon.
+export const toTicketUpdate = (
+  values: ITicketSettingsValues,
+  ticket: ITicketDetail
+): IUpdateTicket => {
+  const extras = {
+    extraSkills: values.extraSkills.split(/[\s,]+/).filter(Boolean),
+    extraInstructions: values.extraInstructions
+  };
+  const projectId = Number(values.projectId);
+  if (projectId && projectId !== ticket.projectId) {
+    return { projectId, ...extras };
+  }
+  return {
+    repoId: values.repoId ? Number(values.repoId) : null,
+    specAgent: toNullable(values.specAgent),
+    devAgent: toNullable(values.devAgent),
+    testAgent: toNullable(values.testAgent),
+    ...extras
+  };
+};

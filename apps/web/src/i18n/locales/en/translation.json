@@ -158,6 +158,55 @@
       "running": "running",
       "approved": "approved",
       "needs_you": "needs you"
+    },
+    "open_ticket": "Open ticket {{key}}",
+    "open_jira": "Open in Jira",
+    "tab": {
+      "spec": "Spec",
+      "edit": "Edit",
+      "settings": "Settings",
+      "agents": "Agents"
+    },
+    "spec_empty": "No spec yet. Move the ticket to In Spec to have the spec agent write it.",
+    "spec_edited": "edited by hand",
+    "spec_from_feedback": "Rewritten after feedback: {{feedback}}",
+    "spec_markdown": "Spec (markdown)",
+    "save_spec": "Save changes",
+    "spec_saved": "Spec saved",
+    "edit_locked": "The spec can only be edited in In Review Spec.",
+    "feedback": "Feedback",
+    "feedback_placeholder": "Tell the spec agent what to change…",
+    "send_feedback": "Send feedback",
+    "feedback_sent": "Feedback sent; the spec agent is rewriting",
+    "approve": "Approve",
+    "spec_approved": "Spec approved",
+    "request_failed": "Request failed. Please try again.",
+    "none": "None",
+    "project": "Project",
+    "repo": "Repo",
+    "specAgent": "Spec agent",
+    "devAgent": "Dev agent",
+    "testAgent": "Testing agent",
+    "extra_skills": "Extra skills",
+    "extra_skills_hint": "Skill names installed for the provider, comma-separated",
+    "extra_skills_invalid": "Skill names may only contain letters, digits and : . _ -",
+    "extra_instructions": "Extra rules and description",
+    "save_settings": "Save settings",
+    "settings_saved": "Ticket settings saved",
+    "agent_missing": "Agent {{slug}} was not found. Steps that use it are blocked.",
+    "locked_running": "An agent is running: the repo and spec agent are locked.",
+    "runs_empty": "No agent has run for this ticket yet.",
+    "pane": "pane {{paneId}}",
+    "step": {
+      "SPEC": "Spec",
+      "DEV": "Dev",
+      "TEST": "Testing"
+    },
+    "run_status": {
+      "RUNNING": "running",
+      "COMPLETED": "done",
+      "FAILED": "failed",
+      "STOPPED": "stopped"
     }
   }
 }

@@ -12,8 +12,14 @@ export interface IBoardColumnProps {
   status: TicketStatus;
   tickets: IBoardTicket[];
   pendingId: number | null;
+  onOpen: (ticketId: number) => void;
 }
-const BoardColumn = ({ status, tickets, pendingId }: IBoardColumnProps) => (
+const BoardColumn = ({
+  status,
+  tickets,
+  pendingId,
+  onOpen
+}: IBoardColumnProps) => (
   <TmnDnD.Droppable
     id={`board-col-${status}`}
     accept="board-ticket"
@@ -34,7 +40,12 @@ const BoardColumn = ({ status, tickets, pendingId }: IBoardColumnProps) => (
           </TmnText>
         </TmnFlex>
         {tickets.map(t => (
-          <BoardCard key={t.id} ticket={t} pending={pendingId === t.id} />
+          <BoardCard
+            key={t.id}
+            ticket={t}
+            pending={pendingId === t.id}
+            onOpen={onOpen}
+          />
         ))}
       </TmnBox>
     )}

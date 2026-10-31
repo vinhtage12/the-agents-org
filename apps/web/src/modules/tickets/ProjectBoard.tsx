@@ -15,20 +15,29 @@ import {
 import { trans } from '#i18n';
 
 import BoardColumn from './BoardColumn';
-import { MOVABLE, TICKET_STATUSES } from './constants';
+import { MOVABLE, TICKET_DIALOG, TICKET_STATUSES } from './constants';
 import { TicketError } from './error';
 import { useBoardEvents, useMoveTicket, useProjectTickets } from './hooks';
+import TicketDialog from './TicketDialog';
 
-import type { TicketStatus } from './types';
+import type { IAgentOption, TicketStatus } from './types';
 
 export interface IProjectBoardProps {
   projectId: number;
+  profiles: IAgentOption[];
 }
-const ProjectBoard = ({ projectId }: IProjectBoardProps) => {
+const ProjectBoard = ({ projectId, profiles }: IProjectBoardProps) => {
   const { data, isLoading, error, refetch } = useProjectTickets(projectId);
   const move = useMoveTicket();
   const [pendingId, setPendingId] = useState<number | null>(null);
   useBoardEvents(projectId);
+
+  const openTicket = (ticketId: number) => {
+    UIUtils.popup.open(TICKET_DIALOG, {
+      size: 'xl',
+      content: () => <TicketDialog ticketId={ticketId} profiles={profiles} />
+    });
+  };
 
   const onDragEnd: TmnDnDRootProps['onDragEnd'] = async event => {
     if (event.canceled) {
@@ -80,6 +89,7 @@ const ProjectBoard = ({ projectId }: IProjectBoardProps) => {
               status={status}
               tickets={data.filter(t => t.status === status)}
               pendingId={pendingId}
+              onOpen={openTicket}
             />
           ))}
         </TmnFlex>
