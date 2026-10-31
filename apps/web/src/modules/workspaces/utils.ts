@@ -53,3 +53,12 @@ export const getEntityEndpoint = (context: IEntityFormContext) => {
     context.entity ? String(context.entity.id) : undefined
   );
 };
+export const getWorkspaceRoute = (path: string) => {
+  const [workspaceId, section, ...rest] = path.split('/');
+  return section === 'projects'
+    ? {
+        to: '/workspaces/$workspaceId/projects/$' as const,
+        params: { workspaceId, _splat: rest.join('/') }
+      }
+    : { to: '/workspaces/$' as const, params: { _splat: path } };
+};

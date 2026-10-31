@@ -3,6 +3,8 @@ export * from './DefaultsForm';
 export { default as DefaultsForm } from './DefaultsForm';
 export * from './error';
 export * from './hooks';
+export * from './ProjectPage';
+export { default as ProjectPage } from './ProjectPage';
 export * from './ProjectSettings';
 export { default as ProjectSettings } from './ProjectSettings';
 export * from './RepoForm';

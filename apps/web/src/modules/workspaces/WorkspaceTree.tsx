@@ -19,6 +19,7 @@ import { trans } from '#i18n';
 import { WORKSPACE_ENDPOINTS } from './constants';
 import { useWorkspaceMutation, useWorkspaces } from './hooks';
 import TreeItem from './TreeItem';
+import { getWorkspaceRoute } from './utils';
 import WorkspaceLink from './WorkspaceLink';
 
 const WorkspaceTree = () => {
@@ -63,10 +64,9 @@ const WorkspaceTree = () => {
           `/workspaces/${project.workspaceId}/projects/${project.id}`
         )
       ) {
-        await navigate({
-          to: '/workspaces/$',
-          params: { _splat: `${destination.id}/projects/${project.id}` }
-        });
+        await navigate(
+          getWorkspaceRoute(`${destination.id}/projects/${project.id}`)
+        );
       }
     } catch {
       UIUtils.notify.error(trans('workspace.move_failed'));

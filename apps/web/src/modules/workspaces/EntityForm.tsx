@@ -21,7 +21,12 @@ import { trans } from '#i18n';
 
 import { WorkspaceError } from './error';
 import { useWorkspaceMutation } from './hooks';
-import { getEntityEndpoint, getEntityFormTitle, getEntityPath } from './utils';
+import {
+  getEntityEndpoint,
+  getEntityFormTitle,
+  getEntityPath,
+  getWorkspaceRoute
+} from './utils';
 import WorkspaceLink from './WorkspaceLink';
 
 import type {
@@ -75,14 +80,13 @@ const EntityForm = ({
         throw new Error('Missing response');
       }
       UIUtils.notify.success(trans('workspace.saved'));
-      await navigate({
-        to: '/workspaces/$',
-        params: {
-          _splat: projectMode
+      await navigate(
+        getWorkspaceRoute(
+          projectMode
             ? `${values.workspaceId}/projects/${saved.id}`
             : String(saved.id)
-        }
-      });
+        )
+      );
     } catch (error) {
       const text =
         error instanceof WorkspaceError && error.status === 409

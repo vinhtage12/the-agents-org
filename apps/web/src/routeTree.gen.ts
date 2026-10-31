@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
 import { Route as AppTicketsRouteImport } from './routes/_app/tickets'
 import { Route as AppWorkspacesSplatRouteImport } from './routes/_app/workspaces.$'
+import { Route as AppWorkspacesWorkspaceIdProjectsSplatRouteImport } from './routes/_app/workspaces.$workspaceId.projects.$'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -33,16 +34,24 @@ const AppWorkspacesSplatRoute = AppWorkspacesSplatRouteImport.update({
   path: '/workspaces/$',
   getParentRoute: () => AppRoute,
 } as any)
+const AppWorkspacesWorkspaceIdProjectsSplatRoute =
+  AppWorkspacesWorkspaceIdProjectsSplatRouteImport.update({
+    id: '/workspaces/$workspaceId/projects/$',
+    path: '/workspaces/$workspaceId/projects/$',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppHomeRoute
   '/tickets': typeof AppTicketsRoute
   '/workspaces/$': typeof AppWorkspacesSplatRoute
+  '/workspaces/$workspaceId/projects/$': typeof AppWorkspacesWorkspaceIdProjectsSplatRoute
 }
 export interface FileRoutesByTo {
   '/tickets': typeof AppTicketsRoute
   '/': typeof AppHomeRoute
   '/workspaces/$': typeof AppWorkspacesSplatRoute
+  '/workspaces/$workspaceId/projects/$': typeof AppWorkspacesWorkspaceIdProjectsSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -50,13 +59,21 @@ export interface FileRoutesById {
   '/_app/tickets': typeof AppTicketsRoute
   '/_app/': typeof AppHomeRoute
   '/_app/workspaces/$': typeof AppWorkspacesSplatRoute
+  '/_app/workspaces/$workspaceId/projects/$': typeof AppWorkspacesWorkspaceIdProjectsSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/tickets' | '/workspaces/$'
+  fullPaths:
+    '/' | '/tickets' | '/workspaces/$' | '/workspaces/$workspaceId/projects/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/tickets' | '/' | '/workspaces/$'
-  id: '__root__' | '/_app' | '/_app/tickets' | '/_app/' | '/_app/workspaces/$'
+  to: '/tickets' | '/' | '/workspaces/$' | '/workspaces/$workspaceId/projects/$'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/_app/tickets'
+    | '/_app/'
+    | '/_app/workspaces/$'
+    | '/_app/workspaces/$workspaceId/projects/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -93,6 +110,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWorkspacesSplatRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/workspaces/$workspaceId/projects/$': {
+      id: '/_app/workspaces/$workspaceId/projects/$'
+      path: '/workspaces/$workspaceId/projects/$'
+      fullPath: '/workspaces/$workspaceId/projects/$'
+      preLoaderRoute: typeof AppWorkspacesWorkspaceIdProjectsSplatRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -100,12 +124,15 @@ interface AppRouteChildren {
   AppTicketsRoute: typeof AppTicketsRoute
   AppHomeRoute: typeof AppHomeRoute
   AppWorkspacesSplatRoute: typeof AppWorkspacesSplatRoute
+  AppWorkspacesWorkspaceIdProjectsSplatRoute: typeof AppWorkspacesWorkspaceIdProjectsSplatRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppTicketsRoute: AppTicketsRoute,
   AppHomeRoute: AppHomeRoute,
   AppWorkspacesSplatRoute: AppWorkspacesSplatRoute,
+  AppWorkspacesWorkspaceIdProjectsSplatRoute:
+    AppWorkspacesWorkspaceIdProjectsSplatRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

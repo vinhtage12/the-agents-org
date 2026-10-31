@@ -5,6 +5,7 @@ import {
   TmnCallout,
   TmnFlex,
   TmnLoading,
+  TmnScrollArea,
   TmnText
 } from '@truyenmoinhu/uikit';
 
@@ -33,15 +34,17 @@ const ProjectBoard = ({ projectId }: IProjectBoardProps) => {
   }
 
   return (
-    <TmnFlex direction="row" gap={3} className="min-w-0 overflow-x-auto pb-2">
-      {TICKET_STATUSES.map(status => (
-        <BoardColumn
-          key={status}
-          status={status}
-          tickets={data.filter(t => t.status === status)}
-        />
-      ))}
-    </TmnFlex>
+    <TmnScrollArea scrollbars="both">
+      <TmnFlex direction="row" gap={3} className="min-w-0 pb-2">
+        {TICKET_STATUSES.map(status => (
+          <BoardColumn
+            key={status}
+            status={status}
+            tickets={data.filter(t => t.status === status)}
+          />
+        ))}
+      </TmnFlex>
+    </TmnScrollArea>
   );
 };
 export default memo(ProjectBoard);

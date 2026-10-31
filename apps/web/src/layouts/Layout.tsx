@@ -34,12 +34,19 @@ const Layout = () => {
         </Sidebar>
       </Activity>
 
-      <TmnFlex direction="column" className="min-w-0 flex-1">
+      <TmnFlex
+        direction="column"
+        className={`min-w-0 flex-1 max-w-screen ${isOpen ? 'md:max-w-[calc(100vw-var(--spacing)*60)]' : ''}`}
+      >
         <Header>
           <MachineStatus />
         </Header>
 
-        <TmnScrollArea scrollbars="vertical" className="flex-1">
+        {/* Radix viewport content grows to fit wide children; cap it so nested scroll areas scroll instead */}
+        <TmnScrollArea
+          scrollbars="vertical"
+          className="flex-1 [&>[data-radix-scroll-area-viewport]>div]:max-w-full"
+        >
           <TmnFlex asChild direction="column" padding={3} className="flex-1">
             <main>
               <Outlet />

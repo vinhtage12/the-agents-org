@@ -4,6 +4,8 @@ import { Link } from '@tanstack/react-router';
 import { TmnButton, TmnLink } from '@truyenmoinhu/uikit';
 
 import { useSidebar } from '#hooks/sidebar';
+
+import { getWorkspaceRoute } from './utils';
 export interface IWorkspaceLinkProps {
   path: string;
   children: ReactNode;
@@ -23,8 +25,7 @@ const WorkspaceLink = ({
   const { close } = useSidebar();
   const link = (
     <Link
-      to="/workspaces/$"
-      params={{ _splat: path }}
+      {...getWorkspaceRoute(path)}
       aria-label={label}
       onClick={() => {
         if (window.matchMedia('(max-width: 767px)').matches) {
