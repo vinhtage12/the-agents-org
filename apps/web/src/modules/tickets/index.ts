@@ -15,6 +15,8 @@ export * from './SpecFeedbackForm';
 export { default as SpecFeedbackForm } from './SpecFeedbackForm';
 export * from './SpecPanel';
 export { default as SpecPanel } from './SpecPanel';
+export * from './SpecStopButton';
+export { default as SpecStopButton } from './SpecStopButton';
 export * from './StoreColumn';
 export { default as StoreColumn } from './StoreColumn';
 export * from './StoreTicketCard';

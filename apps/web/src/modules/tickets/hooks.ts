@@ -197,5 +197,7 @@ export const useSaveSpec = () =>
   useTicketRequest<{ content: string }>('/spec', RequestMethods.PUT);
 export const useSpecFeedback = () =>
   useTicketRequest<{ feedback: string }>('/spec/feedback', RequestMethods.POST);
+export const useStopSpec = () =>
+  useTicketRequest<undefined>('/spec/stop', RequestMethods.POST);
 export const useApproveSpec = () =>
   useTicketRequest<undefined>('/spec/approve', RequestMethods.POST);

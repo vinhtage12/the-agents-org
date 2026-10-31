@@ -18,7 +18,9 @@ export const apiManagerInstance = new ApiManager({
     baseURL: `${BASE_API_URL}/${BASE_API_VERSION}`,
     headers: {
       Accept: 'application/json',
-      'Content-Type': 'application/json;charset=UTF-8'
+      'Content-Type': 'application/json;charset=UTF-8',
+      // The daemon rejects writes without it (CSRF guard).
+      'X-Agents-Org-Client': 'web'
     },
     withCredentials: true
   },

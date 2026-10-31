@@ -20,8 +20,9 @@ import SpecFeedbackForm from './SpecFeedbackForm';
 import type { ITicketDetail } from './types';
 export interface ISpecPanelProps {
   ticket: ITicketDetail;
+  editDirty: boolean;
 }
-const SpecPanel = ({ ticket }: ISpecPanelProps) => {
+const SpecPanel = ({ ticket, editDirty }: ISpecPanelProps) => {
   const [message, setMessage] = useState('');
   const approve = useApproveSpec();
 
@@ -73,12 +74,17 @@ const SpecPanel = ({ ticket }: ISpecPanelProps) => {
           gap={3}
           className="border-t border-border pt-3"
         >
-          <SpecFeedbackForm ticketId={ticket.id} />
+          {editDirty && (
+            <TmnCallout color="orange">
+              {trans('ticket.unsaved_edits')}
+            </TmnCallout>
+          )}
+          <SpecFeedbackForm ticketId={ticket.id} disabled={editDirty} />
           {!ticket.specApprovedAt && (
             <TmnButton
               kind="primary"
               className="self-start"
-              disabled={approve.isPending}
+              disabled={editDirty || approve.isPending}
               onClick={onApprove}
             >
               {trans('ticket.approve')}

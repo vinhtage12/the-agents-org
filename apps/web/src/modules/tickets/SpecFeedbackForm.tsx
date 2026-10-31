@@ -14,11 +14,12 @@ import { useSpecFeedback } from './hooks';
 
 export interface ISpecFeedbackFormProps {
   ticketId: number;
+  disabled: boolean;
 }
 interface ISpecFeedbackValues {
   feedback: string;
 }
-const SpecFeedbackForm = ({ ticketId }: ISpecFeedbackFormProps) => {
+const SpecFeedbackForm = ({ ticketId, disabled }: ISpecFeedbackFormProps) => {
   const [message, setMessage] = useState('');
   const mutation = useSpecFeedback();
   const form = useFormResolver<ISpecFeedbackValues>({
@@ -67,7 +68,7 @@ const SpecFeedbackForm = ({ ticketId }: ISpecFeedbackFormProps) => {
       <TmnButton
         type="submit"
         className="self-start"
-        disabled={empty || form.formState.isSubmitting}
+        disabled={disabled || empty || form.formState.isSubmitting}
       >
         {trans('ticket.send_feedback')}
       </TmnButton>

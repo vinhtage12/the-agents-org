@@ -207,6 +207,9 @@
       "COMPLETED": "done",
       "FAILED": "failed",
       "STOPPED": "stopped"
-    }
+    },
+    "stop_spec": "Stop spec agent",
+    "spec_stopped": "Spec agent stopped; the ticket went back to its previous column",
+    "unsaved_edits": "You have unsaved edits in the Edit tab. Save them before sending feedback or approving."
   }
 }

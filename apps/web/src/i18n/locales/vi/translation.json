@@ -207,6 +207,9 @@
       "COMPLETED": "xong",
       "FAILED": "lỗi",
       "STOPPED": "đã dừng"
-    }
+    },
+    "stop_spec": "Dừng agent Spec",
+    "spec_stopped": "Đã dừng agent Spec, ticket quay về cột trước",
+    "unsaved_edits": "Bạn có chỉnh sửa chưa lưu ở tab Sửa. Hãy lưu trước khi gửi feedback hoặc approve."
   }
 }

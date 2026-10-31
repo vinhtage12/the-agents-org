@@ -30,6 +30,16 @@ describe('boardLabel', () => {
     ).toBe('running');
   });
 
+  it('shows a blocked agent as needs_you even during startup', () => {
+    expect(
+      boardLabel({
+        ...base,
+        run: { ...run, startedAt: new Date('2026-10-31T09:59:55Z') },
+        paneStatus: 'blocked'
+      })
+    ).toBe('needs_you');
+  });
+
   it('flags failed spec runs and approved specs', () => {
     expect(
       boardLabel({

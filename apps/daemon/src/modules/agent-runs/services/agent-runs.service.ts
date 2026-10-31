@@ -1,7 +1,7 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 import {
   BadRequestException,
@@ -20,6 +20,7 @@ import { HerdrService } from '../../herdr/services/herdr.service';
 import { assertRepoPath } from '../../projects/controllers/project-settings.controller';
 import { BoardGateway } from '../gateways/board.gateway';
 import { buildAgentArgs } from '../utils/agent-args';
+import { STARTUP_GRACE_MS } from '../utils/constants';
 import { buildSpecPrompt } from '../utils/spec-prompt';
 
 import type { AgentRunEntity } from '../entities/agent-run.entity';
@@ -50,18 +51,34 @@ export class AgentRunsService implements OnModuleInit {
     this.callbackUrl = `http://127.0.0.1:${config.get<number>('PORT')}/api/v1`;
   }
 
+  // Daemon restart: resubscribe live runs; fail runs whose pane is gone so the ticket is not stuck.
   async onModuleInit() {
     try {
       const runs = await this.prisma.agentRun.findMany({
-        where: { status: 'RUNNING', paneId: { not: null } },
+        where: { status: 'RUNNING' },
         include: { ticket: { select: { projectId: true } } }
       });
+      if (!runs.length) return;
+      const live = new Set(
+        (await this.herdr.listAgents()).map(agent => agent.paneId)
+      );
       for (const run of runs) {
-        if (run.paneId && run.ticket.projectId !== null)
-          this.watch(run.id, run.paneId, run.ticket.projectId);
+        if (run.paneId && live.has(run.paneId)) {
+          if (run.ticket.projectId !== null)
+            this.watch(run.id, run.paneId, run.ticket.projectId);
+          continue;
+        }
+        await this.prisma.agentRun.update({
+          where: { id: run.id },
+          data: {
+            status: 'FAILED',
+            error: 'Agent pane is gone',
+            finishedAt: new Date()
+          }
+        });
       }
     } catch (error) {
-      this.logger.warn(`Could not resubscribe agent runs: ${String(error)}`);
+      this.logger.warn(`Could not reconcile agent runs: ${String(error)}`);
     }
   }
 
@@ -109,7 +126,11 @@ export class AgentRunsService implements OnModuleInit {
         },
         previous
       });
-      paneId = await this.reusablePane(ticketId, profile.slug);
+      paneId = await this.reusablePane(
+        ticketId,
+        profile.slug,
+        ticket.repo.path
+      );
       if (!paneId) {
         const agent = await this.herdr.createAgent({
           agent: profile.provider,
@@ -139,7 +160,15 @@ export class AgentRunsService implements OnModuleInit {
       where: { id: run.id },
       data: { paneId }
     });
-    if (ticket.projectId !== null) this.watch(run.id, paneId, ticket.projectId);
+    const { projectId } = ticket;
+    if (projectId !== null) {
+      this.watch(run.id, paneId, projectId);
+      // The board label changes when the grace ends even if Herdr sends no event.
+      setTimeout(
+        () => this.board.emitChanged(projectId),
+        STARTUP_GRACE_MS + 1000
+      ).unref();
+    }
     return started;
   }
 
@@ -202,6 +231,23 @@ export class AgentRunsService implements OnModuleInit {
     if (projectId !== null) this.board.emitChanged(projectId);
   }
 
+  // The owner gives up on a run that will never call back (pane closed, crash, denied permission).
+  async stopSpec(ticketId: number): Promise<number> {
+    const runs = await this.prisma.agentRun.findMany({
+      where: { ticketId, step: 'SPEC', status: 'RUNNING' },
+      select: { id: true }
+    });
+    const { count } = await this.prisma.agentRun.updateMany({
+      where: { ticketId, step: 'SPEC', status: 'RUNNING' },
+      data: { status: 'STOPPED', finishedAt: new Date() }
+    });
+    for (const run of runs ?? []) {
+      this.subscriptions.get(run.id)?.();
+      this.subscriptions.delete(run.id);
+    }
+    return count;
+  }
+
   async liveStatuses(): Promise<Map<string, string>> {
     try {
       const agents = await this.herdr.listAgents();
@@ -211,19 +257,27 @@ export class AgentRunsService implements OnModuleInit {
     }
   }
 
-  // Latest spec pane of this ticket, if it still hosts the same agent.
+  // Latest spec pane of this ticket, if it still hosts the same agent in the ticket's repo.
   private async reusablePane(
     ticketId: number,
-    agentSlug: string
+    agentSlug: string,
+    repoPath: string
   ): Promise<string | undefined> {
     const last = await this.prisma.agentRun.findFirst({
       where: { ticketId, step: 'SPEC', paneId: { not: null } },
       orderBy: { id: 'desc' }
     });
     if (!last?.paneId) return undefined;
-    const live = await this.liveStatuses();
-    if (!live.has(last.paneId)) return undefined;
-    if (last.agentSlug === agentSlug) return last.paneId;
+    const agent = (await this.herdr.listAgents().catch(() => [])).find(
+      item => item.paneId === last.paneId
+    );
+    if (!agent) return undefined;
+    if (
+      last.agentSlug === agentSlug &&
+      agent.cwd &&
+      resolve(agent.cwd) === resolve(repoPath)
+    )
+      return last.paneId;
     await this.herdr.closeAgent(last.paneId);
     return undefined;
   }

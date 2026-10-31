@@ -283,6 +283,21 @@ export class TicketsService {
     return this.detail(id);
   }
 
+  async stopSpec(id: number): Promise<TicketDetail> {
+    const ticket = await this.find(id);
+    if (ticket.status !== 'IN_SPEC')
+      throw new ConflictException('Ticket is not in spec');
+    await this.agentRuns.stopSpec(id);
+    // Back to where the spec step started: review if a spec exists, otherwise To Do.
+    const back = (await this.latestSpec(id)) ? 'IN_REVIEW_SPEC' : 'TODO';
+    await this.prisma.ticket.updateMany({
+      where: { id, status: 'IN_SPEC' },
+      data: { status: back }
+    });
+    this.emit(ticket.projectId);
+    return this.detail(id);
+  }
+
   async saveSpec(id: number, content: string): Promise<TicketDetail> {
     const ticket = await this.find(id);
     const spec = await this.reviewableSpec(ticket);

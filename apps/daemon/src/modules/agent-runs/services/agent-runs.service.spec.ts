@@ -9,6 +9,7 @@ import {
   NotFoundException
 } from '@nestjs/common';
 
+import { STARTUP_GRACE_MS } from '../utils/constants';
 import { AgentRunsService } from './agent-runs.service';
 
 import type { PrismaService } from '../../../database/prisma.service';
@@ -32,7 +33,8 @@ describe('AgentRunsService', () => {
       update: jest.fn(),
       findFirst: jest.fn(),
       findUnique: jest.fn(),
-      findMany: jest.fn()
+      findMany: jest.fn(),
+      updateMany: jest.fn()
     },
     $transaction: jest.fn()
   };
@@ -138,7 +140,9 @@ describe('AgentRunsService', () => {
       agentSlug: 'analyst',
       status: 'FAILED'
     });
-    herdr.listAgents.mockResolvedValue([{ paneId: 'w1:p4', status: 'idle' }]);
+    herdr.listAgents.mockResolvedValue([
+      { paneId: 'w1:p4', status: 'idle', cwd: repoDir }
+    ]);
     await service.startSpec(10);
     expect(herdr.createAgent).not.toHaveBeenCalled();
     expect(herdr.sendPrompt).toHaveBeenCalledWith('w1:p4', expect.any(String));
@@ -151,11 +155,52 @@ describe('AgentRunsService', () => {
       agentSlug: 'old',
       status: 'COMPLETED'
     });
-    herdr.listAgents.mockResolvedValue([{ paneId: 'w1:p4', status: 'idle' }]);
+    herdr.listAgents.mockResolvedValue([
+      { paneId: 'w1:p4', status: 'idle', cwd: repoDir }
+    ]);
     await service.startSpec(10);
     expect(herdr.closeAgent).toHaveBeenCalledWith('w1:p4');
     expect(herdr.createAgent).toHaveBeenCalled();
     expect(herdr.sendPrompt).toHaveBeenCalledWith('w1:p9', expect.any(String));
+  });
+
+  it('opens a new pane when the ticket repo changed', async () => {
+    prisma.agentRun.findFirst.mockResolvedValue({
+      id: 3,
+      paneId: 'w1:p4',
+      agentSlug: 'analyst',
+      status: 'FAILED'
+    });
+    herdr.listAgents.mockResolvedValue([
+      { paneId: 'w1:p4', status: 'idle', cwd: '/repos/ff-web' }
+    ]);
+    await service.startSpec(10);
+    expect(herdr.closeAgent).toHaveBeenCalledWith('w1:p4');
+    expect(herdr.createAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ cwd: repoDir })
+    );
+    expect(herdr.sendPrompt).toHaveBeenCalledWith('w1:p9', expect.any(String));
+  });
+
+  it('refreshes the board once the startup grace ends', async () => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+    try {
+      await service.startSpec(10);
+      board.emitChanged.mockClear();
+      jest.advanceTimersByTime(STARTUP_GRACE_MS + 1000);
+      expect(board.emitChanged).toHaveBeenCalledWith(3);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('stopSpec stops running spec runs', async () => {
+    prisma.agentRun.updateMany.mockResolvedValue({ count: 1 });
+    await expect(service.stopSpec(10)).resolves.toBe(1);
+    expect(prisma.agentRun.updateMany).toHaveBeenCalledWith({
+      where: { ticketId: 10, step: 'SPEC', status: 'RUNNING' },
+      data: { status: 'STOPPED', finishedAt: expect.any(Date) }
+    });
   });
 
   it('reverts the ticket when the agent cannot start', async () => {
@@ -312,14 +357,47 @@ describe('AgentRunsService', () => {
     );
   });
 
-  it('resubscribes running runs on startup', async () => {
+  it('resubscribes live running runs on startup', async () => {
     prisma.agentRun.findMany.mockResolvedValue([
       { id: 1, paneId: 'w1:p9', ticket: { projectId: 3 } }
+    ]);
+    herdr.listAgents.mockResolvedValue([
+      { paneId: 'w1:p9', status: 'working' }
     ]);
     await service.onModuleInit();
     expect(herdr.subscribeAgent).toHaveBeenCalledWith(
       'w1:p9',
       expect.any(Function)
     );
+    expect(prisma.agentRun.update).not.toHaveBeenCalled();
+  });
+
+  it('fails running runs whose pane is gone on startup', async () => {
+    prisma.agentRun.findMany.mockResolvedValue([
+      { id: 1, paneId: 'w1:p9', ticket: { projectId: 3 } },
+      { id: 2, paneId: null, ticket: { projectId: 3 } }
+    ]);
+    herdr.listAgents.mockResolvedValue([]);
+    await service.onModuleInit();
+    expect(herdr.subscribeAgent).not.toHaveBeenCalled();
+    for (const id of [1, 2]) {
+      expect(prisma.agentRun.update).toHaveBeenCalledWith({
+        where: { id },
+        data: {
+          status: 'FAILED',
+          error: 'Agent pane is gone',
+          finishedAt: expect.any(Date)
+        }
+      });
+    }
+  });
+
+  it('keeps running runs when Herdr is unreachable on startup', async () => {
+    prisma.agentRun.findMany.mockResolvedValue([
+      { id: 1, paneId: 'w1:p9', ticket: { projectId: 3 } }
+    ]);
+    herdr.listAgents.mockRejectedValue(new Error('down'));
+    await service.onModuleInit();
+    expect(prisma.agentRun.update).not.toHaveBeenCalled();
   });
 });

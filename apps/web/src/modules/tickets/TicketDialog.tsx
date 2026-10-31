@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 
 import {
@@ -19,6 +19,7 @@ import { useTicketDetail } from './hooks';
 import RunList from './RunList';
 import SpecEditForm from './SpecEditForm';
 import SpecPanel from './SpecPanel';
+import SpecStopButton from './SpecStopButton';
 import TicketSettingsForm from './TicketSettingsForm';
 
 import type { IAgentOption } from './types';
@@ -28,6 +29,7 @@ export interface ITicketDialogProps {
 }
 const TicketDialog = ({ ticketId, profiles }: ITicketDialogProps) => {
   const { data, isLoading, error, refetch } = useTicketDetail(ticketId);
+  const [editDirty, setEditDirty] = useState(false);
 
   if (isLoading) {
     return <TmnLoading />;
@@ -62,6 +64,7 @@ const TicketDialog = ({ ticketId, profiles }: ITicketDialogProps) => {
         </TmnLink>
       </TmnFlex>
       <TmnText className="text-sm">{data.summary}</TmnText>
+      {data.status === 'IN_SPEC' && <SpecStopButton ticketId={data.id} />}
       <TmnTab.Container
         tabs={[
           { value: 'spec', label: trans('ticket.tab.spec') },
@@ -71,15 +74,21 @@ const TicketDialog = ({ ticketId, profiles }: ITicketDialogProps) => {
         ]}
       >
         <TmnTab.Content value="spec">
-          <SpecPanel ticket={data} />
+          <SpecPanel ticket={data} editDirty={editDirty} />
         </TmnTab.Content>
-        <TmnTab.Content value="edit">
+        {/* Stay mounted so unsaved edits survive a tab switch. */}
+        <TmnTab.Content
+          value="edit"
+          forceMount
+          className="data-[state=inactive]:hidden"
+        >
           {data.spec ? (
             <SpecEditForm
               key={data.spec.version}
               ticketId={data.id}
               content={data.spec.content}
               disabled={data.status !== 'IN_REVIEW_SPEC'}
+              onDirtyChange={setEditDirty}
             />
           ) : (
             <TmnText className="text-sm text-muted-foreground">

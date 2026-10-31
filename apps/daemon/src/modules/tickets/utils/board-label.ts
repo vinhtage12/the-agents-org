@@ -1,10 +1,9 @@
+import { STARTUP_GRACE_MS } from '../../agent-runs/utils/constants';
+
 import type { AgentRunStatus } from '../../agent-runs/entities/agent-run.entity';
 import type { TicketStatus } from '../entities/ticket.entity';
 
 export type BoardLabel = 'running' | 'approved' | 'needs_you' | null;
-
-// An agent that was just prompted may not have reported "working" yet.
-const STARTUP_GRACE_MS = 15_000;
 
 export function boardLabel(input: {
   status: TicketStatus;
@@ -20,6 +19,7 @@ export function boardLabel(input: {
   const { run } = input;
   if (run?.status === 'RUNNING') {
     if (input.paneStatus === 'working') return 'running';
+    if (input.paneStatus === 'blocked') return 'needs_you';
     if (input.now.getTime() - run.startedAt.getTime() < STARTUP_GRACE_MS)
       return 'running';
     // Idle or blocked without a completion callback: the agent is waiting for the owner.

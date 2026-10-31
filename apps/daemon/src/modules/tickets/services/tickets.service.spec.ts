@@ -118,7 +118,11 @@ describe('TicketsService flow', () => {
     agentRun: { count: jest.fn(), findMany: jest.fn() },
     $transaction: jest.fn()
   };
-  const agentRuns = { startSpec: jest.fn(), liveStatuses: jest.fn() };
+  const agentRuns = {
+    startSpec: jest.fn(),
+    stopSpec: jest.fn(),
+    liveStatuses: jest.fn()
+  };
   const board = { emitChanged: jest.fn() };
   const profiles = { assertExists: jest.fn() };
   const service = new TicketsService(
@@ -340,6 +344,40 @@ describe('TicketsService flow', () => {
     });
     expect(board.emitChanged).toHaveBeenCalledWith(3);
     expect(board.emitChanged).toHaveBeenCalledWith(4);
+  });
+
+  it('stops the spec agent and returns to To Do without a spec', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      status: 'IN_SPEC'
+    });
+    await service.stopSpec(10);
+    expect(agentRuns.stopSpec).toHaveBeenCalledWith(10);
+    expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
+      where: { id: 10, status: 'IN_SPEC' },
+      data: { status: 'TODO' }
+    });
+    expect(board.emitChanged).toHaveBeenCalledWith(3);
+  });
+
+  it('stops the spec agent and returns to review when a spec exists', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      status: 'IN_SPEC'
+    });
+    prisma.specVersion.findFirst.mockResolvedValue({ id: 4, version: 1 });
+    await service.stopSpec(10);
+    expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
+      where: { id: 10, status: 'IN_SPEC' },
+      data: { status: 'IN_REVIEW_SPEC' }
+    });
+  });
+
+  it('only stops tickets that are In Spec', async () => {
+    await expect(service.stopSpec(10)).rejects.toBeInstanceOf(
+      ConflictException
+    );
+    expect(agentRuns.stopSpec).not.toHaveBeenCalled();
   });
 
   it('labels board cards from live agent status in one Herdr call', async () => {

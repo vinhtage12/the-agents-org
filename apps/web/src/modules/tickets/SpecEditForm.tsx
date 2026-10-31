@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import {
   TmnController,
@@ -16,17 +16,29 @@ export interface ISpecEditFormProps {
   ticketId: number;
   content: string;
   disabled: boolean;
+  onDirtyChange: (dirty: boolean) => void;
 }
 interface ISpecEditValues {
   content: string;
 }
-const SpecEditForm = ({ ticketId, content, disabled }: ISpecEditFormProps) => {
+const SpecEditForm = ({
+  ticketId,
+  content,
+  disabled,
+  onDirtyChange
+}: ISpecEditFormProps) => {
   const [message, setMessage] = useState('');
   const mutation = useSaveSpec();
   const form = useFormResolver<ISpecEditValues>({
     schema: createSchema(),
     configs: { defaultValues: { content } }
   });
+
+  const { isDirty } = form.formState;
+
+  useEffect(() => {
+    onDirtyChange(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   const submit = form.handleSubmit(async values => {
     setMessage('');
@@ -35,6 +47,7 @@ const SpecEditForm = ({ ticketId, content, disabled }: ISpecEditFormProps) => {
         ticketId,
         data: { content: values.content }
       });
+      form.reset(values);
       UIUtils.notify.success(trans('ticket.spec_saved'));
     } catch (e) {
       setMessage(
