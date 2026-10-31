@@ -15,6 +15,7 @@ import type {
   IBoardTicket,
   ILinkTicket,
   IMoveTicket,
+  IRepoConflict,
   ISyncResult,
   ITicketDetail,
   ITicketRequest,
@@ -130,6 +131,24 @@ export const useMoveTicket = () => {
     }
   });
 };
+export const useRepoConflicts = () =>
+  useMutationEnhancer<IRepoConflict[], number>({
+    mutationFn: async ({ apiManager, variables }) => {
+      if (!apiManager || variables === undefined) {
+        throw new TicketError();
+      }
+      const result = await apiManager.sendRequest<{
+        tickets: IRepoConflict[];
+      }>({
+        url: TICKET_ENDPOINTS.tickets(`${variables}/repo-conflicts`),
+        suppressNotifyOnError: true
+      });
+      if (!result.success || !result.payload) {
+        throw new TicketError(result.code, result.message);
+      }
+      return result.payload.tickets;
+    }
+  });
 export const useBoardEvents = (projectId: number) => {
   const queryClient = useQueryClient();
 

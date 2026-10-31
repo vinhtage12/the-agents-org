@@ -38,6 +38,11 @@ export interface IBoardTicket extends ITicketBase {
   label: BoardLabel | null;
   specVersion: number | null;
 }
+export interface IRepoConflict {
+  id: number;
+  jiraKey: string;
+  projectId: number | null;
+}
 export interface IMoveTicket {
   ticketId: number;
   to: TicketStatus;

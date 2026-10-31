@@ -20,9 +20,14 @@ export const TICKET_QUERY_KEYS = {
 };
 // Drag moves the daemon accepts (its assertTransition table).
 export const MOVABLE: Partial<Record<TicketStatus, TicketStatus[]>> = {
-  TODO: ['IN_SPEC']
+  TODO: ['IN_SPEC'],
+  IN_REVIEW_SPEC: ['IN_PROGRESS'],
+  IN_TESTING: ['IN_REVIEW'],
+  IN_REVIEW: ['DONE']
 };
 export const DROP_TARGETS = new Set(Object.values(MOVABLE).flat());
+// Moves into these steps start an agent, so overlapping repos are warned about.
+export const AGENT_START_STATUSES: TicketStatus[] = ['IN_SPEC', 'IN_PROGRESS'];
 export const LABEL_COLORS: Record<BoardLabel, 'blue' | 'green' | 'orange'> = {
   running: 'blue',
   approved: 'green',

@@ -154,6 +154,10 @@
       "CANCELED": "Canceled"
     },
     "move_failed": "Could not move the ticket",
+    "repo_conflict_title": "Possible repository overlap",
+    "repo_conflict_body": "These tickets already use the same repository: {{keys}}. Moving this one may cause conflicts.",
+    "continue": "Continue",
+    "cancel": "Cancel",
     "label": {
       "running": "running",
       "approved": "approved",

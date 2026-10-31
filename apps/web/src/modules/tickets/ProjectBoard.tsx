@@ -15,12 +15,22 @@ import {
 import { trans } from '#i18n';
 
 import BoardColumn from './BoardColumn';
-import { MOVABLE, TICKET_DIALOG, TICKET_STATUSES } from './constants';
+import {
+  AGENT_START_STATUSES,
+  MOVABLE,
+  TICKET_DIALOG,
+  TICKET_STATUSES
+} from './constants';
 import { TicketError } from './error';
-import { useBoardEvents, useMoveTicket, useProjectTickets } from './hooks';
+import {
+  useBoardEvents,
+  useMoveTicket,
+  useProjectTickets,
+  useRepoConflicts
+} from './hooks';
 import TicketDialog from './TicketDialog';
 
-import type { IAgentOption, TicketStatus } from './types';
+import type { IAgentOption, IRepoConflict, TicketStatus } from './types';
 
 export interface IProjectBoardProps {
   projectId: number;
@@ -29,6 +39,7 @@ export interface IProjectBoardProps {
 const ProjectBoard = ({ projectId, profiles }: IProjectBoardProps) => {
   const { data, isLoading, error, refetch } = useProjectTickets(projectId);
   const move = useMoveTicket();
+  const conflicts = useRepoConflicts();
   const [pendingId, setPendingId] = useState<number | null>(null);
   useBoardEvents(projectId);
 
@@ -37,6 +48,21 @@ const ProjectBoard = ({ projectId, profiles }: IProjectBoardProps) => {
       size: 'xl',
       content: () => <TicketDialog ticketId={ticketId} profiles={profiles} />
     });
+  };
+
+  const doMove = async (ticketId: number, to: TicketStatus) => {
+    setPendingId(ticketId);
+    try {
+      await move.mutateAsync({ ticketId, to });
+    } catch (e) {
+      UIUtils.notify.error(
+        e instanceof TicketError && e.message
+          ? e.message
+          : trans('ticket.move_failed')
+      );
+    } finally {
+      setPendingId(null);
+    }
   };
 
   const onDragEnd: TmnDnDRootProps['onDragEnd'] = async event => {
@@ -53,18 +79,37 @@ const ProjectBoard = ({ projectId, profiles }: IProjectBoardProps) => {
     if (from === to || !MOVABLE[from]?.includes(to)) {
       return;
     }
-    setPendingId(source.ticketId);
-    try {
-      await move.mutateAsync({ ticketId: source.ticketId, to });
-    } catch (e) {
-      UIUtils.notify.error(
-        e instanceof TicketError && e.message
-          ? e.message
-          : trans('ticket.move_failed')
-      );
-    } finally {
-      setPendingId(null);
+    const ticketId: number = source.ticketId;
+    if (AGENT_START_STATUSES.includes(to)) {
+      let overlapping: IRepoConflict[] = [];
+      try {
+        overlapping = (await conflicts.mutateAsync(ticketId)) ?? [];
+      } catch {
+        // Warning only: a failed lookup must not block the move.
+      }
+      if (overlapping.length) {
+        const modal = `repo-conflict-${ticketId}`;
+        UIUtils.alert.open(modal, {
+          title: trans('ticket.repo_conflict_title'),
+          message: trans('ticket.repo_conflict_body', {
+            keys: overlapping.map(t => t.jiraKey).join(', ')
+          }),
+          cancelTitle: trans('ticket.cancel'),
+          actions: () => [
+            {
+              kind: 'primary',
+              children: trans('ticket.continue'),
+              onClick: () => {
+                UIUtils.alert.dismissByName(modal);
+                void doMove(ticketId, to);
+              }
+            }
+          ]
+        });
+        return;
+      }
     }
+    await doMove(ticketId, to);
   };
 
   if (isLoading) {

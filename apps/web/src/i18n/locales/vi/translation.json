@@ -154,6 +154,10 @@
       "CANCELED": "Canceled"
     },
     "move_failed": "Không chuyển được ticket",
+    "repo_conflict_title": "Có thể trùng repository",
+    "repo_conflict_body": "Các ticket này đang dùng cùng repository: {{keys}}. Chuyển ticket này có thể gây xung đột.",
+    "continue": "Tiếp tục",
+    "cancel": "Hủy",
     "label": {
       "running": "đang chạy",
       "approved": "đã duyệt",
