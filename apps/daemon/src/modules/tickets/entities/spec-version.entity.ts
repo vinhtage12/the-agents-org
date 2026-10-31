@@ -1,11 +1,4 @@
-import {
-  IsDate,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  Min
-} from 'class-validator';
+import { IsDate, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 import type { SpecVersion as SpecVersionModel } from '../../../generated/prisma/client';
 

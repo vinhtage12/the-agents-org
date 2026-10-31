@@ -1,19 +1,14 @@
-import { Test, TestingModule } from '@nestjs/testing';
-
-import { AgentRunsService } from '../services/agent-runs.service';
 import { AgentRunsController } from './agent-runs.controller';
 
+import type { AgentRunsService } from '../services/agent-runs.service';
+
 describe('AgentRunsController', () => {
-  it('resolves its service', async () => {
-    const service = {};
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [AgentRunsController],
-      providers: [{ provide: AgentRunsService, useValue: service }]
-    }).compile();
-    try {
-      expect(module.get(AgentRunsController).service).toBe(service);
-    } finally {
-      await module.close();
-    }
+  it('passes the run id and token header to the service', async () => {
+    const agentRuns = { complete: jest.fn().mockResolvedValue(undefined) };
+    const controller = new AgentRunsController(
+      agentRuns as unknown as AgentRunsService
+    );
+    await expect(controller.complete(1, 'tok')).resolves.toBeUndefined();
+    expect(agentRuns.complete).toHaveBeenCalledWith(1, 'tok');
   });
 });

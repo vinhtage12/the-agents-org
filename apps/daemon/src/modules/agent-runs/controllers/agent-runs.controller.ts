@@ -1,4 +1,11 @@
-import { Controller } from '@nestjs/common';
+import {
+  Controller,
+  Headers,
+  HttpCode,
+  Param,
+  ParseIntPipe,
+  Post
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { AgentRunsService } from '../services/agent-runs.service';
@@ -6,5 +13,15 @@ import { AgentRunsService } from '../services/agent-runs.service';
 @Controller('agent-runs')
 @ApiTags('agent-runs')
 export class AgentRunsController {
-  constructor(readonly service: AgentRunsService) {}
+  constructor(private readonly agentRuns: AgentRunsService) {}
+
+  // Called by the agent itself (curl) once output.md is written.
+  @Post(':id/complete')
+  @HttpCode(204)
+  async complete(
+    @Param('id', ParseIntPipe) id: number,
+    @Headers('x-run-token') token: string
+  ): Promise<void> {
+    await this.agentRuns.complete(id, token);
+  }
 }
