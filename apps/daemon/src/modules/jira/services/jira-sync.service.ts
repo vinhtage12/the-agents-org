@@ -1,12 +1,16 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma.service';
+import { BoardGateway } from '../../agent-runs/gateways/board.gateway';
+import { AgentRunsService } from '../../agent-runs/services/agent-runs.service';
 import { JiraClient, JiraHttpError, JiraIssue } from '../clients/jira.client';
 @Injectable()
 export class JiraSyncService {
   constructor(
     private readonly jira: JiraClient,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly agentRuns: AgentRunsService,
+    private readonly board: BoardGateway
   ) {}
   private content(issue: JiraIssue) {
     return {
@@ -55,7 +59,10 @@ export class JiraSyncService {
         const reopened = existing.status === 'CANCELED';
         await this.prisma.ticket.update({
           where: { jiraKey: issue.key },
-          data: { ...data, ...(reopened ? { status: 'TODO' as const } : {}) }
+          data: {
+            ...data,
+            ...(reopened ? { status: 'TODO' as const, fixRound: 0 } : {})
+          }
         });
         if (reopened) result.reopened++;
         else result.updated++;
@@ -73,10 +80,13 @@ export class JiraSyncService {
       for (const ticket of batch) {
         const issue = checked.find(value => value.key === ticket.jiraKey);
         if (!issue || issue.assigneeAccountId !== me.accountId) {
+          await this.agentRuns.closeTicketPanes(ticket.id);
           await this.prisma.ticket.update({
             where: { jiraKey: ticket.jiraKey },
             data: { status: 'CANCELED' }
           });
+          if (ticket.projectId !== null)
+            this.board.emitChanged(ticket.projectId);
           result.canceled++;
         } else {
           await this.prisma.ticket.update({
