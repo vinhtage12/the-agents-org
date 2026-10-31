@@ -7,6 +7,7 @@ import {
   type TmnDnDRootProps,
   TmnFlex,
   TmnLoading,
+  type TmnPopupItemRendererParams,
   TmnScrollArea,
   TmnText,
   UIUtils
@@ -30,7 +31,18 @@ import {
 } from './hooks';
 import TicketDialog from './TicketDialog';
 
+import type { ITicketDialogProps } from './TicketDialog';
 import type { IAgentOption, IRepoConflict, TicketStatus } from './types';
+
+const TicketDialogRenderer = ({
+  params
+}: TmnPopupItemRendererParams<ITicketDialogProps>) => {
+  const { profiles, ticketId } = params || {};
+  if (!profiles || !ticketId) {
+    return null;
+  }
+  return <TicketDialog profiles={profiles} ticketId={ticketId} />;
+};
 
 export interface IProjectBoardProps {
   projectId: number;
@@ -44,9 +56,11 @@ const ProjectBoard = ({ projectId, profiles }: IProjectBoardProps) => {
   useBoardEvents(projectId);
 
   const openTicket = (ticketId: number) => {
-    UIUtils.popup.open(TICKET_DIALOG, {
+    UIUtils.popup.open({
+      name: TICKET_DIALOG,
       size: 'xl',
-      content: () => <TicketDialog ticketId={ticketId} profiles={profiles} />
+      renderer: TicketDialogRenderer,
+      params: { ticketId, profiles }
     });
   };
 
@@ -89,7 +103,8 @@ const ProjectBoard = ({ projectId, profiles }: IProjectBoardProps) => {
       }
       if (overlapping.length) {
         const modal = `repo-conflict-${ticketId}`;
-        UIUtils.alert.open(modal, {
+        UIUtils.alert.open({
+          name: modal,
           title: trans('ticket.repo_conflict_title'),
           message: trans('ticket.repo_conflict_body', {
             keys: overlapping.map(t => t.jiraKey).join(', ')

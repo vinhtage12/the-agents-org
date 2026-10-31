@@ -36,7 +36,7 @@
     "@truyenmoinhu/hooks": "0.1.1-canary.3",
     "@truyenmoinhu/query": "0.1.2-canary.7",
     "@truyenmoinhu/table": "0.1.0-canary.4",
-    "@truyenmoinhu/uikit": "0.1.0-canary.24",
+    "@truyenmoinhu/uikit": "0.1.0-canary.26",
     "@truyenmoinhu/utils": "0.1.0-canary.4",
     "chart.js": "^4.6.1",
     "i18next": "^26.5.11",

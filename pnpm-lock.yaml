@@ -149,10 +149,10 @@ importers:
         version: 0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1)
       '@truyenmoinhu/table':
         specifier: 0.1.0-canary.4
-        version: 0.1.0-canary.4(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/uikit@0.1.0-canary.24(@floating-ui/dom@1.8.0)(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 0.1.0-canary.4(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/uikit@0.1.0-canary.26(@floating-ui/dom@1.8.0)(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@truyenmoinhu/uikit':
-        specifier: 0.1.0-canary.24
-        version: 0.1.0-canary.24(@floating-ui/dom@1.8.0)(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        specifier: 0.1.0-canary.26
+        version: 0.1.0-canary.26(@floating-ui/dom@1.8.0)(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@truyenmoinhu/utils':
         specifier: 0.1.0-canary.4
         version: 0.1.0-canary.4
@@ -2999,8 +2999,8 @@ packages:
   '@truyenmoinhu/ts-config@0.1.3':
     resolution: {integrity: sha512-pz5JRrQ4cnN6IVkOzqVi5MxEiQ82cdGw/kgrUVehog9Il+CLQsZcNQsXWYcPWTxLn6CcX6xlxmOsDkgBAnZ5iQ==, tarball: https://npm.pkg.github.com/download/@truyenmoinhu/ts-config/0.1.3/56c897090599dea094e4a5bd9643e9e5ff4d220e}
 
-  '@truyenmoinhu/uikit@0.1.0-canary.24':
-    resolution: {integrity: sha512-bClFX5QDHpvmNGPBvyD4fCccS9gzdUz1g0yo+JHJfZs1b4D26MrT6U/MVA8zg5ZWq/3ZF1TA/dEAbo2fp1XImQ==, tarball: https://npm.pkg.github.com/download/@truyenmoinhu/uikit/0.1.0-canary.24/2c61ecac6e14e11de2b5ea84926dc1d46ae3beff}
+  '@truyenmoinhu/uikit@0.1.0-canary.26':
+    resolution: {integrity: sha512-isndqq5gaobqTtAZq296VuiiaoAhtPJooktDmBxoTbuvBIvcSwhd+WTECrsGZ2TtNukgHQacw/Jd59nPnn6JtA==, tarball: https://npm.pkg.github.com/download/@truyenmoinhu/uikit/0.1.0-canary.26/68eeb8ee1c48822efd484b330be5171a239ce86c}
     engines: {node: '>=20'}
     peerDependencies:
       '@truyenmoinhu/hooks': 0.1.1-canary.3
@@ -9486,14 +9486,14 @@ snapshots:
       - debug
       - supports-color
 
-  '@truyenmoinhu/table@0.1.0-canary.4(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/uikit@0.1.0-canary.24(@floating-ui/dom@1.8.0)(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@truyenmoinhu/table@0.1.0-canary.4(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/uikit@0.1.0-canary.26(@floating-ui/dom@1.8.0)(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@tanstack/react-store': 0.11.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-table': 9.2.4(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/store': 0.11.1
       '@truyenmoinhu/hooks': 0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@truyenmoinhu/query': 0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1)
-      '@truyenmoinhu/uikit': 0.1.0-canary.24(@floating-ui/dom@1.8.0)(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@truyenmoinhu/uikit': 0.1.0-canary.26(@floating-ui/dom@1.8.0)(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@truyenmoinhu/utils': 0.1.0-canary.4
       fuse.js: 7.5.0
       lucide-react: 0.577.0(react@19.3.1)
@@ -9502,7 +9502,7 @@ snapshots:
 
   '@truyenmoinhu/ts-config@0.1.3': {}
 
-  '@truyenmoinhu/uikit@0.1.0-canary.24(@floating-ui/dom@1.8.0)(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@truyenmoinhu/uikit@0.1.0-canary.26(@floating-ui/dom@1.8.0)(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@truyenmoinhu/hooks@0.1.1-canary.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@truyenmoinhu/query@0.1.2-canary.7(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(react@19.3.1))(@truyenmoinhu/utils@0.1.0-canary.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(lucide-react@0.577.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@daypicker/react': 10.0.2(@types/react@19.3.0)(react@19.3.1)
       '@dnd-kit/helpers': 0.5.0
@@ -10479,10 +10479,10 @@ snapshots:
 
   cmdk@1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
     dependencies:
-      '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.3.0)(react@19.3.1)
+      '@radix-ui/react-compose-refs': 1.1.5(@types/react@19.3.0)(react@19.3.1)
       '@radix-ui/react-dialog': 1.3.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@radix-ui/react-id': 1.1.4(@types/react@19.3.0)(react@19.3.1)
-      '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@radix-ui/react-primitive': 2.2.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
     transitivePeerDependencies:

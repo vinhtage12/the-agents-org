@@ -33,7 +33,8 @@ const RepoList = ({
 
   const remove = (repo: IProjectRepo) => {
     const modal = `delete-repo-${repo.id}`;
-    UIUtils.alert.open(modal, {
+    UIUtils.alert.open({
+      name: modal,
       title: trans('project.delete_repo_title'),
       message: trans('project.delete_repo_message', { name: repo.name }),
       cancelTitle: trans('project.cancel'),

@@ -6,6 +6,7 @@ import {
   TmnButton,
   TmnFlex,
   TmnHoverCard,
+  type TmnHoverCardRendererParams,
   TmnScrollArea,
   TmnText
 } from '@truyenmoinhu/uikit';
@@ -15,7 +16,7 @@ import { trans } from '#i18n';
 import { SYSTEM_PROVIDERS } from './constants';
 import DockerDetails from './DockerDetails';
 import { useDocker, useUsage } from './hooks';
-import UsageDetails from './UsageDetails';
+import UsageDetails, { type IUsageDetailsProps } from './UsageDetails';
 
 const MachineStatus = () => {
   const docker = useDocker();
@@ -30,11 +31,11 @@ const MachineStatus = () => {
             return (
               <TmnHoverCard
                 key={p.id}
-                content={() => (
-                  <TmnBox className="max-h-[70vh] w-72 max-w-[80vw] overflow-y-auto">
-                    <UsageDetails item={item} error={Boolean(usage.error)} />
-                  </TmnBox>
-                )}
+                renderer={UsageDetailsRenderer}
+                params={{
+                  item,
+                  error: Boolean(usage.error)
+                }}
               >
                 <TmnButton
                   startIcon={p.icon}
@@ -63,13 +64,14 @@ const MachineStatus = () => {
         open={open}
         onOpenChange={setOpen}
         placement="bottom-end"
-        content={() => (
+        renderer={() => (
           <TmnScrollArea className="max-h-[70vh]" scrollbars="both">
             <span>
               <DockerDetails data={docker.data} error={Boolean(docker.error)} />
             </span>
           </TmnScrollArea>
         )}
+        params={undefined}
       >
         <TmnButton
           startIcon={Boxes}
@@ -98,3 +100,14 @@ const MachineStatus = () => {
   );
 };
 export default memo(MachineStatus);
+
+const UsageDetailsRenderer = memo(
+  ({ params }: TmnHoverCardRendererParams<IUsageDetailsProps>) => {
+    const { error, item } = params || {};
+    return (
+      <TmnBox className="max-h-[70vh] w-72 max-w-[80vw] overflow-y-auto">
+        <UsageDetails item={item} error={error} />
+      </TmnBox>
+    );
+  }
+);

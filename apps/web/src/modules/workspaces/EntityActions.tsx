@@ -26,7 +26,8 @@ const EntityActions = ({ workspace, project }: IEntityActionsProps) => {
     : String(workspace.id);
   const remove = () => {
     const modal = `delete-${path}`;
-    UIUtils.alert.open(modal, {
+    UIUtils.alert.open({
+      name: modal,
       title: trans('workspace.delete_title'),
       message: trans(
         project
