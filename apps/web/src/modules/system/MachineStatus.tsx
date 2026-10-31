@@ -23,42 +23,42 @@ const MachineStatus = () => {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <TmnFlex
-        direction="row"
-        gap={2}
-        className="min-w-0 flex-1 overflow-x-auto py-1"
-      >
-        {SYSTEM_PROVIDERS.map(p => {
-          const item = usage.data?.providers.find(i => i.provider === p.id);
-          return (
-            <TmnHoverCard
-              key={p.id}
-              content={() => (
-                <TmnBox className="max-h-[70vh] w-72 max-w-[80vw] overflow-y-auto">
-                  <UsageDetails item={item} error={Boolean(usage.error)} />
-                </TmnBox>
-              )}
-            >
-              <TmnButton
-                startIcon={p.icon}
-                kind="default"
-                variant="outline"
-                className="shrink-0 rounded-full text-xs capitalize"
+      <TmnScrollArea scrollbars="horizontal">
+        <TmnFlex row gap={2} className="min-w-0 flex-1" paddingY={2}>
+          {SYSTEM_PROVIDERS.map(p => {
+            const item = usage.data?.providers.find(i => i.provider === p.id);
+            return (
+              <TmnHoverCard
+                key={p.id}
+                content={() => (
+                  <TmnBox className="max-h-[70vh] w-72 max-w-[80vw] overflow-y-auto">
+                    <UsageDetails item={item} error={Boolean(usage.error)} />
+                  </TmnBox>
+                )}
               >
-                <TmnText>{p.id}</TmnText>
-                <TmnText>
-                  {item?.windows.length
-                    ? item.windows.map(w => `${w.usedPercent}%`).join(' / ')
-                    : trans(
-                        usage.isLoading ? 'machine.loading' : 'machine.no_data'
-                      )}
-                </TmnText>
-                {usage.error && <AlertCircle size={12} />}
-              </TmnButton>
-            </TmnHoverCard>
-          );
-        })}
-      </TmnFlex>
+                <TmnButton
+                  startIcon={p.icon}
+                  kind="default"
+                  variant="outline"
+                  className="shrink-0 rounded-full text-xs capitalize"
+                >
+                  <TmnText>{p.id}</TmnText>
+                  <TmnText>
+                    {item?.windows.length
+                      ? item.windows.map(w => `${w.usedPercent}%`).join(' / ')
+                      : trans(
+                          usage.isLoading
+                            ? 'machine.loading'
+                            : 'machine.no_data'
+                        )}
+                  </TmnText>
+                  {usage.error && <AlertCircle size={12} />}
+                </TmnButton>
+              </TmnHoverCard>
+            );
+          })}
+        </TmnFlex>
+      </TmnScrollArea>
       <TmnHoverCard
         open={open}
         onOpenChange={setOpen}
