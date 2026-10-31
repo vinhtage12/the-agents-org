@@ -34,10 +34,12 @@ import {{ {symbol}Service }} from './services/{name}.service';
 export class {symbol}Module {{}}
 """,
         f'controllers/{name}.controller.ts': f"""import {{ Controller }} from '@nestjs/common';
+import {{ ApiTags }} from '@nestjs/swagger';
 
 import {{ {symbol}Service }} from '../services/{name}.service';
 
 @Controller('{name}')
+@ApiTags('{name}')
 export class {symbol}Controller {{
   constructor(readonly service: {symbol}Service) {{}}
 }}
@@ -85,7 +87,8 @@ describe('{symbol}Service', () => {{
 }});
 """,
         'dtos/.gitkeep': '',
-        'entities/.gitkeep': '',
+        f'entities/{name}.entity.ts': f"""export class {symbol}Entity {{}}
+""",
     }
     if not dry_run:
         for relative, content in files.items():

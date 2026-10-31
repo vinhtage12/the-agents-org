@@ -12,18 +12,23 @@ import {
   Patch,
   Post
 } from '@nestjs/common';
+import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateWorkspaceDto } from '../dtos/create-workspace.dto';
 import { UpdateProjectDto } from '../dtos/update-project.dto';
 import { UpdateWorkspaceDto } from '../dtos/update-workspace.dto';
+import { ProjectEntity } from '../entities/project.entity';
+import { WorkspaceEntity } from '../entities/workspace.entity';
 
 @Controller('workspaces')
+@ApiTags('workspaces')
 export class WorkspacesController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  list() {
+  @ApiOkResponse({ type: WorkspaceEntity, isArray: true })
+  list(): Promise<(WorkspaceEntity & { projects: ProjectEntity[] })[]> {
     return this.prisma.workspace.findMany({
       orderBy: { id: 'asc' },
       include: { projects: { orderBy: { id: 'asc' } } }
@@ -31,7 +36,10 @@ export class WorkspacesController {
   }
 
   @Get(':id')
-  async detail(@Param('id', ParseIntPipe) id: number) {
+  @ApiOkResponse({ type: WorkspaceEntity })
+  async detail(
+    @Param('id', ParseIntPipe) id: number
+  ): Promise<WorkspaceEntity & { projects: ProjectEntity[] }> {
     if (id <= 0) throw new BadRequestException('ID must be positive');
     const workspace = await this.prisma.workspace.findUnique({
       where: { id },
@@ -42,7 +50,8 @@ export class WorkspacesController {
   }
 
   @Post()
-  async create(@Body() data: CreateWorkspaceDto) {
+  @ApiCreatedResponse({ type: WorkspaceEntity })
+  async create(@Body() data: CreateWorkspaceDto): Promise<WorkspaceEntity> {
     try {
       return await this.prisma.workspace.create({ data });
     } catch (error) {
@@ -51,10 +60,11 @@ export class WorkspacesController {
   }
 
   @Post(':id/projects')
+  @ApiCreatedResponse({ type: ProjectEntity })
   async createProject(
     @Param('id', ParseIntPipe) workspaceId: number,
     @Body() data: CreateWorkspaceDto
-  ) {
+  ): Promise<ProjectEntity> {
     await this.detail(workspaceId);
     try {
       return await this.prisma.project.create({
@@ -66,10 +76,11 @@ export class WorkspacesController {
   }
 
   @Get(':id/projects/:projectId')
+  @ApiOkResponse({ type: ProjectEntity })
   async project(
     @Param('id', ParseIntPipe) workspaceId: number,
     @Param('projectId', ParseIntPipe) id: number
-  ) {
+  ): Promise<ProjectEntity & { workspace: WorkspaceEntity }> {
     if (id <= 0 || workspaceId <= 0)
       throw new BadRequestException('ID must be positive');
     const project = await this.prisma.project.findFirst({
@@ -81,10 +92,11 @@ export class WorkspacesController {
   }
 
   @Patch(':id')
+  @ApiOkResponse({ type: WorkspaceEntity })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() data: UpdateWorkspaceDto
-  ) {
+  ): Promise<WorkspaceEntity> {
     await this.detail(id);
     try {
       return await this.prisma.workspace.update({ where: { id }, data });
@@ -105,11 +117,12 @@ export class WorkspacesController {
   }
 
   @Patch(':id/projects/:projectId')
+  @ApiOkResponse({ type: ProjectEntity })
   async updateProject(
     @Param('id', ParseIntPipe) workspaceId: number,
     @Param('projectId', ParseIntPipe) id: number,
     @Body() data: UpdateProjectDto
-  ) {
+  ): Promise<ProjectEntity> {
     await this.project(workspaceId, id);
     if (data.workspaceId !== undefined) await this.detail(data.workspaceId);
     try {

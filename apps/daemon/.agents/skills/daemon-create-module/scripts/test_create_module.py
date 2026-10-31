@@ -20,9 +20,10 @@ class ScaffoldTests(unittest.TestCase):
         self.assertEqual(len(paths), 7)
         self.assertIn('export class AuditLogsModule', (module / 'audit-logs.module.ts').read_text())
         self.assertIn("@Controller('audit-logs')", (module / 'controllers/audit-logs.controller.ts').read_text())
+        self.assertIn("@ApiTags('audit-logs')", (module / 'controllers/audit-logs.controller.ts').read_text())
         self.assertIn('TestingModule', (module / 'services/audit-logs.service.spec.ts').read_text())
         self.assertTrue((module / 'dtos/.gitkeep').exists())
-        self.assertTrue((module / 'entities/.gitkeep').exists())
+        self.assertTrue((module / 'entities/audit-logs.entity.ts').exists())
         self.assertIn('    AuditLogsModule,', self.app.read_text())
         self.assertIn("from './audit-logs/audit-logs.module'", self.app.read_text())
 

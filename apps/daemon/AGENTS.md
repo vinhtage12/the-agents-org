@@ -25,7 +25,7 @@ src/
       dtos/                  # request validation classes in *.dto.ts
       clients/ gateways/     # corresponding suffixes when present
       utils/                 # helpers without a Nest suffix, e.g. adf.ts
-      entities/              # only when needed (scaffolder creates placeholder)
+      entities/              # Prisma-backed classes implementing generated model types
 ```
 
 Domains currently include agent-profiles, agent-usage, herdr, jira, projects,
@@ -60,6 +60,15 @@ schema changes; Prisma 7 migrate does not generate the client automatically.
 Keep schema and new migration together in the same commit when committing is
 authorized. Deploy with `pnpm --filter daemon db:migrate:deploy`.
 See [migration rules](.agents/rules/daemon-migrations.md).
+
+Prisma is the source of truth for database entities. Keep one class per model
+in its owning module's `entities/` directory and implement the generated Prisma
+model type so `tsc` catches schema drift. Add relation properties only when
+endpoints return them. Swagger UI is available at `http://127.0.0.1:3005/api/docs`
+and its JSON document at `/api/docs-json`. Controllers use `@ApiTags` with
+their module name; the Nest Swagger CLI plugin documents DTO and entity fields.
+Add explicit `@ApiProperty` metadata for enums, unions, and `unknown` fields
+that the plugin cannot infer.
 
 The generator continues to output `src/generated/prisma`. Moving the database
 service does not change the schema, migrations, or generator output. Local config

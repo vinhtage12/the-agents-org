@@ -10,7 +10,10 @@ Applies to `apps/daemon/**` only. Run commands below from the repository root.
 4. Run `pnpm --filter daemon db:generate`. Prisma 7 does not automatically
    regenerate the client during migration. Output stays in
    `apps/daemon/src/generated/prisma`; never hand-edit or commit generated files.
-5. Run daemon build and tests. When commits are authorized, commit the schema and
+5. Update the matching entity class in its owning module after every schema
+   change. Its `implements` clause makes daemon TypeScript compilation enforce
+   field parity.
+6. Run daemon build and tests. When commits are authorized, commit the schema and
    its newly generated migration together.
 
 Never edit an applied migration; create a new forward migration. Do not reset a

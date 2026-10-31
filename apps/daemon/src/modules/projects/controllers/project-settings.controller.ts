@@ -15,12 +15,20 @@ import {
   Patch,
   Post
 } from '@nestjs/common';
+import {
+  ApiCreatedResponse,
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiTags,
+  getSchemaPath
+} from '@nestjs/swagger';
 
 import { PrismaService } from '../../../database/prisma.service';
 import { AgentProfilesService } from '../../agent-profiles/services/agent-profiles.service';
 import { CreateRepoDto } from '../dtos/create-repo.dto';
 import { UpdateProjectSettingsDto } from '../dtos/update-project-settings.dto';
 import { UpdateRepoDto } from '../dtos/update-repo.dto';
+import { ProjectRepoEntity } from '../entities/project-repo.entity';
 
 export async function assertRepoPath(path: string): Promise<void> {
   if (isAbsolute(path)) {
@@ -35,6 +43,8 @@ export async function assertRepoPath(path: string): Promise<void> {
   );
 }
 @Controller('workspaces/:id/projects/:projectId')
+@ApiTags('projects')
+@ApiExtraModels(ProjectRepoEntity)
 export class ProjectSettingsController {
   constructor(
     private readonly prisma: PrismaService,
@@ -50,10 +60,31 @@ export class ProjectSettingsController {
     return project;
   }
   @Get('settings')
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        repos: {
+          type: 'array',
+          items: { $ref: getSchemaPath(ProjectRepoEntity) }
+        },
+        defaultRepoId: { type: 'number', nullable: true },
+        specAgent: { type: 'string', nullable: true },
+        devAgent: { type: 'string', nullable: true },
+        testAgent: { type: 'string', nullable: true }
+      }
+    }
+  })
   async settings(
     @Param('id', ParseIntPipe) workspaceId: number,
     @Param('projectId', ParseIntPipe) projectId: number
-  ) {
+  ): Promise<{
+    repos: ProjectRepoEntity[];
+    defaultRepoId: number | null;
+    specAgent: string | null;
+    devAgent: string | null;
+    testAgent: string | null;
+  }> {
     const project = await this.project(workspaceId, projectId);
     const repos = await this.prisma.projectRepo.findMany({
       where: { projectId },
@@ -68,11 +99,12 @@ export class ProjectSettingsController {
     };
   }
   @Post('repos')
+  @ApiCreatedResponse({ type: ProjectRepoEntity })
   async createRepo(
     @Param('id', ParseIntPipe) workspaceId: number,
     @Param('projectId', ParseIntPipe) projectId: number,
     @Body() data: CreateRepoDto
-  ) {
+  ): Promise<ProjectRepoEntity> {
     const project = await this.project(workspaceId, projectId);
     await assertRepoPath(data.path);
     try {
@@ -98,12 +130,13 @@ export class ProjectSettingsController {
     return repo;
   }
   @Patch('repos/:repoId')
+  @ApiOkResponse({ type: ProjectRepoEntity })
   async updateRepo(
     @Param('id', ParseIntPipe) workspaceId: number,
     @Param('projectId', ParseIntPipe) projectId: number,
     @Param('repoId', ParseIntPipe) id: number,
     @Body() data: UpdateRepoDto
-  ) {
+  ): Promise<ProjectRepoEntity> {
     await this.repo(workspaceId, projectId, id);
     if (data.path !== undefined) await assertRepoPath(data.path);
     try {

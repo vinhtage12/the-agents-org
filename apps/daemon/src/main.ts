@@ -1,8 +1,10 @@
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './modules/app.module';
+import packageJson from '../package.json';
 
 import type { Env } from './configuration/env.validation';
 
@@ -23,6 +25,15 @@ async function bootstrap() {
     })
   );
   app.enableShutdownHooks();
+
+  const document = SwaggerModule.createDocument(
+    app,
+    new DocumentBuilder()
+      .setTitle('The Agents Org daemon')
+      .setVersion(packageJson.version)
+      .build()
+  );
+  SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(config.get('PORT', { infer: true }), '127.0.0.1');
 }

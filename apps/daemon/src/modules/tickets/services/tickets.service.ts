@@ -5,6 +5,17 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma.service';
+import type { TicketEntity } from '../entities/ticket.entity';
+import type { ProjectEntity } from '../../workspaces/entities/project.entity';
+
+type TicketStoreItem = Pick<
+  TicketEntity,
+  'id' | 'jiraKey' | 'summary' | 'issueType' | 'jiraUrl'
+>;
+type TicketBoardItem = Pick<
+  TicketEntity,
+  'id' | 'jiraKey' | 'summary' | 'status' | 'jiraUrl'
+>;
 
 export function suggestProjectId(
   jiraKey: string,
@@ -18,7 +29,10 @@ export function suggestProjectId(
 @Injectable()
 export class TicketsService {
   constructor(private readonly prisma: PrismaService) {}
-  async store() {
+  async store(): Promise<{
+    tickets: (TicketStoreItem & { suggestedProjectId: number | null })[];
+    projects: Pick<ProjectEntity, 'id' | 'name' | 'code' | 'workspaceId'>[];
+  }> {
     const [tickets, projects] = await Promise.all([
       this.prisma.ticket.findMany({
         where: { projectId: null, status: { not: 'CANCELED' } },
@@ -79,7 +93,7 @@ export class TicketsService {
       return { linked: links.length };
     });
   }
-  async board(projectId: number) {
+  async board(projectId: number): Promise<TicketBoardItem[]> {
     if (!(await this.prisma.project.findUnique({ where: { id: projectId } })))
       throw new NotFoundException('Project not found');
     return this.prisma.ticket.findMany({

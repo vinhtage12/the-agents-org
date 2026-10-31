@@ -21,8 +21,9 @@ existing module directories or registrations, and previews without writing when
 `--dry-run` is passed.
 
 It creates `src/modules/<name>/` with a Nest module, controller/service and
-adjacent Nest TestingModule specs, plus `dtos/` and `entities/` placeholders. It
-registers the module in `src/modules/app.module.ts`. If the imports array cannot
+adjacent Nest TestingModule specs, plus a DTO placeholder and an entity class
+stub. The controller is tagged with `@ApiTags('<name>')`. It registers the module
+in `src/modules/app.module.ts`. If the imports array cannot
 be identified, it refuses to write; inspect the composition root before retrying.
 
 Add the requested behavior, request DTOs, dependencies, and tests. Keep entities

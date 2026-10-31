@@ -2,11 +2,13 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 import { Controller, Get } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 
 import { AgentUsageService } from '../../agent-usage/services/agent-usage.service';
 
 const execute = promisify(execFile);
 @Controller('system')
+@ApiTags('system')
 export class SystemController {
   constructor(private readonly agentUsage: AgentUsageService) {}
   private dockerRequest?: ReturnType<typeof sampleDocker>;

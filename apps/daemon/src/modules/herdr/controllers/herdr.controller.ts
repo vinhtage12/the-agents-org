@@ -1,10 +1,12 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 
 import { CreateAgentDto } from '../dtos/create-agent.dto';
 import { SendAgentPromptDto } from '../dtos/send-agent-prompt.dto';
 import { HerdrService } from '../services/herdr.service';
 
 @Controller('agents')
+@ApiTags('herdr')
 export class HerdrController {
   constructor(private readonly herdr: HerdrService) {}
 
