@@ -225,6 +225,7 @@
     "fix_round": "Vòng sửa {{round}} / {{max}}",
     "fix_rounds_exhausted": "Đã hết {{max}} vòng sửa",
     "fix_rounds_exhausted_hint": "Gửi feedback cho agent Dev bên dưới, hoặc tự kéo thẻ sang In Review.",
+    "idle_hint": "Không có agent nào đang chạy. Gửi feedback để Dev tiếp tục.",
     "tests_empty": "Chưa có test case.",
     "test_passed": "đạt",
     "test_failed": "lỗi",

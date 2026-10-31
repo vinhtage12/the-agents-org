@@ -16,7 +16,13 @@ const TestPanel = ({ ticket }: ITestPanelProps) => {
     (ticket.testResults?.results ?? []).map(r => [r.position, r])
   );
   const running = ticket.runs.some(run => run.status === 'RUNNING');
-  const exhausted = ticket.status === 'IN_TESTING' && !running;
+  const idleTesting = ticket.status === 'IN_TESTING' && !running;
+  const exhausted = idleTesting && ticket.fixRound >= MAX_FIX_ROUNDS;
+  // Mirrors the daemon's feedback guard.
+  const canFeedback =
+    ticket.status === 'IN_REVIEW' ||
+    ((ticket.status === 'IN_PROGRESS' || ticket.status === 'IN_TESTING') &&
+      !running);
 
   return (
     <TmnFlex direction="column" gap={3}>
@@ -26,6 +32,11 @@ const TestPanel = ({ ticket }: ITestPanelProps) => {
           max: MAX_FIX_ROUNDS
         })}
       </TmnText>
+      {canFeedback && !exhausted && ticket.status !== 'IN_REVIEW' && (
+        <TmnCallout color="blue">
+          <TmnText className="text-sm">{trans('ticket.idle_hint')}</TmnText>
+        </TmnCallout>
+      )}
       {exhausted && (
         <TmnCallout color="orange">
           <TmnText weight="bold">
@@ -85,7 +96,7 @@ const TestPanel = ({ ticket }: ITestPanelProps) => {
           );
         })
       )}
-      {(exhausted || ticket.status === 'IN_REVIEW') && (
+      {canFeedback && (
         <FeedbackForm ticketId={ticket.id} target="dev" disabled={false} />
       )}
     </TmnFlex>
