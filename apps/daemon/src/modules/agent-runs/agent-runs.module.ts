@@ -5,11 +5,12 @@ import { HerdrModule } from '../herdr/herdr.module';
 import { AgentRunsController } from './controllers/agent-runs.controller';
 import { BoardGateway } from './gateways/board.gateway';
 import { AgentRunsService } from './services/agent-runs.service';
+import { TicketFlowService } from './services/ticket-flow.service';
 
 @Module({
   imports: [HerdrModule, AgentProfilesModule],
   controllers: [AgentRunsController],
-  providers: [AgentRunsService, BoardGateway],
-  exports: [AgentRunsService, BoardGateway]
+  providers: [AgentRunsService, TicketFlowService, BoardGateway],
+  exports: [AgentRunsService, TicketFlowService, BoardGateway]
 })
 export class AgentRunsModule {}

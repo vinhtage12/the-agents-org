@@ -5,6 +5,7 @@ import { AgentProfilesController } from './agent-profiles/controllers/agent-prof
 import { AgentRunsController } from './agent-runs/controllers/agent-runs.controller';
 import { BoardGateway } from './agent-runs/gateways/board.gateway';
 import { AgentRunsService } from './agent-runs/services/agent-runs.service';
+import { TicketFlowService } from './agent-runs/services/ticket-flow.service';
 import { AgentUsageService } from './agent-usage/services/agent-usage.service';
 import { AppModule } from './app.module';
 import { HerdrController } from './herdr/controllers/herdr.controller';
@@ -24,6 +25,7 @@ describe('AppModule domain wiring', () => {
       for (const provider of [
         AgentRunsController,
         AgentRunsService,
+        TicketFlowService,
         BoardGateway,
         AgentProfilesController,
         AgentUsageService,

@@ -251,65 +251,6 @@ export class AgentRunsService implements OnModuleInit {
     if (projectId !== null) this.board.emitChanged(projectId);
   }
 
-  async complete(runId: number, token: string): Promise<void> {
-    const run = await this.prisma.agentRun.findUnique({ where: { id: runId } });
-    if (!run) throw new NotFoundException('Agent run not found');
-    const expected = Buffer.from(run.token);
-    const given = Buffer.from(token ?? '');
-    if (expected.length !== given.length || !timingSafeEqual(expected, given))
-      throw new ForbiddenException('Invalid run token');
-    if (run.status !== 'RUNNING')
-      throw new ConflictException('Agent run is not running');
-    let content = '';
-    try {
-      content = (
-        await readFile(join(this.runsDir, String(run.id), 'output.md'), 'utf8')
-      ).trim();
-    } catch {
-      // Missing file is reported below; the run stays RUNNING so the agent can retry.
-    }
-    if (!content)
-      throw new BadRequestException('output.md is missing or empty');
-
-    const projectId = await this.prisma.$transaction(async tx => {
-      const ticket = await tx.ticket.findUnique({
-        where: { id: run.ticketId }
-      });
-      const finishedAt = new Date();
-      if (!ticket || ticket.status !== 'IN_SPEC') {
-        await tx.agentRun.update({
-          where: { id: run.id },
-          data: { status: 'STOPPED', finishedAt }
-        });
-        return ticket?.projectId ?? null;
-      }
-      const { _max } = await tx.specVersion.aggregate({
-        where: { ticketId: ticket.id },
-        _max: { version: true }
-      });
-      await tx.specVersion.create({
-        data: {
-          ticketId: ticket.id,
-          version: (_max.version ?? 0) + 1,
-          content,
-          feedback: run.feedback
-        }
-      });
-      await tx.ticket.update({
-        where: { id: ticket.id },
-        data: { status: 'IN_REVIEW_SPEC', specApprovedAt: null }
-      });
-      await tx.agentRun.update({
-        where: { id: run.id },
-        data: { status: 'COMPLETED', finishedAt }
-      });
-      return ticket.projectId;
-    });
-    this.subscriptions.get(run.id)?.();
-    this.subscriptions.delete(run.id);
-    if (projectId !== null) this.board.emitChanged(projectId);
-  }
-
   // The owner gives up on a run that will never call back (pane closed, crash, denied permission).
   stopSpec(ticketId: number): Promise<number> {
     return this.stop(ticketId, 'SPEC');
