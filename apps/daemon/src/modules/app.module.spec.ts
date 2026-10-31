@@ -2,6 +2,9 @@ import { Test } from '@nestjs/testing';
 
 import { PrismaService } from '../database/prisma.service';
 import { AgentProfilesController } from './agent-profiles/controllers/agent-profiles.controller';
+import { AgentRunsController } from './agent-runs/controllers/agent-runs.controller';
+import { BoardGateway } from './agent-runs/gateways/board.gateway';
+import { AgentRunsService } from './agent-runs/services/agent-runs.service';
 import { AgentUsageService } from './agent-usage/services/agent-usage.service';
 import { AppModule } from './app.module';
 import { HerdrController } from './herdr/controllers/herdr.controller';
@@ -19,6 +22,9 @@ describe('AppModule domain wiring', () => {
       .compile();
     try {
       for (const provider of [
+        AgentRunsController,
+        AgentRunsService,
+        BoardGateway,
         AgentProfilesController,
         AgentUsageService,
         HerdrController,

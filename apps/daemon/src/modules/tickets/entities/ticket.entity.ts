@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsArray,
   IsDate,
   IsEnum,
   IsInt,
@@ -86,6 +87,17 @@ export class TicketEntity implements TicketModel {
   @IsOptional()
   @IsDate()
   linkedAt!: Date | null;
+
+  @IsOptional()
+  @IsDate()
+  specApprovedAt!: Date | null;
+
+  @IsString()
+  extraInstructions!: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  extraSkills!: string[];
 
   @IsDate()
   createdAt!: Date;

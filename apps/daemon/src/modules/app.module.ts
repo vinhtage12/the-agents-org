@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { validate } from '../configuration/env.validation';
 import { PrismaModule } from '../database/prisma.module';
 import { AgentProfilesModule } from './agent-profiles/agent-profiles.module';
+import { AgentRunsModule } from './agent-runs/agent-runs.module';
 import { AgentUsageModule } from './agent-usage/agent-usage.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -16,6 +17,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
   imports: [
+    AgentRunsModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env.development',

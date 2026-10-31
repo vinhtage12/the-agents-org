@@ -1,25 +1,71 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 
 import {
   TmnButton,
   TmnCallout,
+  TmnDnD,
+  type TmnDnDRootProps,
   TmnFlex,
   TmnLoading,
   TmnScrollArea,
-  TmnText
+  TmnText,
+  UIUtils
 } from '@truyenmoinhu/uikit';
 
 import { trans } from '#i18n';
 
 import BoardColumn from './BoardColumn';
-import { TICKET_STATUSES } from './constants';
-import { useProjectTickets } from './hooks';
+import { MOVABLE, TICKET_DIALOG, TICKET_STATUSES } from './constants';
+import { TicketError } from './error';
+import { useBoardEvents, useMoveTicket, useProjectTickets } from './hooks';
+import TicketDialog from './TicketDialog';
+
+import type { IAgentOption, TicketStatus } from './types';
 
 export interface IProjectBoardProps {
   projectId: number;
+  profiles: IAgentOption[];
 }
-const ProjectBoard = ({ projectId }: IProjectBoardProps) => {
+const ProjectBoard = ({ projectId, profiles }: IProjectBoardProps) => {
   const { data, isLoading, error, refetch } = useProjectTickets(projectId);
+  const move = useMoveTicket();
+  const [pendingId, setPendingId] = useState<number | null>(null);
+  useBoardEvents(projectId);
+
+  const openTicket = (ticketId: number) => {
+    UIUtils.popup.open(TICKET_DIALOG, {
+      size: 'xl',
+      content: () => <TicketDialog ticketId={ticketId} profiles={profiles} />
+    });
+  };
+
+  const onDragEnd: TmnDnDRootProps['onDragEnd'] = async event => {
+    if (event.canceled) {
+      return;
+    }
+    const source = event.operation.source?.data;
+    const target = event.operation.target?.data;
+    if (!source || !target || typeof source.ticketId !== 'number') {
+      return;
+    }
+    const from = source.status as TicketStatus;
+    const to = target.status as TicketStatus;
+    if (from === to || !MOVABLE[from]?.includes(to)) {
+      return;
+    }
+    setPendingId(source.ticketId);
+    try {
+      await move.mutateAsync({ ticketId: source.ticketId, to });
+    } catch (e) {
+      UIUtils.notify.error(
+        e instanceof TicketError && e.message
+          ? e.message
+          : trans('ticket.move_failed')
+      );
+    } finally {
+      setPendingId(null);
+    }
+  };
 
   if (isLoading) {
     return <TmnLoading />;
@@ -34,17 +80,21 @@ const ProjectBoard = ({ projectId }: IProjectBoardProps) => {
   }
 
   return (
-    <TmnScrollArea scrollbars="both">
-      <TmnFlex direction="row" gap={3} className="min-w-0 pb-2">
-        {TICKET_STATUSES.map(status => (
-          <BoardColumn
-            key={status}
-            status={status}
-            tickets={data.filter(t => t.status === status)}
-          />
-        ))}
-      </TmnFlex>
-    </TmnScrollArea>
+    <TmnDnD.Root onDragEnd={onDragEnd}>
+      <TmnScrollArea scrollbars="both">
+        <TmnFlex direction="row" gap={3} className="min-w-0 pb-2">
+          {TICKET_STATUSES.map(status => (
+            <BoardColumn
+              key={status}
+              status={status}
+              tickets={data.filter(t => t.status === status)}
+              pendingId={pendingId}
+              onOpen={openTicket}
+            />
+          ))}
+        </TmnFlex>
+      </TmnScrollArea>
+    </TmnDnD.Root>
   );
 };
 export default memo(ProjectBoard);

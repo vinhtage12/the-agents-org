@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   BadRequestException,
   ConflictException,
   NotFoundException
@@ -112,7 +113,7 @@ describe('HerdrService', () => {
     expect(result.name).toMatch(/^web-[a-f0-9]{8}$/);
     expect(herdr.request).toHaveBeenNthCalledWith(1, 'pane.split', {
       direction: 'down',
-      pane_id: 'w1:p2'
+      target_pane_id: 'w1:p2'
     });
     expect(herdr.request).toHaveBeenNthCalledWith(
       2,
@@ -132,5 +133,57 @@ describe('HerdrService', () => {
       service.createAgent({ agent: 'unknown-agent' })
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(herdr.request).not.toHaveBeenCalled();
+  });
+
+  it('passes cwd to pane.split and args to agent.start', async () => {
+    herdr.request
+      .mockResolvedValueOnce({ pane: { pane_id: 'w1:p9' } })
+      .mockResolvedValueOnce({
+        agent: { pane_id: 'w1:p9', agent: 'claude', agent_status: 'idle' }
+      });
+    await service.createAgent({
+      agent: 'claude',
+      cwd: '/repos/ff-web',
+      args: ['--model', 'opus'],
+      parentPaneId: 'w1:p1'
+    });
+    expect(herdr.request).toHaveBeenNthCalledWith(1, 'pane.split', {
+      direction: 'right',
+      cwd: '/repos/ff-web',
+      target_pane_id: 'w1:p1'
+    });
+    expect(herdr.request).toHaveBeenNthCalledWith(
+      2,
+      'agent.start',
+      expect.objectContaining({ pane_id: 'w1:p9', args: ['--model', 'opus'] }),
+      35000
+    );
+  });
+
+  it('closeAgent ignores panes that are already gone', async () => {
+    herdr.request.mockRejectedValueOnce(new HerdrApiError('gone', 'not_found'));
+    await expect(service.closeAgent('w1:p9')).resolves.toBeUndefined();
+    expect(herdr.request).toHaveBeenCalledWith('pane.close', {
+      pane_id: 'w1:p9'
+    });
+    herdr.request.mockRejectedValueOnce(
+      new HerdrApiError('boom', 'herdr_error')
+    );
+    await expect(service.closeAgent('w1:p9')).rejects.toBeInstanceOf(
+      BadGatewayException
+    );
+  });
+
+  it('subscribeAgent reports changes but not the start ack', () => {
+    const stop = jest.fn();
+    herdr.subscribe.mockReturnValue(stop);
+    const onChange = jest.fn();
+    expect(service.subscribeAgent('w1:p9', onChange)).toBe(stop);
+    const [panes, onEvent, onError] = herdr.subscribe.mock.calls[0];
+    expect(panes).toEqual(['w1:p9']);
+    onEvent({ type: 'subscription_started' });
+    onEvent({ event: 'pane.agent_status_changed' });
+    onError(new Error('closed'));
+    expect(onChange).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,10 +1,11 @@
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-import { AppModule } from './modules/app.module';
 import packageJson from '../package.json';
+import { ClientHeaderGuard } from './common/guards/client-header.guard';
+import { AppModule } from './modules/app.module';
 
 import type { Env } from './configuration/env.validation';
 
@@ -24,6 +25,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true
     })
   );
+  app.useGlobalGuards(new ClientHeaderGuard(app.get(Reflector)));
   app.enableShutdownHooks();
 
   const document = SwaggerModule.createDocument(
