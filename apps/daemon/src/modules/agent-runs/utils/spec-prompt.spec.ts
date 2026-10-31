@@ -1,4 +1,4 @@
-import { buildSpecPrompt, type SpecPromptInput } from './spec-prompt';
+import { type SpecPromptInput, buildSpecPrompt } from './spec-prompt';
 
 const input: SpecPromptInput = {
   profile: {

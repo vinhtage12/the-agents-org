@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-import { AppModule } from './modules/app.module';
 import packageJson from '../package.json';
+import { AppModule } from './modules/app.module';
 
 import type { Env } from './configuration/env.validation';
 
