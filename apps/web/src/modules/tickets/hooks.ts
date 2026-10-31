@@ -7,7 +7,12 @@ import {
   useQueryEnhancer
 } from '@truyenmoinhu/query';
 
-import { TICKET_ENDPOINTS, TICKET_QUERY_KEYS } from './constants';
+import {
+  OUTPUT_LINES,
+  OUTPUT_REFETCH_MS,
+  TICKET_ENDPOINTS,
+  TICKET_QUERY_KEYS
+} from './constants';
 import { TicketError } from './error';
 import { openBoardEvents } from './socket';
 
@@ -15,6 +20,7 @@ import type {
   IBoardTicket,
   ILinkTicket,
   IMoveTicket,
+  IReplyAgent,
   IRepoConflict,
   ISyncResult,
   ITicketDetail,
@@ -216,7 +222,45 @@ export const useSaveSpec = () =>
   useTicketRequest<{ content: string }>('/spec', RequestMethods.PUT);
 export const useSpecFeedback = () =>
   useTicketRequest<{ feedback: string }>('/spec/feedback', RequestMethods.POST);
-export const useStopSpec = () =>
+export const useDevFeedback = () =>
+  useTicketRequest<{ feedback: string }>('/feedback', RequestMethods.POST);
+export const useStopAgents = () =>
   useTicketRequest<undefined>('/stop', RequestMethods.POST);
 export const useApproveSpec = () =>
   useTicketRequest<undefined>('/spec/approve', RequestMethods.POST);
+export const useAgentOutput = (paneId: string | null) =>
+  useQueryEnhancer<{ text: string }>({
+    queryKey: [TICKET_QUERY_KEYS.output, paneId],
+    enabled: paneId !== null,
+    refetchInterval: OUTPUT_REFETCH_MS,
+    queryFn: async ({ apiManager }) => {
+      const result = await apiManager?.sendRequest<{ text: string }>({
+        url: TICKET_ENDPOINTS.agents(`${paneId}/output`, {
+          lines: OUTPUT_LINES
+        }),
+        suppressNotifyOnError: true
+      });
+      if (!result?.success || !result.payload) {
+        throw new TicketError(result?.code, result?.message);
+      }
+      return result.payload;
+    }
+  });
+export const useReplyAgent = () =>
+  useMutationEnhancer<unknown, IReplyAgent>({
+    mutationFn: async ({ apiManager, variables }) => {
+      if (!apiManager || !variables) {
+        throw new TicketError();
+      }
+      const result = await apiManager.sendRequest<unknown>({
+        url: TICKET_ENDPOINTS.agents(`${variables.paneId}/prompts`),
+        method: RequestMethods.POST,
+        data: { prompt: variables.prompt },
+        suppressNotifyOnError: true
+      });
+      if (!result.success) {
+        throw new TicketError(result.code, result.message);
+      }
+      return result.payload;
+    }
+  });

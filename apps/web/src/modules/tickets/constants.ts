@@ -16,7 +16,8 @@ export const TICKET_STATUSES = [
 export const TICKET_QUERY_KEYS = {
   store: generateQueryKey('ticket-store'),
   board: generateQueryKey('project-board'),
-  detail: generateQueryKey('ticket-detail')
+  detail: generateQueryKey('ticket-detail'),
+  output: generateQueryKey('agent-output')
 };
 // Drag moves the daemon accepts (its assertTransition table).
 export const MOVABLE: Partial<Record<TicketStatus, TicketStatus[]>> = {
@@ -36,8 +37,12 @@ export const LABEL_COLORS: Record<BoardLabel, 'blue' | 'green' | 'orange'> = {
 export const BOARD_EVENT = 'board-changed';
 export const TICKET_ENDPOINTS = {
   tickets: withGenerateEndpoint('tickets'),
-  projects: withGenerateEndpoint('projects')
+  projects: withGenerateEndpoint('projects'),
+  agents: withGenerateEndpoint('agents')
 };
+export const MAX_FIX_ROUNDS = 2;
+export const OUTPUT_REFETCH_MS = 2000;
+export const OUTPUT_LINES = 200;
 export const UNASSIGNED_COLUMN = 'store-col-none';
 export const AGENT_STEPS = ['specAgent', 'devAgent', 'testAgent'] as const;
 export const TICKET_DIALOG = 'ticket-dialog';

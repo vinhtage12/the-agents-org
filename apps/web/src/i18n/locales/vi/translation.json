@@ -169,7 +169,9 @@
       "spec": "Spec",
       "edit": "Sửa",
       "settings": "Cài đặt",
-      "agents": "Agent"
+      "agents": "Agent",
+      "test": "Test",
+      "terminal": "Terminal"
     },
     "spec_empty": "Chưa có spec. Kéo ticket sang In Spec để agent Spec viết.",
     "spec_edited": "đã sửa tay",
@@ -179,9 +181,15 @@
     "spec_saved": "Đã lưu spec",
     "edit_locked": "Chỉ sửa được khi ticket ở In Review Spec.",
     "feedback": "Feedback",
-    "feedback_placeholder": "Viết điều agent Spec cần sửa…",
+    "feedback_placeholder": {
+      "spec": "Viết điều agent Spec cần sửa…",
+      "dev": "Viết điều agent Dev cần sửa…"
+    },
     "send_feedback": "Gửi feedback",
-    "feedback_sent": "Đã gửi feedback, agent Spec đang viết lại",
+    "feedback_sent": {
+      "spec": "Đã gửi feedback, agent Spec đang viết lại",
+      "dev": "Đã gửi feedback, agent Dev đang sửa"
+    },
     "approve": "Approve",
     "spec_approved": "Đã duyệt spec",
     "request_failed": "Yêu cầu thất bại. Vui lòng thử lại.",
@@ -212,8 +220,20 @@
       "FAILED": "lỗi",
       "STOPPED": "đã dừng"
     },
-    "stop_spec": "Dừng agent Spec",
-    "spec_stopped": "Đã dừng agent Spec, ticket quay về cột trước",
+    "stop_agents": "Dừng agent",
+    "agents_stopped": "Đã dừng agent, ticket quay về cột trước",
+    "fix_round": "Vòng sửa {{round}} / {{max}}",
+    "fix_rounds_exhausted": "Đã hết {{max}} vòng sửa",
+    "fix_rounds_exhausted_hint": "Gửi feedback cho agent Dev bên dưới, hoặc tự kéo thẻ sang In Review.",
+    "tests_empty": "Chưa có test case.",
+    "test_passed": "đạt",
+    "test_failed": "lỗi",
+    "test_expected": "Kỳ vọng: {{expected}}",
+    "terminal_empty": "Không có agent nào đang chạy. Bắt đầu một bước để xem terminal ở đây.",
+    "terminal_needs_dialog": "Agent đang ở hộp hỏi quyền hoặc câu hỏi. Hãy trả lời ngay trong pane.",
+    "terminal_pane": "Pane",
+    "terminal_reply": "Trả lời agent",
+    "terminal_send": "Gửi",
     "unsaved_edits": "Bạn có chỉnh sửa chưa lưu ở tab Sửa. Hãy lưu trước khi gửi feedback hoặc approve."
   }
 }

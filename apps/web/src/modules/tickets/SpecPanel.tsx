@@ -14,8 +14,8 @@ import {
 import { trans } from '#i18n';
 
 import { MARKDOWN_CLASS } from './constants';
+import FeedbackForm from './FeedbackForm';
 import { useApproveSpec } from './hooks';
-import SpecFeedbackForm from './SpecFeedbackForm';
 
 import type { ITicketDetail } from './types';
 export interface ISpecPanelProps {
@@ -79,7 +79,11 @@ const SpecPanel = ({ ticket, editDirty }: ISpecPanelProps) => {
               {trans('ticket.unsaved_edits')}
             </TmnCallout>
           )}
-          <SpecFeedbackForm ticketId={ticket.id} disabled={editDirty} />
+          <FeedbackForm
+            ticketId={ticket.id}
+            target="spec"
+            disabled={editDirty}
+          />
           {!ticket.specApprovedAt && (
             <TmnButton
               kind="primary"
