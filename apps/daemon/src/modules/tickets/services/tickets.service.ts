@@ -64,6 +64,7 @@ export interface UpdateTicketInput {
 const RUN_SELECT = {
   id: true,
   step: true,
+  testMode: true,
   agentSlug: true,
   status: true,
   paneId: true,
