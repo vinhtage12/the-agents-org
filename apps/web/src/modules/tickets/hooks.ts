@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import {
@@ -8,10 +9,12 @@ import {
 
 import { TICKET_ENDPOINTS, TICKET_QUERY_KEYS } from './constants';
 import { TicketError } from './error';
+import { openBoardEvents } from './socket';
 
 import type {
   IBoardTicket,
   ILinkTicket,
+  IMoveTicket,
   ISyncResult,
   ITicketStore
 } from './types';
@@ -93,4 +96,54 @@ export const useLinkTickets = () => {
       return result.payload;
     }
   });
+};
+export const useMoveTicket = () => {
+  const queryClient = useQueryClient();
+  return useMutationEnhancer<unknown, IMoveTicket>({
+    mutationFn: async ({ apiManager, variables }) => {
+      if (!apiManager || !variables) {
+        throw new TicketError();
+      }
+      try {
+        const result = await apiManager.sendRequest<unknown>({
+          url: TICKET_ENDPOINTS.tickets(`${variables.ticketId}/move`),
+          method: RequestMethods.POST,
+          data: { to: variables.to },
+          suppressNotifyOnError: true
+        });
+        if (!result.success) {
+          throw new TicketError(result.code, result.message);
+        }
+        return result.payload;
+      } finally {
+        // Refetch even on failure: the daemon may have rolled the card back.
+        await queryClient.invalidateQueries({
+          queryKey: [TICKET_QUERY_KEYS.board]
+        });
+        await queryClient.invalidateQueries({
+          queryKey: [TICKET_QUERY_KEYS.detail]
+        });
+      }
+    }
+  });
+};
+export const useBoardEvents = (projectId: number) => {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const socket = openBoardEvents(changed => {
+      if (changed !== projectId) {
+        return;
+      }
+      void queryClient.invalidateQueries({
+        queryKey: [TICKET_QUERY_KEYS.board, projectId]
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [TICKET_QUERY_KEYS.detail]
+      });
+    });
+    return () => {
+      socket.disconnect();
+    };
+  }, [projectId, queryClient]);
 };

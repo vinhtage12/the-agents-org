@@ -32,6 +32,13 @@ export interface ISyncResult {
   canceled: number;
   reopened: number;
 }
+export type BoardLabel = 'running' | 'approved' | 'needs_you';
 export interface IBoardTicket extends ITicketBase {
   status: TicketStatus;
+  label: BoardLabel | null;
+  specVersion: number | null;
+}
+export interface IMoveTicket {
+  ticketId: number;
+  to: TicketStatus;
 }

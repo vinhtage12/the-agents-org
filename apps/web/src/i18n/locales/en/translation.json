@@ -152,6 +152,12 @@
       "IN_REVIEW": "In Review",
       "DONE": "Done",
       "CANCELED": "Canceled"
+    },
+    "move_failed": "Could not move the ticket",
+    "label": {
+      "running": "running",
+      "approved": "approved",
+      "needs_you": "needs you"
     }
   }
 }
