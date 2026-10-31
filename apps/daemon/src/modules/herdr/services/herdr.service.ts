@@ -45,6 +45,8 @@ export interface CreateAgentInput {
   agent: string;
   parentPaneId?: string;
   direction?: 'right' | 'down';
+  cwd?: string;
+  args?: string[];
 }
 
 const AGENT_KINDS: Record<string, string> = {
@@ -101,7 +103,8 @@ export class HerdrService {
 
     const split = await this.herdr.request<PaneSplitResponse>('pane.split', {
       direction: input.direction ?? 'right',
-      ...(input.parentPaneId && { pane_id: input.parentPaneId })
+      ...(input.cwd && { cwd: input.cwd }),
+      ...(input.parentPaneId && { target_pane_id: input.parentPaneId })
     });
     const paneId = split.pane?.pane_id;
     if (!paneId) {
@@ -121,7 +124,7 @@ export class HerdrService {
             name,
             kind,
             pane_id: paneId,
-            args: [],
+            args: input.args ?? [],
             timeout_ms: 30000
           },
           35000
@@ -189,6 +192,25 @@ export class HerdrService {
       stopEvents();
       observer.kill();
     };
+  }
+
+  async closeAgent(paneId: string): Promise<void> {
+    try {
+      await this.herdr.request('pane.close', { pane_id: paneId });
+    } catch (error) {
+      if (error instanceof HerdrApiError && error.code === 'not_found') return;
+      this.rethrowHerdrError(error);
+    }
+  }
+
+  subscribeAgent(paneId: string, onChange: () => void): () => void {
+    return this.herdr.subscribe(
+      [paneId],
+      event => {
+        if (event.type !== 'subscription_started') onChange();
+      },
+      () => onChange()
+    );
   }
 
   private toAgentInfo(record: Record<string, unknown>): AgentInfo | null {

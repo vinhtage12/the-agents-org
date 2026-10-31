@@ -7,6 +7,7 @@ import { HerdrService } from './services/herdr.service';
 
 @Module({
   controllers: [HerdrController],
-  providers: [HerdrClient, HerdrService, HerdrGateway]
+  providers: [HerdrClient, HerdrService, HerdrGateway],
+  exports: [HerdrService]
 })
 export class HerdrModule {}
