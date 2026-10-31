@@ -75,10 +75,59 @@ model Ticket {
   devAgent String? @map("dev_agent") @db.VarChar(128)
   testAgent String? @map("test_agent") @db.VarChar(128)
   linkedAt DateTime? @map("linked_at")
+  specApprovedAt DateTime? @map("spec_approved_at")
+  extraInstructions String @default("") @map("extra_instructions") @db.Text
+  extraSkills String[] @default([]) @map("extra_skills")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   project Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
   repo ProjectRepo? @relation(fields: [repoId], references: [id], onDelete: SetNull)
+  runs AgentRun[]
+  specs SpecVersion[]
   @@index([projectId])
   @@map("tickets")
+}
+
+enum AgentStep {
+  SPEC
+  DEV
+  TEST
+}
+
+enum AgentRunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  STOPPED
+}
+
+model AgentRun {
+  id Int @id @default(autoincrement())
+  ticketId Int @map("ticket_id")
+  step AgentStep
+  agentSlug String @map("agent_slug") @db.VarChar(128)
+  paneId String? @map("pane_id") @db.VarChar(128)
+  token String @db.VarChar(64)
+  status AgentRunStatus @default(RUNNING)
+  // Feedback sent when this run started; copied onto the spec version it produces.
+  feedback String? @db.Text
+  error String? @db.Text
+  startedAt DateTime @default(now()) @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  @@index([ticketId, step])
+  @@map("agent_runs")
+}
+
+model SpecVersion {
+  id Int @id @default(autoincrement())
+  ticketId Int @map("ticket_id")
+  version Int
+  content String @db.Text
+  feedback String? @db.Text
+  editedAt DateTime? @map("edited_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  @@unique([ticketId, version])
+  @@map("spec_versions")
 }

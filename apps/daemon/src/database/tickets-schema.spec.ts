@@ -15,3 +15,21 @@ describe('ticket schema contract', () => {
     expect(schema).toContain('@@map("tickets")');
   });
 });
+
+describe('agent run schema contract', () => {
+  const schema = readFileSync(
+    join(__dirname, '../../prisma/schema.prisma'),
+    'utf8'
+  );
+  it('defines agent steps, run statuses and spec versions', () => {
+    expect(schema).toMatch(/enum AgentStep\s*{\s*SPEC\s+DEV\s+TEST\s*}/);
+    expect(schema).toMatch(
+      /enum AgentRunStatus\s*{\s*RUNNING\s+COMPLETED\s+FAILED\s+STOPPED\s*}/
+    );
+    expect(schema).toContain('@@map("agent_runs")');
+    expect(schema).toContain('@@unique([ticketId, version])');
+    expect(schema).toContain('@@map("spec_versions")');
+    expect(schema).toMatch(/specApprovedAt\s+DateTime\?/);
+    expect(schema).toMatch(/extraSkills\s+String\[\]\s+@default\(\[\]\)/);
+  });
+});
