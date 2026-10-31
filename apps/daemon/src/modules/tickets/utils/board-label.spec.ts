@@ -7,25 +7,46 @@ describe('boardLabel', () => {
     paneId: 'w1:p9',
     startedAt: new Date('2026-10-31T09:59:00Z')
   } as const;
-  const base = { status: 'IN_SPEC', specApprovedAt: null, now } as const;
+  const base = {
+    status: 'IN_SPEC',
+    specApprovedAt: null,
+    now,
+    lastRun: null,
+    running: [] as { paneId: string | null; startedAt: Date }[],
+    paneStatuses: new Map<string, string>()
+  } as const;
 
   it('labels idle running agents as needs_you', () => {
-    expect(boardLabel({ ...base, run, paneStatus: 'working' })).toBe('running');
-    expect(boardLabel({ ...base, run, paneStatus: 'idle' })).toBe('needs_you');
-    expect(boardLabel({ ...base, run, paneStatus: 'blocked' })).toBe(
-      'needs_you'
-    );
-    expect(boardLabel({ ...base, run, paneStatus: undefined })).toBe(
-      'needs_you'
-    );
+    expect(
+      boardLabel({
+        ...base,
+        running: [run],
+        paneStatuses: new Map([[run.paneId, 'working']])
+      })
+    ).toBe('running');
+    expect(
+      boardLabel({
+        ...base,
+        running: [run],
+        paneStatuses: new Map([[run.paneId, 'idle']])
+      })
+    ).toBe('needs_you');
+    expect(
+      boardLabel({
+        ...base,
+        running: [run],
+        paneStatuses: new Map([[run.paneId, 'blocked']])
+      })
+    ).toBe('needs_you');
+    expect(boardLabel({ ...base, running: [run] })).toBe('needs_you');
   });
 
   it('treats a just-started run as running', () => {
     expect(
       boardLabel({
         ...base,
-        run: { ...run, startedAt: new Date('2026-10-31T09:59:50Z') },
-        paneStatus: 'idle'
+        running: [{ ...run, startedAt: new Date('2026-10-31T09:59:50Z') }],
+        paneStatuses: new Map([[run.paneId, 'idle']])
       })
     ).toBe('running');
   });
@@ -34,8 +55,8 @@ describe('boardLabel', () => {
     expect(
       boardLabel({
         ...base,
-        run: { ...run, startedAt: new Date('2026-10-31T09:59:55Z') },
-        paneStatus: 'blocked'
+        running: [{ ...run, startedAt: new Date('2026-10-31T09:59:55Z') }],
+        paneStatuses: new Map([[run.paneId, 'blocked']])
       })
     ).toBe('needs_you');
   });
@@ -44,36 +65,50 @@ describe('boardLabel', () => {
     expect(
       boardLabel({
         ...base,
-        run: { ...run, status: 'FAILED' },
-        paneStatus: undefined
+        lastRun: { status: 'FAILED' }
       })
     ).toBe('needs_you');
     expect(
       boardLabel({
+        ...base,
         status: 'TODO',
         specApprovedAt: null,
-        run: { ...run, status: 'FAILED' },
-        paneStatus: undefined,
+        lastRun: { status: 'FAILED' },
         now
       })
     ).toBeNull();
     expect(
       boardLabel({
+        ...base,
         status: 'IN_REVIEW_SPEC',
         specApprovedAt: now,
-        run: null,
-        paneStatus: undefined,
+        lastRun: null,
         now
       })
     ).toBe('approved');
     expect(
       boardLabel({
+        ...base,
         status: 'IN_REVIEW_SPEC',
         specApprovedAt: null,
-        run: { ...run, status: 'COMPLETED' },
-        paneStatus: 'idle',
+        lastRun: { status: 'COMPLETED' },
         now
       })
     ).toBeNull();
+  });
+
+  it('labels exhausted testing as needs_you', () => {
+    expect(boardLabel({ ...base, status: 'IN_TESTING' })).toBe('needs_you');
+  });
+  it('prefers running over failed history when a step is running', () => {
+    expect(
+      boardLabel({
+        ...base,
+        status: 'IN_PROGRESS',
+        lastRun: { status: 'FAILED' },
+        running: [run],
+        paneStatuses: new Map([[run.paneId, 'working']])
+      })
+    ).toBe('running');
   });
 });

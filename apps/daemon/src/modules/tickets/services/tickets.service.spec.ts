@@ -18,6 +18,7 @@ describe('TicketsService', () => {
     prisma as unknown as PrismaService,
     {} as never,
     {} as never,
+    {} as never,
     {} as never
   );
   beforeEach(() => {
@@ -115,21 +116,25 @@ describe('TicketsService flow', () => {
     project: { findUnique: jest.fn(), findMany: jest.fn() },
     projectRepo: { findFirst: jest.fn(), findMany: jest.fn() },
     specVersion: { findFirst: jest.fn(), update: jest.fn() },
-    agentRun: { count: jest.fn(), findMany: jest.fn() },
+    agentRun: { count: jest.fn(), findMany: jest.fn(), findFirst: jest.fn() },
+    testCase: { findMany: jest.fn() },
     $transaction: jest.fn()
   };
   const agentRuns = {
     startSpec: jest.fn(),
-    stopSpec: jest.fn(),
+    stop: jest.fn(),
+    closeTicketPanes: jest.fn(),
     liveStatuses: jest.fn()
   };
+  const flow = { startDevelopment: jest.fn() };
   const board = { emitChanged: jest.fn() };
   const profiles = { assertExists: jest.fn() };
   const service = new TicketsService(
     prisma as unknown as PrismaService,
     agentRuns as never,
     board as never,
-    profiles as never
+    profiles as never,
+    flow as never
   );
   const ticket = {
     id: 10,
@@ -145,6 +150,7 @@ describe('TicketsService flow', () => {
     testAgent: 'qa',
     extraInstructions: '',
     extraSkills: [],
+    fixRound: 0,
     specApprovedAt: null,
     project: { id: 3, workspaceId: 1 }
   };
@@ -161,6 +167,9 @@ describe('TicketsService flow', () => {
     prisma.specVersion.findFirst.mockResolvedValue(null);
     agentRuns.liveStatuses.mockResolvedValue(new Map());
     agentRuns.startSpec.mockResolvedValue({ id: 1 });
+    agentRuns.stop.mockResolvedValue(1);
+    prisma.testCase.findMany.mockResolvedValue([]);
+    prisma.agentRun.findFirst.mockResolvedValue(null);
   });
 
   it('starts the spec agent when moving TODO → IN_SPEC', async () => {
@@ -198,8 +207,8 @@ describe('TicketsService flow', () => {
     await expect(service.move(10, 'IN_SPEC')).rejects.toBeInstanceOf(
       BadRequestException
     );
-    expect(prisma.ticket.update).toHaveBeenCalledWith({
-      where: { id: 10 },
+    expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
+      where: { id: 10, status: 'IN_SPEC' },
       data: { status: 'TODO' }
     });
     expect(board.emitChanged).toHaveBeenCalledWith(3);
@@ -217,7 +226,7 @@ describe('TicketsService flow', () => {
       content: 'edited',
       editedAt: new Date()
     });
-    await service.feedback(10, 'Split step 3');
+    await service.specFeedback(10, 'Split step 3');
     expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
       where: { id: 10, status: 'IN_REVIEW_SPEC' },
       data: { status: 'IN_SPEC', specApprovedAt: null }
@@ -240,11 +249,11 @@ describe('TicketsService flow', () => {
       content: 'x'
     });
     agentRuns.startSpec.mockRejectedValue(new ConflictException('busy'));
-    await expect(service.feedback(10, 'F')).rejects.toBeInstanceOf(
+    await expect(service.specFeedback(10, 'F')).rejects.toBeInstanceOf(
       ConflictException
     );
-    expect(prisma.ticket.update).toHaveBeenCalledWith({
-      where: { id: 10 },
+    expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
+      where: { id: 10, status: 'IN_SPEC' },
       data: { status: 'IN_REVIEW_SPEC' }
     });
   });
@@ -351,13 +360,27 @@ describe('TicketsService flow', () => {
       ...ticket,
       status: 'IN_SPEC'
     });
-    await service.stopSpec(10);
-    expect(agentRuns.stopSpec).toHaveBeenCalledWith(10);
+    await service.stop(10);
+    expect(agentRuns.stop).toHaveBeenCalledWith(10, 'SPEC');
     expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
       where: { id: 10, status: 'IN_SPEC' },
       data: { status: 'TODO' }
     });
     expect(board.emitChanged).toHaveBeenCalledWith(3);
+  });
+
+  it('stop moves a stuck In Spec ticket back even with no running run', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      status: 'IN_SPEC'
+    });
+    agentRuns.stop.mockResolvedValue(0);
+    await expect(service.stop(10)).resolves.toBeDefined();
+    expect(agentRuns.stop).toHaveBeenCalledWith(10, 'SPEC');
+    expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
+      where: { id: 10, status: 'IN_SPEC' },
+      data: { status: 'TODO' }
+    });
   });
 
   it('stops the spec agent and returns to review when a spec exists', async () => {
@@ -366,18 +389,224 @@ describe('TicketsService flow', () => {
       status: 'IN_SPEC'
     });
     prisma.specVersion.findFirst.mockResolvedValue({ id: 4, version: 1 });
-    await service.stopSpec(10);
+    await service.stop(10);
     expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
       where: { id: 10, status: 'IN_SPEC' },
       data: { status: 'IN_REVIEW_SPEC' }
     });
   });
 
-  it('only stops tickets that are In Spec', async () => {
-    await expect(service.stopSpec(10)).rejects.toBeInstanceOf(
+  it('rejects stopping when no runs are running', async () => {
+    agentRuns.stop.mockResolvedValue(0);
+    await expect(service.stop(10)).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('requires an approved spec to start development', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      status: 'IN_REVIEW_SPEC'
+    });
+    await expect(service.move(10, 'IN_PROGRESS')).rejects.toThrow(
+      'Spec is not approved'
+    );
+  });
+  it('starts development with a fresh fix counter', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      status: 'IN_REVIEW_SPEC',
+      specApprovedAt: new Date(),
+      fixRound: 2
+    });
+    await service.move(10, 'IN_PROGRESS');
+    expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
+      where: { id: 10, status: 'IN_REVIEW_SPEC' },
+      data: { status: 'IN_PROGRESS', fixRound: 0 }
+    });
+    expect(flow.startDevelopment).toHaveBeenCalledWith(10, {});
+  });
+  it('review feedback resets fix rounds', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      status: 'IN_REVIEW',
+      fixRound: 2
+    });
+    await service.feedback(10, 'F');
+    expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
+      where: { id: 10, status: 'IN_REVIEW' },
+      data: { status: 'IN_PROGRESS', fixRound: 0 }
+    });
+    expect(flow.startDevelopment).toHaveBeenCalledWith(10, { feedback: 'F' });
+  });
+  it('rejects feedback while an agent is running', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      status: 'IN_TESTING'
+    });
+    prisma.agentRun.count.mockResolvedValue(1);
+    await expect(service.feedback(10, 'F')).rejects.toBeInstanceOf(
       ConflictException
     );
-    expect(agentRuns.stopSpec).not.toHaveBeenCalled();
+  });
+  it('blocks moving to In Review while tests run', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      status: 'IN_TESTING'
+    });
+    prisma.agentRun.count.mockResolvedValue(1);
+    await expect(service.move(10, 'IN_REVIEW')).rejects.toBeInstanceOf(
+      ConflictException
+    );
+  });
+  it('closes panes when the ticket is done', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      status: 'IN_REVIEW'
+    });
+    await service.move(10, 'DONE');
+    expect(agentRuns.closeTicketPanes).toHaveBeenCalledWith(10);
+    expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
+      where: { id: 10, status: 'IN_REVIEW' },
+      data: { status: 'DONE' }
+    });
+  });
+  it('stop keeps the column outside In Spec', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      status: 'IN_PROGRESS'
+    });
+    await service.stop(10);
+    expect(agentRuns.stop).toHaveBeenCalledWith(10);
+    expect(prisma.ticket.updateMany).not.toHaveBeenCalled();
+  });
+  it('lists other running tickets on the same repo', async () => {
+    prisma.ticket.findMany.mockResolvedValue([
+      { id: 11, jiraKey: 'FMS-2', projectId: 3 }
+    ]);
+    await expect(service.repoConflicts(10)).resolves.toEqual({
+      tickets: [{ id: 11, jiraKey: 'FMS-2', projectId: 3 }]
+    });
+    expect(prisma.ticket.findMany).toHaveBeenCalledWith({
+      where: {
+        id: { not: 10 },
+        repoId: 5,
+        runs: { some: { status: 'RUNNING' } }
+      },
+      select: { id: true, jiraKey: true, projectId: true }
+    });
+  });
+  it('locks the dev agent while dev runs', async () => {
+    prisma.agentRun.count.mockResolvedValue(1);
+    await expect(
+      service.update(10, { devAgent: 'other' })
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+  it('only validates changed agents', async () => {
+    profiles.assertExists.mockImplementation(slugs => {
+      if (slugs.includes('fe-dev')) throw new Error('Deleted profile');
+    });
+    await expect(
+      service.update(10, { devAgent: 'fe-dev', extraInstructions: 'F' })
+    ).resolves.toBeDefined();
+    expect(profiles.assertExists).toHaveBeenCalledWith([]);
+  });
+
+  it.each([
+    'IN_REVIEW',
+    'IN_TESTING',
+    'IN_PROGRESS'
+  ])('restores %s if feedback cannot start dev', async status => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      status,
+      fixRound: 2
+    });
+    flow.startDevelopment.mockRejectedValue(new Error('cannot start'));
+    await expect(service.feedback(10, 'F')).rejects.toThrow('cannot start');
+    expect(prisma.ticket.updateMany).toHaveBeenLastCalledWith({
+      where: { id: 10, status: 'IN_PROGRESS' },
+      data: { status }
+    });
+  });
+  it('restores spec review if development cannot start', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      status: 'IN_REVIEW_SPEC',
+      specApprovedAt: new Date()
+    });
+    flow.startDevelopment.mockRejectedValue(new Error('cannot start'));
+    await expect(service.move(10, 'IN_PROGRESS')).rejects.toThrow(
+      'cannot start'
+    );
+    expect(prisma.ticket.updateMany).toHaveBeenLastCalledWith({
+      where: { id: 10, status: 'IN_PROGRESS' },
+      data: { status: 'IN_REVIEW_SPEC' }
+    });
+  });
+  it('rejects a lost conditional claim before starting development', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      status: 'IN_REVIEW'
+    });
+    prisma.ticket.updateMany.mockResolvedValue({ count: 0 });
+    await expect(service.feedback(10, 'F')).rejects.toBeInstanceOf(
+      ConflictException
+    );
+    expect(flow.startDevelopment).not.toHaveBeenCalled();
+  });
+  it('locks the test agent while tests run', async () => {
+    prisma.agentRun.count.mockResolvedValue(1);
+    await expect(
+      service.update(10, { testAgent: 'other' })
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.agentRun.count).toHaveBeenCalledWith({
+      where: { ticketId: 10, status: 'RUNNING', step: 'TEST' }
+    });
+  });
+  it('has no repo conflicts when no repo is selected', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({ ...ticket, repoId: null });
+    await expect(service.repoConflicts(10)).resolves.toEqual({ tickets: [] });
+    expect(prisma.ticket.findMany).not.toHaveBeenCalled();
+  });
+  it('returns ordered cases, latest completed results and test modes in detail', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({ ...ticket, fixRound: 2 });
+    const cases = [
+      { id: 4, position: 1, title: 'T', steps: 'S', expected: 'E' }
+    ];
+    prisma.testCase.findMany.mockResolvedValue(cases);
+    const finishedAt = new Date();
+    prisma.agentRun.findFirst.mockResolvedValue({
+      id: 8,
+      finishedAt,
+      results: [{ testCase: { position: 1 }, passed: false, detail: 'F' }]
+    });
+    prisma.agentRun.findMany.mockResolvedValue([
+      { id: 8, status: 'COMPLETED', testMode: 'RUN_CASES' }
+    ]);
+    const detail = await service.detail(10);
+    expect(detail).toMatchObject({
+      fixRound: 2,
+      testCases: cases,
+      testResults: {
+        agentRunId: 8,
+        finishedAt,
+        results: [{ position: 1, passed: false, detail: 'F' }]
+      },
+      runs: [{ testMode: 'RUN_CASES' }]
+    });
+    expect(prisma.testCase.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { position: 'asc' } })
+    );
+    expect(prisma.agentRun.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          ticketId: 10,
+          step: 'TEST',
+          testMode: 'RUN_CASES',
+          status: 'COMPLETED'
+        },
+        orderBy: { id: 'desc' }
+      })
+    );
   });
 
   it('labels board cards from live agent status in one Herdr call', async () => {
