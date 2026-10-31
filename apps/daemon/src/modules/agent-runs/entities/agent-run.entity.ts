@@ -10,11 +10,15 @@ import {
   Min
 } from 'class-validator';
 
-import { AgentRunStatus, AgentStep } from '../../../generated/prisma/client';
+import {
+  AgentRunStatus,
+  AgentStep,
+  TestMode
+} from '../../../generated/prisma/client';
 
 import type { AgentRun as AgentRunModel } from '../../../generated/prisma/client';
 
-export { AgentRunStatus, AgentStep };
+export { AgentRunStatus, AgentStep, TestMode };
 
 export class AgentRunEntity implements AgentRunModel {
   @IsInt()
@@ -30,6 +34,11 @@ export class AgentRunEntity implements AgentRunModel {
   @ApiProperty({ enum: AgentStep, enumName: 'AgentStep' })
   @IsEnum(AgentStep)
   step!: AgentStep;
+
+  @ApiProperty({ enum: TestMode, enumName: 'TestMode', nullable: true })
+  @IsOptional()
+  @IsEnum(TestMode)
+  testMode!: TestMode | null;
 
   @IsString()
   @MaxLength(128)

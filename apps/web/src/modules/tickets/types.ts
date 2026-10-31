@@ -38,6 +38,11 @@ export interface IBoardTicket extends ITicketBase {
   label: BoardLabel | null;
   specVersion: number | null;
 }
+export interface IRepoConflict {
+  id: number;
+  jiraKey: string;
+  projectId: number | null;
+}
 export interface IMoveTicket {
   ticketId: number;
   to: TicketStatus;
@@ -63,8 +68,26 @@ export interface IAgentRun {
   status: AgentRunStatus;
   paneId: string | null;
   error: string | null;
+  testMode: 'WRITE_CASES' | 'RUN_CASES' | null;
   startedAt: string;
   finishedAt: string | null;
+}
+export interface ITestCase {
+  id: number;
+  position: number;
+  title: string;
+  steps: string;
+  expected: string;
+}
+export interface ITestResult {
+  position: number;
+  passed: boolean;
+  detail: string;
+}
+export interface ITestResults {
+  agentRunId: number;
+  finishedAt: string;
+  results: ITestResult[];
 }
 export interface ITicketAgents<TValue = string | null> {
   specAgent: TValue;
@@ -84,6 +107,9 @@ export interface ITicketDetail extends ITicketBase, ITicketAgents {
   repos: { id: number; name: string; path: string }[];
   projects: { id: number; name: string; code: string }[];
   runs: IAgentRun[];
+  fixRound: number;
+  testCases: ITestCase[];
+  testResults: ITestResults | null;
 }
 export type IUpdateTicket = Partial<
   Pick<
@@ -106,4 +132,8 @@ export interface ITicketSettingsValues extends ITicketAgents<string> {
 export interface ITicketRequest<TData = unknown> {
   ticketId: number;
   data?: TData;
+}
+export interface IReplyAgent {
+  paneId: string;
+  prompt: string;
 }

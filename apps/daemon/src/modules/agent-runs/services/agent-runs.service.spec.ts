@@ -6,6 +6,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Logger,
   NotFoundException
 } from '@nestjs/common';
 
@@ -23,7 +24,7 @@ describe('AgentRunsService', () => {
   const tx = {
     ticket: { findUnique: jest.fn(), update: jest.fn() },
     specVersion: { aggregate: jest.fn(), create: jest.fn() },
-    agentRun: { update: jest.fn() }
+    agentRun: { update: jest.fn(), updateMany: jest.fn() }
   };
   const prisma = {
     ticket: { findUnique: jest.fn() },
@@ -71,6 +72,8 @@ describe('AgentRunsService', () => {
       extraInstructions: '',
       extraSkills: [],
       specAgent: 'analyst',
+      devAgent: 'fe-dev',
+      testAgent: 'tester',
       repoId: 5,
       repo: { id: 5, path: repoDir }
     });
@@ -267,83 +270,150 @@ describe('AgentRunsService', () => {
     expect(herdr.createAgent).not.toHaveBeenCalled();
   });
 
-  describe('complete', () => {
-    const runs: Record<number, object> = {
-      1: {
-        id: 1,
-        ticketId: 10,
-        token: 'tok',
-        status: 'RUNNING',
-        feedback: 'F'
-      },
-      2: { id: 2, ticketId: 10, token: 'tok', status: 'COMPLETED' }
-    };
-    beforeEach(() => {
-      prisma.agentRun.findUnique.mockImplementation(
-        async ({ where }) => runs[where.id] ?? null
-      );
-      tx.ticket.findUnique.mockResolvedValue({
-        id: 10,
-        status: 'IN_SPEC',
-        projectId: 3
-      });
-      tx.specVersion.aggregate.mockResolvedValue({ _max: { version: 1 } });
+  it('starts a dev run with the dev agent in its own pane', async () => {
+    profiles.get.mockResolvedValue({
+      slug: 'fe-dev',
+      provider: 'claude',
+      skills: [],
+      instructions: ''
     });
-
-    it('rejects bad callbacks', async () => {
-      await expect(service.complete(9, 'tok')).rejects.toBeInstanceOf(
-        NotFoundException
-      );
-      await expect(service.complete(1, 'wrong')).rejects.toBeInstanceOf(
-        ForbiddenException
-      );
-      await expect(service.complete(1, 'tok')).rejects.toBeInstanceOf(
-        BadRequestException
-      );
-      await mkdir(join(runsDir, '1'), { recursive: true });
-      await writeFile(join(runsDir, '1', 'output.md'), '  \n');
-      await expect(service.complete(1, 'tok')).rejects.toBeInstanceOf(
-        BadRequestException
-      );
-      await expect(service.complete(2, 'tok')).rejects.toBeInstanceOf(
-        ConflictException
-      );
-      expect(prisma.$transaction).not.toHaveBeenCalled();
+    prisma.agentRun.findFirst.mockImplementation(async ({ where }) =>
+      where.step === 'SPEC' ? { paneId: 'w1:p4', agentSlug: 'fe-dev' } : null
+    );
+    herdr.listAgents.mockResolvedValue([{ paneId: 'w1:p4', cwd: repoDir }]);
+    await service.start(10, 'DEV', () => 'Implement');
+    expect(profiles.get).toHaveBeenCalledWith('fe-dev');
+    expect(prisma.agentRun.count).toHaveBeenCalledWith({
+      where: { ticketId: 10, step: 'DEV', status: 'RUNNING' }
     });
-
-    it('stores a new spec version and moves the ticket to review', async () => {
-      await mkdir(join(runsDir, '1'), { recursive: true });
-      await writeFile(join(runsDir, '1', 'output.md'), '# Spec\n');
-      await service.complete(1, 'tok');
-      expect(tx.specVersion.create).toHaveBeenCalledWith({
-        data: { ticketId: 10, version: 2, content: '# Spec', feedback: 'F' }
-      });
-      expect(tx.ticket.update).toHaveBeenCalledWith({
-        where: { id: 10 },
-        data: { status: 'IN_REVIEW_SPEC', specApprovedAt: null }
-      });
-      expect(tx.agentRun.update).toHaveBeenCalledWith({
-        where: { id: 1 },
-        data: { status: 'COMPLETED', finishedAt: expect.any(Date) }
-      });
-      expect(board.emitChanged).toHaveBeenCalledWith(3);
+    expect(prisma.agentRun.findFirst).toHaveBeenCalledWith({
+      where: { ticketId: 10, step: 'DEV', paneId: { not: null } },
+      orderBy: { id: 'desc' }
     });
+    expect(herdr.createAgent).toHaveBeenCalled();
+    expect(herdr.sendPrompt).toHaveBeenCalledWith('w1:p9', 'Implement');
+    expect(herdr.closeAgent).not.toHaveBeenCalled();
+  });
 
-    it('stops the run when the ticket left In Spec', async () => {
-      await mkdir(join(runsDir, '1'), { recursive: true });
-      await writeFile(join(runsDir, '1', 'output.md'), '# Spec');
-      tx.ticket.findUnique.mockResolvedValue({
-        id: 10,
-        status: 'CANCELED',
-        projectId: 3
-      });
-      await service.complete(1, 'tok');
-      expect(tx.specVersion.create).not.toHaveBeenCalled();
-      expect(tx.agentRun.update).toHaveBeenCalledWith({
-        where: { id: 1 },
+  it('stores the test mode on the run', async () => {
+    await service.start(10, 'TEST', () => 'Test', { testMode: 'WRITE_CASES' });
+    expect(profiles.get).toHaveBeenCalledWith('tester');
+    expect(prisma.agentRun.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ step: 'TEST', testMode: 'WRITE_CASES' })
+    });
+  });
+
+  it('claim reads output.json for testing runs', async () => {
+    const run = { id: 1, token: 'tok', step: 'TEST', status: 'RUNNING' };
+    prisma.agentRun.findUnique.mockResolvedValue(run);
+    await mkdir(join(runsDir, '1'), { recursive: true });
+    await writeFile(join(runsDir, '1', 'output.json'), ' {"cases":[]} ');
+    await expect(service.claim(1, 'tok')).resolves.toEqual({
+      run,
+      output: '{"cases":[]}'
+    });
+    expect(prisma.agentRun.update).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('finish rejects a run that is no longer running', async () => {
+    tx.agentRun.updateMany.mockResolvedValue({ count: 0 });
+    await expect(
+      service.finish(
+        tx as unknown as import('../../../generated/prisma/client').Prisma.TransactionClient,
+        1,
+        'COMPLETED'
+      )
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('closeTicketPanes stops runs and closes each pane once', async () => {
+    prisma.agentRun.findMany
+      .mockResolvedValueOnce([{ id: 1 }])
+      .mockResolvedValueOnce([
+        { paneId: 'w1:p4' },
+        { paneId: 'w1:p4' },
+        { paneId: 'w1:p5' }
+      ]);
+    prisma.agentRun.updateMany.mockResolvedValue({ count: 1 });
+    herdr.closeAgent.mockRejectedValue(new Error('gone'));
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    try {
+      await expect(service.closeTicketPanes(10)).resolves.toBeUndefined();
+      expect(prisma.agentRun.updateMany).toHaveBeenCalledWith({
+        where: { ticketId: 10, status: 'RUNNING' },
         data: { status: 'STOPPED', finishedAt: expect.any(Date) }
       });
+      expect(herdr.closeAgent).toHaveBeenCalledTimes(2);
+      expect(herdr.closeAgent).toHaveBeenCalledWith('w1:p4');
+      expect(herdr.closeAgent).toHaveBeenCalledWith('w1:p5');
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('claim validates callbacks without changing state', async () => {
+    prisma.agentRun.findUnique.mockResolvedValue(null);
+    await expect(service.claim(9, 'tok')).rejects.toBeInstanceOf(
+      NotFoundException
+    );
+    prisma.agentRun.findUnique.mockResolvedValue({
+      id: 1,
+      token: 'tok',
+      step: 'DEV',
+      status: 'RUNNING'
     });
+    await expect(service.claim(1, 'wrong')).rejects.toBeInstanceOf(
+      ForbiddenException
+    );
+    await expect(service.claim(1, 'tok')).rejects.toThrow(
+      'output.md is missing or empty'
+    );
+    await mkdir(join(runsDir, '1'), { recursive: true });
+    await writeFile(join(runsDir, '1', 'output.md'), '  ');
+    await expect(service.claim(1, 'tok')).rejects.toBeInstanceOf(
+      BadRequestException
+    );
+    await writeFile(join(runsDir, '1', 'output.md'), '# Changed');
+    await expect(service.claim(1, 'tok')).resolves.toMatchObject({
+      output: '# Changed'
+    });
+    prisma.agentRun.findUnique.mockResolvedValue({
+      id: 1,
+      token: 'tok',
+      status: 'COMPLETED'
+    });
+    await expect(service.claim(1, 'tok')).rejects.toBeInstanceOf(
+      ConflictException
+    );
+    expect(prisma.agentRun.update).not.toHaveBeenCalled();
+    expect(prisma.agentRun.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('finish atomically updates only a running run', async () => {
+    tx.agentRun.updateMany.mockResolvedValue({ count: 1 });
+    await service.finish(
+      tx as unknown as import('../../../generated/prisma/client').Prisma.TransactionClient,
+      1,
+      'STOPPED'
+    );
+    expect(tx.agentRun.updateMany).toHaveBeenCalledWith({
+      where: { id: 1, status: 'RUNNING' },
+      data: { status: 'STOPPED', finishedAt: expect.any(Date) }
+    });
+  });
+
+  it('afterFinish unsubscribes once and emits only for a project', async () => {
+    const unsubscribe = jest.fn();
+    herdr.subscribeAgent.mockReturnValue(unsubscribe);
+    await service.startSpec(10);
+    service.afterFinish(1, 3);
+    service.afterFinish(1, null);
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    expect(board.emitChanged).toHaveBeenCalledTimes(1);
+    expect(board.emitChanged).toHaveBeenCalledWith(3);
   });
 
   it('liveStatuses is empty when Herdr is down', async () => {

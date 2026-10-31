@@ -10,19 +10,22 @@ import { TmnButton, TmnCallout, TmnInput, UIUtils } from '@truyenmoinhu/uikit';
 
 import { trans } from '#i18n';
 
-import { useSpecFeedback } from './hooks';
+import { useDevFeedback, useSpecFeedback } from './hooks';
 
-export interface ISpecFeedbackFormProps {
+export interface IFeedbackFormProps {
   ticketId: number;
+  target: 'spec' | 'dev';
   disabled: boolean;
 }
-interface ISpecFeedbackValues {
+interface IFeedbackValues {
   feedback: string;
 }
-const SpecFeedbackForm = ({ ticketId, disabled }: ISpecFeedbackFormProps) => {
+const FeedbackForm = ({ ticketId, target, disabled }: IFeedbackFormProps) => {
   const [message, setMessage] = useState('');
-  const mutation = useSpecFeedback();
-  const form = useFormResolver<ISpecFeedbackValues>({
+  const spec = useSpecFeedback();
+  const dev = useDevFeedback();
+  const mutation = target === 'spec' ? spec : dev;
+  const form = useFormResolver<IFeedbackValues>({
     schema: createSchema(),
     configs: { defaultValues: { feedback: '' } }
   });
@@ -36,7 +39,7 @@ const SpecFeedbackForm = ({ ticketId, disabled }: ISpecFeedbackFormProps) => {
         data: { feedback: values.feedback.trim() }
       });
       form.reset({ feedback: '' });
-      UIUtils.notify.success(trans('ticket.feedback_sent'));
+      UIUtils.notify.success(trans(`ticket.feedback_sent.${target}`));
     } catch (e) {
       setMessage(
         e instanceof Error ? e.message : trans('ticket.request_failed')
@@ -52,7 +55,7 @@ const SpecFeedbackForm = ({ ticketId, disabled }: ISpecFeedbackFormProps) => {
         render={({ field, fieldState }) => (
           <TmnInput.TextArea
             label={trans('ticket.feedback')}
-            placeholder={trans('ticket.feedback_placeholder')}
+            placeholder={trans(`ticket.feedback_placeholder.${target}`)}
             value={field.value}
             onChange={field.onChange}
             message={fieldState.error?.message}
@@ -75,6 +78,6 @@ const SpecFeedbackForm = ({ ticketId, disabled }: ISpecFeedbackFormProps) => {
     </TmnForm>
   );
 };
-export default memo(SpecFeedbackForm);
+export default memo(FeedbackForm);
 const createSchema = () =>
   validation.object({ feedback: validation.string().trim().required() });

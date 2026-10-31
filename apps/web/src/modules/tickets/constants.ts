@@ -16,13 +16,19 @@ export const TICKET_STATUSES = [
 export const TICKET_QUERY_KEYS = {
   store: generateQueryKey('ticket-store'),
   board: generateQueryKey('project-board'),
-  detail: generateQueryKey('ticket-detail')
+  detail: generateQueryKey('ticket-detail'),
+  output: generateQueryKey('agent-output')
 };
 // Drag moves the daemon accepts (its assertTransition table).
 export const MOVABLE: Partial<Record<TicketStatus, TicketStatus[]>> = {
-  TODO: ['IN_SPEC']
+  TODO: ['IN_SPEC'],
+  IN_REVIEW_SPEC: ['IN_PROGRESS'],
+  IN_TESTING: ['IN_REVIEW'],
+  IN_REVIEW: ['DONE']
 };
 export const DROP_TARGETS = new Set(Object.values(MOVABLE).flat());
+// Moves into these steps start an agent, so overlapping repos are warned about.
+export const AGENT_START_STATUSES: TicketStatus[] = ['IN_SPEC', 'IN_PROGRESS'];
 export const LABEL_COLORS: Record<BoardLabel, 'blue' | 'green' | 'orange'> = {
   running: 'blue',
   approved: 'green',
@@ -31,8 +37,12 @@ export const LABEL_COLORS: Record<BoardLabel, 'blue' | 'green' | 'orange'> = {
 export const BOARD_EVENT = 'board-changed';
 export const TICKET_ENDPOINTS = {
   tickets: withGenerateEndpoint('tickets'),
-  projects: withGenerateEndpoint('projects')
+  projects: withGenerateEndpoint('projects'),
+  agents: withGenerateEndpoint('agents')
 };
+export const MAX_FIX_ROUNDS = 2;
+export const OUTPUT_REFETCH_MS = 2000;
+export const OUTPUT_LINES = 200;
 export const UNASSIGNED_COLUMN = 'store-col-none';
 export const AGENT_STEPS = ['specAgent', 'devAgent', 'testAgent'] as const;
 export const TICKET_DIALOG = 'ticket-dialog';

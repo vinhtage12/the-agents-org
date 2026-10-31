@@ -1,3 +1,5 @@
+import { outputContract, promptHeader } from './prompt-parts';
+
 import type { AgentProfile } from '../../agent-profiles/services/agent-profiles.service';
 
 export interface SpecPromptInput {
@@ -22,18 +24,8 @@ export function buildSpecPrompt({
   run,
   previous
 }: SpecPromptInput): string {
-  const skills = [...new Set([...profile.skills, ...ticket.extraSkills])];
   const sections = [
-    profile.instructions,
-    ticket.extraInstructions,
-    skills.length ? `Skills: ${skills.join(', ')}` : '',
-    [
-      `Ticket ${ticket.jiraKey}: ${ticket.summary}`,
-      ticket.jiraUrl,
-      '',
-      ticket.description
-    ].join('\n'),
-    `Repository: ${repoPath}`,
+    ...promptHeader({ profile, ticket, repoPath, run }),
     [
       'Task: write the implementation spec for this ticket.',
       'Clarify the purpose, use cases, business rules and scope, and point out conflicts with the existing codebase. Then write the spec, ending with the implementation steps.',
@@ -51,12 +43,7 @@ export function buildSpecPrompt({
           'Rewrite the spec to address the feedback.'
         ].join('\n')
       : '',
-    [
-      'When the spec is final:',
-      `1. Write the full spec as markdown to ${run.dir}/output.md (overwrite it).`,
-      `2. Run: curl -fsS -X POST -H 'x-run-token: ${run.token}' ${run.callbackUrl}/agent-runs/${run.id}/complete`,
-      'Do not run the command before output.md is complete. If it fails, fix the problem and run it again.'
-    ].join('\n')
+    outputContract(run, 'output.md', 'the full spec as markdown')
   ];
   return sections.filter(Boolean).join('\n\n');
 }

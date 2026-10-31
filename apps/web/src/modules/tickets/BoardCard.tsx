@@ -4,7 +4,8 @@ import { TmnChip, TmnDnD, TmnFlex, TmnText } from '@truyenmoinhu/uikit';
 
 import { trans } from '#i18n';
 
-import { LABEL_COLORS, MOVABLE } from './constants';
+import { LABEL_COLORS } from './constants';
+import { canDrag } from './utils';
 
 import type { IBoardTicket } from './types';
 export interface IBoardCardProps {
@@ -12,49 +13,52 @@ export interface IBoardCardProps {
   pending: boolean;
   onOpen: (ticketId: number) => void;
 }
-const BoardCard = ({ ticket, pending, onOpen }: IBoardCardProps) => (
-  <TmnDnD.Draggable
-    id={`board-ticket-${ticket.id}`}
-    type="board-ticket"
-    data={{ ticketId: ticket.id, status: ticket.status }}
-    disabled={pending || !MOVABLE[ticket.status]}
-  >
-    {({ isDragging }) => (
-      <TmnFlex
-        direction="column"
-        gap={1}
-        role="button"
-        tabIndex={0}
-        aria-label={trans('ticket.open_ticket', { key: ticket.jiraKey })}
-        onClick={() => onOpen(ticket.id)}
-        onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            onOpen(ticket.id);
-          }
-        }}
-        className={`rounded-md border border-border bg-card p-2 ${MOVABLE[ticket.status] ? 'cursor-grab' : ''} ${isDragging || pending ? 'opacity-40' : ''}`}
-      >
-        <TmnFlex direction="row" align="center" gap={2} className="min-w-0">
-          <TmnText weight="bold" className="truncate text-xs">
-            {ticket.jiraKey}
-          </TmnText>
-          {ticket.specVersion !== null && (
-            <TmnText className="shrink-0 text-xs text-muted-foreground">
-              v{ticket.specVersion}
+const BoardCard = ({ ticket, pending, onOpen }: IBoardCardProps) => {
+  const draggable = canDrag(ticket);
+  return (
+    <TmnDnD.Draggable
+      id={`board-ticket-${ticket.id}`}
+      type="board-ticket"
+      data={{ ticketId: ticket.id, status: ticket.status }}
+      disabled={pending || !draggable}
+    >
+      {({ isDragging }) => (
+        <TmnFlex
+          direction="column"
+          gap={1}
+          role="button"
+          tabIndex={0}
+          aria-label={trans('ticket.open_ticket', { key: ticket.jiraKey })}
+          onClick={() => onOpen(ticket.id)}
+          onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onOpen(ticket.id);
+            }
+          }}
+          className={`rounded-md border border-border bg-card p-2 ${draggable ? 'cursor-grab' : ''} ${isDragging || pending ? 'opacity-40' : ''}`}
+        >
+          <TmnFlex direction="row" align="center" gap={2} className="min-w-0">
+            <TmnText weight="bold" className="truncate text-xs">
+              {ticket.jiraKey}
             </TmnText>
+            {ticket.specVersion !== null && (
+              <TmnText className="shrink-0 text-xs text-muted-foreground">
+                v{ticket.specVersion}
+              </TmnText>
+            )}
+          </TmnFlex>
+          <TmnText className="truncate text-sm" title={ticket.summary}>
+            {ticket.summary}
+          </TmnText>
+          {ticket.label && (
+            <TmnChip color={LABEL_COLORS[ticket.label]} className="self-start">
+              {trans(`ticket.label.${ticket.label}`)}
+            </TmnChip>
           )}
         </TmnFlex>
-        <TmnText className="truncate text-sm" title={ticket.summary}>
-          {ticket.summary}
-        </TmnText>
-        {ticket.label && (
-          <TmnChip color={LABEL_COLORS[ticket.label]} className="self-start">
-            {trans(`ticket.label.${ticket.label}`)}
-          </TmnChip>
-        )}
-      </TmnFlex>
-    )}
-  </TmnDnD.Draggable>
-);
+      )}
+    </TmnDnD.Draggable>
+  );
+};
 export default memo(BoardCard);

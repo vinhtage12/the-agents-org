@@ -99,6 +99,11 @@ export class TicketEntity implements TicketModel {
   @IsString({ each: true })
   extraSkills!: string[];
 
+  @IsInt()
+  @Min(0)
+  @Max(2147483647)
+  fixRound!: number;
+
   @IsDate()
   createdAt!: Date;
 

@@ -9,6 +9,7 @@ import { PrismaService } from '../../../database/prisma.service';
 import { AgentProfilesService } from '../../agent-profiles/services/agent-profiles.service';
 import { BoardGateway } from '../../agent-runs/gateways/board.gateway';
 import { AgentRunsService } from '../../agent-runs/services/agent-runs.service';
+import { TicketFlowService } from '../../agent-runs/services/ticket-flow.service';
 import { type BoardLabel, boardLabel } from '../utils/board-label';
 import { assertTransition } from '../utils/transitions';
 
@@ -41,8 +42,21 @@ export type TicketDetail = Pick<
   | 'testAgent'
   | 'extraInstructions'
   | 'extraSkills'
+  | 'fixRound'
   | 'specApprovedAt'
 > & {
+  testCases: {
+    id: number;
+    position: number;
+    title: string;
+    steps: string;
+    expected: string;
+  }[];
+  testResults: {
+    agentRunId: number;
+    finishedAt: Date | null;
+    results: { position: number; passed: boolean; detail: string }[];
+  } | null;
   label: BoardLabel;
   spec: Pick<
     SpecVersionEntity,
@@ -64,6 +78,7 @@ export interface UpdateTicketInput {
 const RUN_SELECT = {
   id: true,
   step: true,
+  testMode: true,
   agentSlug: true,
   status: true,
   paneId: true,
@@ -87,7 +102,8 @@ export class TicketsService {
     private readonly prisma: PrismaService,
     private readonly agentRuns: AgentRunsService,
     private readonly boardEvents: BoardGateway,
-    private readonly profiles: AgentProfilesService
+    private readonly profiles: AgentProfilesService,
+    private readonly flow: TicketFlowService
   ) {}
   async store(): Promise<{
     tickets: (TicketStoreItem & { suggestedProjectId: number | null })[];
@@ -168,8 +184,7 @@ export class TicketsService {
           specApprovedAt: true,
           runs: {
             select: { status: true, paneId: true, startedAt: true },
-            orderBy: { id: 'desc' },
-            take: 1
+            orderBy: { id: 'desc' }
           },
           specs: {
             select: { version: true },
@@ -187,8 +202,9 @@ export class TicketsService {
       label: boardLabel({
         status: ticket.status,
         specApprovedAt,
-        run: runs[0] ?? null,
-        paneStatus: runs[0]?.paneId ? live.get(runs[0].paneId) : undefined,
+        running: runs.filter(run => run.status === 'RUNNING'),
+        lastRun: runs[0] ?? null,
+        paneStatuses: live,
         now
       }),
       specVersion: specs[0]?.version ?? null
@@ -197,30 +213,62 @@ export class TicketsService {
 
   async detail(id: number): Promise<TicketDetail> {
     const ticket = await this.find(id);
-    const [repos, projects, spec, runs, live] = await Promise.all([
-      ticket.projectId === null
-        ? []
-        : this.prisma.projectRepo.findMany({
-            where: { projectId: ticket.projectId },
-            select: { id: true, name: true, path: true },
-            orderBy: { name: 'asc' }
-          }),
-      ticket.status === 'TODO' && ticket.project
-        ? this.prisma.project.findMany({
-            where: { workspaceId: ticket.project.workspaceId },
-            select: { id: true, name: true, code: true },
-            orderBy: { name: 'asc' }
-          })
-        : [],
-      this.latestSpec(id),
-      this.prisma.agentRun.findMany({
-        where: { ticketId: id },
-        select: RUN_SELECT,
-        orderBy: { id: 'desc' },
-        take: 20
-      }),
-      this.agentRuns.liveStatuses()
-    ]);
+    const [repos, projects, spec, runs, live, testCases, testRun] =
+      await Promise.all([
+        ticket.projectId === null
+          ? []
+          : this.prisma.projectRepo.findMany({
+              where: { projectId: ticket.projectId },
+              select: { id: true, name: true, path: true },
+              orderBy: { name: 'asc' }
+            }),
+        ticket.status === 'TODO' && ticket.project
+          ? this.prisma.project.findMany({
+              where: { workspaceId: ticket.project.workspaceId },
+              select: { id: true, name: true, code: true },
+              orderBy: { name: 'asc' }
+            })
+          : [],
+        this.latestSpec(id),
+        this.prisma.agentRun.findMany({
+          where: { ticketId: id },
+          select: RUN_SELECT,
+          orderBy: { id: 'desc' }
+        }),
+        this.agentRuns.liveStatuses(),
+        this.prisma.testCase.findMany({
+          where: { ticketId: id },
+          select: {
+            id: true,
+            position: true,
+            title: true,
+            steps: true,
+            expected: true
+          },
+          orderBy: { position: 'asc' }
+        }),
+        this.prisma.agentRun.findFirst({
+          where: {
+            ticketId: id,
+            step: 'TEST',
+            testMode: 'RUN_CASES',
+            status: 'COMPLETED'
+          },
+          orderBy: { id: 'desc' },
+          select: {
+            id: true,
+            finishedAt: true,
+            results: {
+              select: {
+                passed: true,
+                detail: true,
+                testCase: { select: { position: true } }
+              },
+              orderBy: { testCase: { position: 'asc' } }
+            }
+          }
+        })
+      ]);
     const run = runs[0] ?? null;
     return {
       id: ticket.id,
@@ -236,12 +284,26 @@ export class TicketsService {
       testAgent: ticket.testAgent,
       extraInstructions: ticket.extraInstructions,
       extraSkills: ticket.extraSkills,
+      fixRound: ticket.fixRound,
+      testCases,
+      testResults: testRun
+        ? {
+            agentRunId: testRun.id,
+            finishedAt: testRun.finishedAt,
+            results: testRun.results.map(result => ({
+              position: result.testCase.position,
+              passed: result.passed,
+              detail: result.detail
+            }))
+          }
+        : null,
       specApprovedAt: ticket.specApprovedAt,
       label: boardLabel({
         status: ticket.status,
         specApprovedAt: ticket.specApprovedAt,
-        run,
-        paneStatus: run?.paneId ? live.get(run.paneId) : undefined,
+        running: runs.filter(item => item.status === 'RUNNING'),
+        lastRun: run,
+        paneStatuses: live,
         now: new Date()
       }),
       spec: spec && {
@@ -259,14 +321,30 @@ export class TicketsService {
   async move(id: number, to: TicketStatus): Promise<TicketDetail> {
     const ticket = await this.find(id);
     assertTransition(ticket.status, to);
-    // Only TODO → IN_SPEC exists in this plan; the conditional update rejects double drops.
-    await this.enterSpec(ticket, 'TODO', {}, () =>
-      this.agentRuns.startSpec(id)
-    );
+    if (to === 'IN_SPEC') {
+      await this.enterSpec(ticket, 'TODO', {}, () =>
+        this.agentRuns.startSpec(id)
+      );
+    } else {
+      if (to === 'IN_PROGRESS' && !ticket.specApprovedAt)
+        throw new ConflictException('Spec is not approved');
+      if (to === 'IN_REVIEW' && (await this.runningCount(id)))
+        throw new ConflictException('An agent is still running');
+      await this.enterStatus(
+        ticket,
+        ticket.status,
+        to,
+        to === 'IN_PROGRESS' ? { fixRound: 0 } : {},
+        async () => {
+          if (to === 'IN_PROGRESS') await this.flow.startDevelopment(id, {});
+          if (to === 'DONE') await this.agentRuns.closeTicketPanes(id);
+        }
+      );
+    }
     return this.detail(id);
   }
 
-  async feedback(id: number, feedback: string): Promise<TicketDetail> {
+  async specFeedback(id: number, feedback: string): Promise<TicketDetail> {
     const ticket = await this.find(id);
     const spec = await this.reviewableSpec(ticket);
     await this.enterSpec(
@@ -283,19 +361,56 @@ export class TicketsService {
     return this.detail(id);
   }
 
-  async stopSpec(id: number): Promise<TicketDetail> {
+  async feedback(id: number, feedback: string): Promise<TicketDetail> {
     const ticket = await this.find(id);
-    if (ticket.status !== 'IN_SPEC')
-      throw new ConflictException('Ticket is not in spec');
-    await this.agentRuns.stopSpec(id);
-    // Back to where the spec step started: review if a spec exists, otherwise To Do.
-    const back = (await this.latestSpec(id)) ? 'IN_REVIEW_SPEC' : 'TODO';
-    await this.prisma.ticket.updateMany({
-      where: { id, status: 'IN_SPEC' },
-      data: { status: back }
-    });
+    if (
+      !['IN_REVIEW', 'IN_TESTING', 'IN_PROGRESS'].includes(ticket.status) ||
+      (ticket.status !== 'IN_REVIEW' && (await this.runningCount(id)))
+    )
+      throw new ConflictException('Ticket cannot receive development feedback');
+    await this.enterStatus(
+      ticket,
+      ticket.status,
+      'IN_PROGRESS',
+      { fixRound: 0 },
+      () => this.flow.startDevelopment(id, { feedback })
+    );
+    return this.detail(id);
+  }
+
+  async stop(id: number): Promise<TicketDetail> {
+    const ticket = await this.find(id);
+    const count =
+      ticket.status === 'IN_SPEC'
+        ? await this.agentRuns.stop(id, 'SPEC')
+        : await this.agentRuns.stop(id);
+    if (!count && ticket.status !== 'IN_SPEC')
+      throw new ConflictException('No running agents to stop');
+    if (ticket.status === 'IN_SPEC') {
+      const back = (await this.latestSpec(id)) ? 'IN_REVIEW_SPEC' : 'TODO';
+      await this.prisma.ticket.updateMany({
+        where: { id, status: 'IN_SPEC' },
+        data: { status: back }
+      });
+    }
     this.emit(ticket.projectId);
     return this.detail(id);
+  }
+
+  async repoConflicts(id: number): Promise<{
+    tickets: { id: number; jiraKey: string; projectId: number | null }[];
+  }> {
+    const ticket = await this.find(id);
+    if (ticket.repoId === null) return { tickets: [] };
+    const tickets = await this.prisma.ticket.findMany({
+      where: {
+        id: { not: id },
+        repoId: ticket.repoId,
+        runs: { some: { status: 'RUNNING' } }
+      },
+      select: { id: true, jiraKey: true, projectId: true }
+    });
+    return { tickets };
   }
 
   async saveSpec(id: number, content: string): Promise<TicketDetail> {
@@ -359,19 +474,27 @@ export class TicketsService {
         throw new ConflictException('Repo is locked while an agent runs');
       data.repoId = input.repoId;
     }
-    if (input.specAgent !== undefined && input.specAgent !== ticket.specAgent) {
-      if (await this.runningCount(id, 'SPEC'))
-        throw new ConflictException('Spec agent is locked while it runs');
-      data.specAgent = input.specAgent;
-    }
-    for (const key of ['devAgent', 'testAgent'] as const) {
+    const steps = {
+      specAgent: 'SPEC',
+      devAgent: 'DEV',
+      testAgent: 'TEST'
+    } as const;
+    for (const key of ['specAgent', 'devAgent', 'testAgent'] as const) {
       if (input[key] !== undefined) data[key] = input[key];
+      if (
+        data[key] !== undefined &&
+        data[key] !== ticket[key] &&
+        (await this.runningCount(id, steps[key]))
+      )
+        throw new ConflictException(
+          `${steps[key]} agent is locked while it runs`
+        );
     }
-    await this.profiles.assertExists([
-      input.specAgent,
-      input.devAgent,
-      input.testAgent
-    ]);
+    await this.profiles.assertExists(
+      (['specAgent', 'devAgent', 'testAgent'] as const)
+        .filter(key => data[key] !== undefined && data[key] !== ticket[key])
+        .map(key => data[key])
+    );
     if (input.extraInstructions !== undefined)
       data.extraInstructions = input.extraInstructions;
     if (input.extraSkills !== undefined) data.extraSkills = input.extraSkills;
@@ -405,7 +528,7 @@ export class TicketsService {
     return spec;
   }
 
-  private runningCount(ticketId: number, step?: 'SPEC') {
+  private runningCount(ticketId: number, step?: 'SPEC' | 'DEV' | 'TEST') {
     return this.prisma.agentRun.count({
       where: { ticketId, status: 'RUNNING', ...(step && { step }) }
     });
@@ -418,17 +541,27 @@ export class TicketsService {
     extra: { specApprovedAt?: null },
     start: () => Promise<unknown>
   ) {
+    await this.enterStatus(ticket, from, 'IN_SPEC', extra, start);
+  }
+
+  private async enterStatus(
+    ticket: { id: number; projectId: number | null },
+    from: TicketStatus,
+    to: TicketStatus,
+    extra: { specApprovedAt?: null; fixRound?: number },
+    start: () => Promise<unknown>
+  ) {
     const claimed = await this.prisma.ticket.updateMany({
       where: { id: ticket.id, status: from },
-      data: { status: 'IN_SPEC', ...extra }
+      data: { status: to, ...extra }
     });
     if (claimed.count !== 1)
       throw new ConflictException('Ticket was moved by another request');
     try {
       await start();
     } catch (error) {
-      await this.prisma.ticket.update({
-        where: { id: ticket.id },
+      await this.prisma.ticket.updateMany({
+        where: { id: ticket.id, status: to },
         data: { status: from }
       });
       throw error;

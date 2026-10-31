@@ -84,6 +84,8 @@ model Ticket {
   repo ProjectRepo? @relation(fields: [repoId], references: [id], onDelete: SetNull)
   runs AgentRun[]
   specs SpecVersion[]
+  fixRound Int @default(0) @map("fix_round")
+  testCases TestCase[]
   @@index([projectId])
   @@map("tickets")
 }
@@ -105,6 +107,8 @@ model AgentRun {
   id Int @id @default(autoincrement())
   ticketId Int @map("ticket_id")
   step AgentStep
+  testMode TestMode? @map("test_mode")
+  results TestResult[]
   agentSlug String @map("agent_slug") @db.VarChar(128)
   paneId String? @map("pane_id") @db.VarChar(128)
   token String @db.VarChar(64)
@@ -130,4 +134,35 @@ model SpecVersion {
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   @@unique([ticketId, version])
   @@map("spec_versions")
+}
+
+enum TestMode {
+  WRITE_CASES
+  RUN_CASES
+}
+
+model TestCase {
+  id Int @id @default(autoincrement())
+  ticketId Int @map("ticket_id")
+  position Int
+  title String @db.VarChar(512)
+  steps String @db.Text
+  expected String @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  results TestResult[]
+  @@unique([ticketId, position])
+  @@map("test_cases")
+}
+
+model TestResult {
+  id Int @id @default(autoincrement())
+  agentRunId Int @map("agent_run_id")
+  testCaseId Int @map("test_case_id")
+  passed Boolean
+  detail String @default("") @db.Text
+  agentRun AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  @@unique([agentRunId, testCaseId])
+  @@map("test_results")
 }

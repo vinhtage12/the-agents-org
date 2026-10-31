@@ -81,6 +81,19 @@ export class HerdrService {
     return agent;
   }
 
+  async readAgent(id: string, lines: number): Promise<string> {
+    try {
+      await this.getAgent(id);
+      const response = await this.herdr.request<{ read: { text: string } }>(
+        'agent.read',
+        { target: id, source: 'recent', lines, strip_ansi: true }
+      );
+      return response.read.text;
+    } catch (error) {
+      this.rethrowHerdrError(error);
+    }
+  }
+
   async sendPrompt(id: string, prompt: string): Promise<unknown> {
     await this.getAgent(id);
     try {

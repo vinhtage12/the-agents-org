@@ -14,12 +14,14 @@ import {
 
 import { trans } from '#i18n';
 
+import AgentTerminal from './AgentTerminal';
 import { LABEL_COLORS } from './constants';
 import { useTicketDetail } from './hooks';
 import RunList from './RunList';
 import SpecEditForm from './SpecEditForm';
 import SpecPanel from './SpecPanel';
-import SpecStopButton from './SpecStopButton';
+import StopAgentsButton from './StopAgentsButton';
+import TestPanel from './TestPanel';
 import TicketSettingsForm from './TicketSettingsForm';
 
 import type { IAgentOption } from './types';
@@ -30,6 +32,7 @@ export interface ITicketDialogProps {
 const TicketDialog = ({ ticketId, profiles }: ITicketDialogProps) => {
   const { data, isLoading, error, refetch } = useTicketDetail(ticketId);
   const [editDirty, setEditDirty] = useState(false);
+  const [tab, setTab] = useState('spec');
 
   if (isLoading) {
     return <TmnLoading />;
@@ -64,13 +67,20 @@ const TicketDialog = ({ ticketId, profiles }: ITicketDialogProps) => {
         </TmnLink>
       </TmnFlex>
       <TmnText className="text-sm">{data.summary}</TmnText>
-      {data.status === 'IN_SPEC' && <SpecStopButton ticketId={data.id} />}
+      {(data.status === 'IN_SPEC' ||
+        data.runs.some(run => run.status === 'RUNNING')) && (
+        <StopAgentsButton ticketId={data.id} />
+      )}
       <TmnTab.Container
+        value={tab}
+        onValueChange={setTab}
         tabs={[
           { value: 'spec', label: trans('ticket.tab.spec') },
           { value: 'edit', label: trans('ticket.tab.edit') },
           { value: 'settings', label: trans('ticket.tab.settings') },
-          { value: 'agents', label: trans('ticket.tab.agents') }
+          { value: 'test', label: trans('ticket.tab.test') },
+          { value: 'agents', label: trans('ticket.tab.agents') },
+          { value: 'terminal', label: trans('ticket.tab.terminal') }
         ]}
       >
         <TmnTab.Content value="spec">
@@ -103,8 +113,15 @@ const TicketDialog = ({ ticketId, profiles }: ITicketDialogProps) => {
             profiles={profiles}
           />
         </TmnTab.Content>
+        <TmnTab.Content value="test">
+          <TestPanel ticket={data} />
+        </TmnTab.Content>
         <TmnTab.Content value="agents">
           <RunList runs={data.runs} />
+        </TmnTab.Content>
+        {/* Mounted only while selected so closed tabs do not poll output. */}
+        <TmnTab.Content value="terminal">
+          {tab === 'terminal' && <AgentTerminal runs={data.runs} />}
         </TmnTab.Content>
       </TmnTab.Container>
     </TmnFlex>

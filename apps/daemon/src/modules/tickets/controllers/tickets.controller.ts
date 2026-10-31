@@ -11,9 +11,9 @@ import {
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { JiraSyncService } from '../../jira/services/jira-sync.service';
+import { FeedbackDto } from '../dtos/feedback.dto';
 import { LinkTicketsDto } from '../dtos/link-tickets.dto';
 import { MoveTicketDto } from '../dtos/move-ticket.dto';
-import { SpecFeedbackDto } from '../dtos/spec-feedback.dto';
 import { UpdateSpecDto } from '../dtos/update-spec.dto';
 import { UpdateTicketDto } from '../dtos/update-ticket.dto';
 import { TicketStatus } from '../entities/ticket.entity';
@@ -115,15 +115,41 @@ export class TicketsController {
     return this.tickets.saveSpec(id, body.content);
   }
   @Post('tickets/:id/spec/feedback')
-  feedback(
+  specFeedback(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: SpecFeedbackDto
+    @Body() body: FeedbackDto
   ) {
+    return this.tickets.specFeedback(id, body.feedback);
+  }
+  @Post('tickets/:id/stop')
+  stop(@Param('id', ParseIntPipe) id: number) {
+    return this.tickets.stop(id);
+  }
+  @Post('tickets/:id/feedback')
+  feedback(@Param('id', ParseIntPipe) id: number, @Body() body: FeedbackDto) {
     return this.tickets.feedback(id, body.feedback);
   }
-  @Post('tickets/:id/spec/stop')
-  stopSpec(@Param('id', ParseIntPipe) id: number) {
-    return this.tickets.stopSpec(id);
+  @Get('tickets/:id/repo-conflicts')
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        tickets: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number' },
+              jiraKey: { type: 'string' },
+              projectId: { type: 'number', nullable: true }
+            }
+          }
+        }
+      }
+    }
+  })
+  repoConflicts(@Param('id', ParseIntPipe) id: number) {
+    return this.tickets.repoConflicts(id);
   }
   @Post('tickets/:id/spec/approve')
   approve(@Param('id', ParseIntPipe) id: number) {

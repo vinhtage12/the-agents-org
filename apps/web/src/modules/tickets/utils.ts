@@ -1,6 +1,7 @@
-import { UNASSIGNED_COLUMN } from './constants';
+import { MOVABLE, UNASSIGNED_COLUMN } from './constants';
 
 import type {
+  IBoardTicket,
   ILinkTicket,
   IStoreTicket,
   ITicketDetail,
@@ -56,4 +57,17 @@ export const toTicketUpdate = (
     testAgent: toNullable(values.testAgent),
     ...extras
   };
+};
+
+export const canDrag = (ticket: IBoardTicket) => {
+  if (!MOVABLE[ticket.status]) {
+    return false;
+  }
+  if (ticket.status === 'IN_REVIEW_SPEC') {
+    return ticket.label === 'approved';
+  }
+  if (ticket.status === 'IN_TESTING') {
+    return ticket.label !== 'running';
+  }
+  return true;
 };

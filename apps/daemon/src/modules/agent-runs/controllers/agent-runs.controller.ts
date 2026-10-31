@@ -9,12 +9,12 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 
 import { AllowWithoutClientHeader } from '../../../common/decorators/allow-without-client-header.decorator';
-import { AgentRunsService } from '../services/agent-runs.service';
+import { TicketFlowService } from '../services/ticket-flow.service';
 
 @Controller('agent-runs')
 @ApiTags('agent-runs')
 export class AgentRunsController {
-  constructor(private readonly agentRuns: AgentRunsService) {}
+  constructor(private readonly ticketFlow: TicketFlowService) {}
 
   // Called by the agent itself (curl) once output.md is written.
   @Post(':id/complete')
@@ -24,6 +24,6 @@ export class AgentRunsController {
     @Param('id', ParseIntPipe) id: number,
     @Headers('x-run-token') token: string
   ): Promise<void> {
-    await this.agentRuns.complete(id, token);
+    await this.ticketFlow.complete(id, token);
   }
 }

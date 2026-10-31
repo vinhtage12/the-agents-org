@@ -33,3 +33,19 @@ describe('agent run schema contract', () => {
     expect(schema).toMatch(/extraSkills\s+String\[\]\s+@default\(\[\]\)/);
   });
 });
+
+describe('dev testing schema contract', () => {
+  const schema = readFileSync(
+    join(__dirname, '../../prisma/schema.prisma'),
+    'utf8'
+  );
+
+  it('defines test modes, fix rounds, test cases and results', () => {
+    expect(schema).toMatch(/enum TestMode\s*{\s*WRITE_CASES\s+RUN_CASES\s*}/);
+    expect(schema).toMatch(/fixRound\s+Int\s+@default\(0\)/);
+    expect(schema).toContain('@@map("test_cases")');
+    expect(schema).toContain('@@unique([ticketId, position])');
+    expect(schema).toContain('@@map("test_results")');
+    expect(schema).toContain('@@unique([agentRunId, testCaseId])');
+  });
+});

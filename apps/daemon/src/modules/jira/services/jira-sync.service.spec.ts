@@ -28,9 +28,13 @@ describe('JiraSyncService', () => {
       update: jest.fn()
     }
   };
+  const agentRuns = { closeTicketPanes: jest.fn() };
+  const board = { emitChanged: jest.fn() };
   const service = new JiraSyncService(
     jira as unknown as JiraClient,
-    prisma as unknown as PrismaService
+    prisma as unknown as PrismaService,
+    agentRuns as never,
+    board as never
   );
   beforeEach(() => {
     jest.resetAllMocks();
@@ -38,6 +42,7 @@ describe('JiraSyncService', () => {
     jira.myself.mockResolvedValue({ accountId: 'me' });
     jira.search.mockResolvedValue([issue]);
     jira.browseUrl.mockReturnValue('https://jira/browse/FMS-1');
+    agentRuns.closeTicketPanes.mockResolvedValue(undefined);
     prisma.ticket.findMany.mockResolvedValue([]);
     prisma.ticket.findUnique.mockResolvedValue(null);
   });
@@ -109,6 +114,31 @@ describe('JiraSyncService', () => {
       where: { jiraKey: 'FMS-1' },
       data: expect.objectContaining({ status: 'TODO' })
     });
+  });
+  it('stops agents before canceling', async () => {
+    prisma.ticket.findMany.mockResolvedValue([
+      { id: 10, jiraKey: 'FMS-1', projectId: 3 }
+    ]);
+    jira.search
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ ...issue, assigneeAccountId: 'other' }]);
+    await service.sync();
+    expect(agentRuns.closeTicketPanes.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.ticket.update.mock.invocationCallOrder[0]
+    );
+    expect(board.emitChanged).toHaveBeenCalledWith(3);
+  });
+  it('reopened tickets restart the fix counter', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      jiraKey: 'FMS-1',
+      status: 'CANCELED'
+    });
+    await service.sync();
+    expect(prisma.ticket.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'TODO', fixRound: 0 })
+      })
+    );
   });
   it('throws 503 when Jira is not configured', async () => {
     jira.isConfigured.mockReturnValue(false);

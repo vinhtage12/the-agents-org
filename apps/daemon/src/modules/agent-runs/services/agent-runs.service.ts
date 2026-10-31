@@ -17,11 +17,20 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../database/prisma.service';
 import { AgentProfilesService } from '../../agent-profiles/services/agent-profiles.service';
 import { HerdrService } from '../../herdr/services/herdr.service';
-import { assertRepoPath } from '../../projects/controllers/project-settings.controller';
+import { assertRepoPath } from '../../projects/utils/repo-path';
 import { BoardGateway } from '../gateways/board.gateway';
 import { buildAgentArgs } from '../utils/agent-args';
 import { STARTUP_GRACE_MS } from '../utils/constants';
 import { buildSpecPrompt } from '../utils/spec-prompt';
+
+import type {
+  AgentStep,
+  Prisma,
+  TestMode
+} from '../../../generated/prisma/client';
+import type { PromptBase } from '../utils/prompt-parts';
+
+export type PromptBuilder = (base: PromptBase) => string;
 
 import type { AgentRunEntity } from '../entities/agent-run.entity';
 
@@ -82,9 +91,23 @@ export class AgentRunsService implements OnModuleInit {
     }
   }
 
-  async startSpec(
+  startSpec(
     ticketId: number,
     previous?: PreviousSpec
+  ): Promise<AgentRunEntity> {
+    return this.start(
+      ticketId,
+      'SPEC',
+      base => buildSpecPrompt({ ...base, previous }),
+      { feedback: previous?.feedback }
+    );
+  }
+
+  async start(
+    ticketId: number,
+    step: AgentStep,
+    build: PromptBuilder,
+    options?: { feedback?: string; testMode?: TestMode }
   ): Promise<AgentRunEntity> {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
@@ -92,29 +115,41 @@ export class AgentRunsService implements OnModuleInit {
     });
     if (!ticket) throw new NotFoundException('Ticket not found');
     if (!ticket.repo) throw new BadRequestException('Ticket has no repo');
-    if (!ticket.specAgent)
-      throw new BadRequestException('Ticket has no spec agent');
+    const slot = {
+      SPEC: 'specAgent',
+      DEV: 'devAgent',
+      TEST: 'testAgent'
+    } as const;
+    const slug = ticket[slot[step]];
+    if (!slug)
+      throw new BadRequestException(
+        `Ticket has no ${step.toLowerCase()} agent`
+      );
     await assertRepoPath(ticket.repo.path);
-    const profile = await this.profiles.get(ticket.specAgent);
+    const profile = await this.profiles.get(slug);
     const running = await this.prisma.agentRun.count({
-      where: { ticketId, step: 'SPEC', status: 'RUNNING' }
+      where: { ticketId, step, status: 'RUNNING' }
     });
-    if (running) throw new ConflictException('Spec agent is already running');
+    if (running)
+      throw new ConflictException(
+        `${step[0]}${step.slice(1).toLowerCase()} agent is already running`
+      );
 
     const run = await this.prisma.agentRun.create({
       data: {
         ticketId,
-        step: 'SPEC',
+        step,
         agentSlug: profile.slug,
         token: randomBytes(24).toString('hex'),
-        feedback: previous?.feedback
+        feedback: options?.feedback,
+        testMode: options?.testMode
       }
     });
     const dir = join(this.runsDir, String(run.id));
     let paneId: string | undefined;
     try {
       await mkdir(dir, { recursive: true });
-      const prompt = buildSpecPrompt({
+      const prompt = build({
         profile,
         ticket,
         repoPath: ticket.repo.path,
@@ -123,11 +158,11 @@ export class AgentRunsService implements OnModuleInit {
           token: run.token,
           dir,
           callbackUrl: this.callbackUrl
-        },
-        previous
+        }
       });
       paneId = await this.reusablePane(
         ticketId,
+        step,
         profile.slug,
         ticket.repo.path
       );
@@ -172,7 +207,10 @@ export class AgentRunsService implements OnModuleInit {
     return started;
   }
 
-  async complete(runId: number, token: string): Promise<void> {
+  async claim(
+    runId: number,
+    token: string
+  ): Promise<{ run: AgentRunEntity; output: string }> {
     const run = await this.prisma.agentRun.findUnique({ where: { id: runId } });
     if (!run) throw new NotFoundException('Agent run not found');
     const expected = Buffer.from(run.token);
@@ -181,64 +219,50 @@ export class AgentRunsService implements OnModuleInit {
       throw new ForbiddenException('Invalid run token');
     if (run.status !== 'RUNNING')
       throw new ConflictException('Agent run is not running');
+    const file = run.step === 'TEST' ? 'output.json' : 'output.md';
     let content = '';
     try {
       content = (
-        await readFile(join(this.runsDir, String(run.id), 'output.md'), 'utf8')
+        await readFile(join(this.runsDir, String(run.id), file), 'utf8')
       ).trim();
     } catch {
       // Missing file is reported below; the run stays RUNNING so the agent can retry.
     }
-    if (!content)
-      throw new BadRequestException('output.md is missing or empty');
+    if (!content) throw new BadRequestException(`${file} is missing or empty`);
 
-    const projectId = await this.prisma.$transaction(async tx => {
-      const ticket = await tx.ticket.findUnique({
-        where: { id: run.ticketId }
-      });
-      const finishedAt = new Date();
-      if (!ticket || ticket.status !== 'IN_SPEC') {
-        await tx.agentRun.update({
-          where: { id: run.id },
-          data: { status: 'STOPPED', finishedAt }
-        });
-        return ticket?.projectId ?? null;
-      }
-      const { _max } = await tx.specVersion.aggregate({
-        where: { ticketId: ticket.id },
-        _max: { version: true }
-      });
-      await tx.specVersion.create({
-        data: {
-          ticketId: ticket.id,
-          version: (_max.version ?? 0) + 1,
-          content,
-          feedback: run.feedback
-        }
-      });
-      await tx.ticket.update({
-        where: { id: ticket.id },
-        data: { status: 'IN_REVIEW_SPEC', specApprovedAt: null }
-      });
-      await tx.agentRun.update({
-        where: { id: run.id },
-        data: { status: 'COMPLETED', finishedAt }
-      });
-      return ticket.projectId;
+    return { run, output: content };
+  }
+
+  async finish(
+    tx: Prisma.TransactionClient,
+    runId: number,
+    status: 'COMPLETED' | 'STOPPED'
+  ): Promise<void> {
+    const { count } = await tx.agentRun.updateMany({
+      where: { id: runId, status: 'RUNNING' },
+      data: { status, finishedAt: new Date() }
     });
-    this.subscriptions.get(run.id)?.();
-    this.subscriptions.delete(run.id);
+    if (count === 0) throw new ConflictException('Agent run is not running');
+  }
+
+  afterFinish(runId: number, projectId: number | null): void {
+    this.subscriptions.get(runId)?.();
+    this.subscriptions.delete(runId);
     if (projectId !== null) this.board.emitChanged(projectId);
   }
 
   // The owner gives up on a run that will never call back (pane closed, crash, denied permission).
-  async stopSpec(ticketId: number): Promise<number> {
+  stopSpec(ticketId: number): Promise<number> {
+    return this.stop(ticketId, 'SPEC');
+  }
+
+  async stop(ticketId: number, step?: AgentStep): Promise<number> {
     const runs = await this.prisma.agentRun.findMany({
-      where: { ticketId, step: 'SPEC', status: 'RUNNING' },
+      where: { ticketId, ...(step && { step }), status: 'RUNNING' },
       select: { id: true }
     });
     const { count } = await this.prisma.agentRun.updateMany({
-      where: { ticketId, step: 'SPEC', status: 'RUNNING' },
+      where: { ticketId, ...(step && { step }), status: 'RUNNING' },
       data: { status: 'STOPPED', finishedAt: new Date() }
     });
     for (const run of runs ?? []) {
@@ -246,6 +270,22 @@ export class AgentRunsService implements OnModuleInit {
       this.subscriptions.delete(run.id);
     }
     return count;
+  }
+
+  async closeTicketPanes(ticketId: number): Promise<void> {
+    await this.stop(ticketId);
+    const runs = await this.prisma.agentRun.findMany({
+      where: { ticketId },
+      select: { paneId: true }
+    });
+    for (const paneId of new Set(runs.map(run => run.paneId))) {
+      if (!paneId) continue;
+      try {
+        await this.herdr.closeAgent(paneId);
+      } catch (error) {
+        this.logger.warn(`Could not close pane ${paneId}: ${String(error)}`);
+      }
+    }
   }
 
   async liveStatuses(): Promise<Map<string, string>> {
@@ -257,14 +297,15 @@ export class AgentRunsService implements OnModuleInit {
     }
   }
 
-  // Latest spec pane of this ticket, if it still hosts the same agent in the ticket's repo.
+  // Latest step pane of this ticket, if it still hosts the same agent in the ticket's repo.
   private async reusablePane(
     ticketId: number,
+    step: AgentStep,
     agentSlug: string,
     repoPath: string
   ): Promise<string | undefined> {
     const last = await this.prisma.agentRun.findFirst({
-      where: { ticketId, step: 'SPEC', paneId: { not: null } },
+      where: { ticketId, step, paneId: { not: null } },
       orderBy: { id: 'desc' }
     });
     if (!last?.paneId) return undefined;

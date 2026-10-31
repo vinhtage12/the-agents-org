@@ -4,21 +4,21 @@ import { TmnButton, TmnCallout, TmnFlex, UIUtils } from '@truyenmoinhu/uikit';
 
 import { trans } from '#i18n';
 
-import { useStopSpec } from './hooks';
+import { useStopAgents } from './hooks';
 
-export interface ISpecStopButtonProps {
+export interface IStopAgentsButtonProps {
   ticketId: number;
 }
-// Way out for a spec run that will never call back (pane closed, crash, denied permission).
-const SpecStopButton = ({ ticketId }: ISpecStopButtonProps) => {
+// Way out for a run that will never call back (pane closed, crash, denied permission).
+const StopAgentsButton = ({ ticketId }: IStopAgentsButtonProps) => {
   const [message, setMessage] = useState('');
-  const stop = useStopSpec();
+  const stop = useStopAgents();
 
   const onStop = async () => {
     setMessage('');
     try {
       await stop.mutateAsync({ ticketId });
-      UIUtils.notify.success(trans('ticket.spec_stopped'));
+      UIUtils.notify.success(trans('ticket.agents_stopped'));
     } catch (e) {
       setMessage(
         e instanceof Error ? e.message : trans('ticket.request_failed')
@@ -35,7 +35,7 @@ const SpecStopButton = ({ ticketId }: ISpecStopButtonProps) => {
         disabled={stop.isPending}
         onClick={onStop}
       >
-        {trans('ticket.stop_spec')}
+        {trans('ticket.stop_agents')}
       </TmnButton>
       {message && (
         <TmnCallout role="alert" color="red">
@@ -45,4 +45,4 @@ const SpecStopButton = ({ ticketId }: ISpecStopButtonProps) => {
     </TmnFlex>
   );
 };
-export default memo(SpecStopButton);
+export default memo(StopAgentsButton);
