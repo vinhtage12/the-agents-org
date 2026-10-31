@@ -19,5 +19,9 @@ alwaysApply: false
 - **Ưu tiên `trans` từ `#i18n` thay cho `t` lấy từ `useTranslation`** trong JSX, validation, handlers và notifications. `useTranslation` chỉ còn cần cho subscription hoặc đối tượng `i18n`; không destructure `t`.
 - Giữ subscription đổi locale ở root để các component dùng `trans` cập nhật. Không bỏ cơ chế đó khi refactor. Thêm key dịch ở cả `vi` và `en`; không hardcode chuỗi UI.
 - Dùng `formatDate` từ `#utils/date`: `DD/MM/YYYY` hoặc `DD/MM/YYYY HH:mm`. Không dùng `toLocaleString()` trực tiếp cho ngày trong UI.
+- **Không dùng `·` (middle dot) làm dấu phân cách** trong chuỗi UI, label, `title` và bản dịch. Chọn theo vai trò:
+  - ` - ` nối hai phần ngang hàng của một tên: `${p.code} - ${p.name}`, `${p.name} - ${p.provider}`.
+  - `( )` cho thông tin phụ của phần chính: `${r.name} (${r.path})`, `${agent.name} (${agent.model})`.
+  - ` | ` tách các mục độc lập cùng một dòng, như số liệu hay trạng thái: `${w.label} | ${w.usedPercent}%`.
 - Navigation nội bộ dùng TanStack Router `Link`/`useNavigate` và params có kiểu; không dùng `window.location` hay reload để điều hướng.
 - Chart chỉ dùng dữ liệu thực; không biến thiếu quota/stats thành `0`, không giả lập lịch sử. Cleanup Chart.js instance, socket, subscription và listener khi unmount.

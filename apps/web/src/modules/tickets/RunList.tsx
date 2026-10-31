@@ -40,7 +40,7 @@ const RunList = ({ runs }: IRunListProps) => {
             {formatDate(run.startedAt)}
             {run.finishedAt ? ` → ${formatDate(run.finishedAt)}` : ''}
             {run.paneId
-              ? ` · ${trans('ticket.pane', { paneId: run.paneId })}`
+              ? ` - ${trans('ticket.pane', { paneId: run.paneId })}`
               : ''}
           </TmnText>
           {run.error && (

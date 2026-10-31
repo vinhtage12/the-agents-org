@@ -142,7 +142,7 @@ const TicketStorePage = () => {
               <StoreColumn
                 key={p.id}
                 projectId={p.id}
-                title={`${p.code} · ${p.name}`}
+                title={`${p.code} - ${p.name}`}
                 hint={trans('ticket.project_hint', { code: p.code })}
                 tickets={columnTickets(p.id)}
                 moved={movedIds}

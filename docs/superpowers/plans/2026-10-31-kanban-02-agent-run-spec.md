@@ -19,6 +19,34 @@
 - **Model/effort:** truyền qua `args` của `agent.start` (bảng ở Task 3). Skills và chỉ dẫn của role đi trong prompt đầu tiên, giống nhau cho mọi provider.
 - **Realtime:** daemon phát `board-changed { projectId }`, web invalidate query board và query chi tiết ticket.
 
+## Tiến độ
+
+**Trạng thái:** ✅ Code hoàn thành, merge vào `main` qua PR #2 (`feat/kanban-agent-runs`). ⏳ Còn chờ kiểm tra end-to-end với agent thật (Task 7 Step 4).
+
+**Chưa kiểm chứng với agent thật:**
+- Callback bằng `curl` và quyền ghi `~/.the-agents-org/runs`. Nếu agent hỏi quyền, card hiện "cần bạn".
+- Cờ CLI theo provider: `--effort`, `--add-dir`, `-c sandbox_workspace_write.network_access=true`, `--reasoning-effort`.
+- Việc dùng lại pane cho feedback.
+- Luồng sửa tay chưa lưu rồi gửi feedback.
+
+**Bổ sung sau review cuối (commit `d776c2a`), ngoài các task ở trên:**
+- `POST /tickets/:id/spec/stop` và nút "Dừng agent Spec" trong dialog. Ticket quay về To Do, hoặc về In Review Spec nếu đã có spec.
+- Khi daemon khởi động, run `RUNNING` có pane đã mất được đánh dấu `FAILED`.
+- Chỉ dùng lại pane khi `cwd` của nó trùng repo của ticket.
+- Agent ở trạng thái `blocked` hiện "cần bạn" ngay. Board tự làm mới khi hết 15 giây ân hạn.
+- Tab Sửa luôn được mount. Khi còn chỉnh sửa chưa lưu, Gửi feedback và Approve bị khoá.
+- Mọi request ghi (POST/PUT/PATCH/DELETE) phải có header `x-agents-org-client` (guard chống CSRF). Callback agent được miễn qua `@AllowWithoutClientHeader()`.
+
+**Minor để lại, Plan 03 nên xử lý khi chạm vào cùng chỗ:**
+- Hai callback cùng lúc trả 500 thay vì 409: kiểm tra `RUNNING` nằm ngoài transaction.
+- `sendPrompt` timeout dù prompt đã tới: run thành `FAILED`, agent vẫn chạy. Gỡ được bằng nút dừng rồi thử lại.
+- `saveSpec`/`approve` ghi không điều kiện, có thể chạy đua với feedback từ tab khác.
+- Run feedback lỗi làm mất `specApprovedAt`.
+- Lưu cài đặt ticket bị lỗi khi một file agent đã gán bị xoá, vì web luôn gửi đủ ba agent.
+- Subscription Herdr không tự kết nối lại.
+- Pane mới tách từ pane đang focus trong Herdr.
+- `assertRepoPath` đang import từ file controller.
+
 ## Global Constraints
 
 - Giữ mọi Global Constraints của Plan 01 (lệnh test/verify, rules web, 8 trạng thái đúng thứ tự, App không ghi Jira, không chạy git).
@@ -52,18 +80,18 @@
   - `Ticket` thêm: `specApprovedAt DateTime?`, `extraInstructions String @default("") @db.Text`, `extraSkills String[] @default([])`, `runs AgentRun[]`, `specs SpecVersion[]`.
   - Cột snake_case qua `@map`.
 
-- [ ] **Step 1: Sửa `schema.prisma` và các entity theo Interfaces** (entity `implements` model sinh ra, `@ApiProperty` cho enum, theo mẫu `ticket.entity.ts`)
-- [ ] **Step 2: Sinh migration và client**
+- [x] **Step 1: Sửa `schema.prisma` và các entity theo Interfaces** (entity `implements` model sinh ra, `@ApiProperty` cho enum, theo mẫu `ticket.entity.ts`)
+- [x] **Step 2: Sinh migration và client**
 
 Run: `pnpm --filter daemon db:migrate:dev --name agent_runs_spec && pnpm --filter daemon db:generate`
 Expected: SQL tạo `agent_runs`, `spec_versions`, hai enum, ba cột mới ở `tickets`; không có lệnh `DROP`.
 
-- [ ] **Step 3: Build và test**
+- [x] **Step 3: Build và test**
 
 Run: `pnpm --filter daemon build && pnpm --filter daemon test`
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/daemon/prisma apps/daemon/src/modules/tickets/entities
@@ -87,7 +115,7 @@ git commit -m "Add agent run and spec version schema"
   - `HerdrModule` thêm `exports: [HerdrService]`.
   - `CreateAgentDto` (HTTP) **không** thêm `cwd`/`args`: chỉ code trong daemon được truyền chúng.
 
-- [ ] **Step 1: Viết test hỏng**
+- [x] **Step 1: Viết test hỏng**
 
 ```ts
 it('passes cwd to pane.split and args to agent.start', async () => {
@@ -115,18 +143,18 @@ it('subscribeAgent reports changes but not the start ack', () => {
 });
 ```
 
-- [ ] **Step 2: Chạy test, xác nhận hỏng**
+- [x] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter daemon test -- herdr.service`
 Expected: FAIL (`target_pane_id`/`cwd` không có trong lời gọi, `closeAgent is not a function`)
 
-- [ ] **Step 3: Cài đặt theo Interfaces**
-- [ ] **Step 4: Chạy test, xác nhận pass**
+- [x] **Step 3: Cài đặt theo Interfaces**
+- [x] **Step 4: Chạy test, xác nhận pass**
 
 Run: `pnpm --filter daemon test -- herdr`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/daemon/src/modules/herdr
@@ -164,12 +192,12 @@ git commit -m "Support cwd, args and closing panes in Herdr service"
     Do not run the command before output.md is complete. If it fails, fix the problem and run it again.
     ```
 
-- [ ] **Step 0: Scaffold module `agent-runs`**
+- [x] **Step 0: Scaffold module `agent-runs`**
 
 Run: `python3 apps/daemon/.agents/skills/daemon-create-module/scripts/create_module.py agent-runs --dry-run`, rồi chạy lại không có `--dry-run`.
 Expected: có `apps/daemon/src/modules/agent-runs/agent-runs.module.ts`, module được import vào `app.module.ts`.
 
-- [ ] **Step 1: Viết test hỏng**
+- [x] **Step 1: Viết test hỏng**
 
 ```ts
 const profile = { slug: 'analyst', name: 'Analyst', provider: 'claude', model: 'claude-opus-5-5', effort: 'high', skills: ['brainstorming'], instructions: 'Think hard.' } as const;
@@ -195,14 +223,14 @@ it('includes the hand-edited spec and feedback', () => {
 });
 ```
 
-- [ ] **Step 2: Chạy test, xác nhận hỏng**
+- [x] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter daemon test -- agent-runs/utils`
 Expected: FAIL, module not found
 
-- [ ] **Step 3: Cài đặt hai hàm**
-- [ ] **Step 4: Chạy test, xác nhận pass** — cùng lệnh, Expected: PASS
-- [ ] **Step 5: Commit**
+- [x] **Step 3: Cài đặt hai hàm**
+- [x] **Step 4: Chạy test, xác nhận pass** — cùng lệnh, Expected: PASS
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/daemon/src/modules/agent-runs apps/daemon/src/modules/app.module.ts
@@ -235,7 +263,7 @@ git commit -m "Add provider args and spec prompt builders"
   - `onModuleInit`: subscribe lại mọi run `RUNNING` có `paneId` (daemon restart mất subscription). Herdr lỗi thì chỉ log.
   - HTTP: `POST /api/v1/agent-runs/:id/complete`, header `x-run-token`, 204.
 
-- [ ] **Step 2: Viết test hỏng** (Prisma, HerdrService, AgentProfilesService, BoardGateway là mock; `RUNS_DIR` = `fs.mkdtemp`; repo path = `os.tmpdir()`)
+- [x] **Step 2: Viết test hỏng** (Prisma, HerdrService, AgentProfilesService, BoardGateway là mock; `RUNS_DIR` = `fs.mkdtemp`; repo path = `os.tmpdir()`)
 
 ```ts
 it('creates a pane in the ticket repo with profile args', async () => {
@@ -280,18 +308,18 @@ it('stores a new spec version and moves the ticket to review', async () => {
 });
 ```
 
-- [ ] **Step 3: Chạy test, xác nhận hỏng**
+- [x] **Step 3: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter daemon test -- agent-runs`
 Expected: FAIL
 
-- [ ] **Step 4: Cài đặt service, controller, gateway, env; cập nhật `app.module.spec.ts`** để kiểm tra `AgentRunsModule` export `AgentRunsService` và `BoardGateway`
-- [ ] **Step 5: Chạy toàn bộ test và build**
+- [x] **Step 4: Cài đặt service, controller, gateway, env; cập nhật `app.module.spec.ts`** để kiểm tra `AgentRunsModule` export `AgentRunsService` và `BoardGateway`
+- [x] **Step 5: Chạy toàn bộ test và build**
 
 Run: `pnpm --filter daemon test && pnpm --filter daemon build`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/daemon/src/modules/agent-runs apps/daemon/src/modules/app.module*.ts apps/daemon/src/configuration apps/daemon/.env.example
@@ -331,7 +359,7 @@ git commit -m "Add agent runs with completion callback and board events"
   - `POST /tickets/:id/spec/feedback` body `{ feedback: string (1–20000) }`. Chỉ khi `IN_REVIEW_SPEC`. Chuyển có điều kiện sang `IN_SPEC` như `move`, `specApprovedAt = null`, rồi `startSpec(id, { version, content, feedback })` với spec mới nhất (gồm cả phần sửa tay). Lỗi thì quay về `IN_REVIEW_SPEC`.
   - `POST /tickets/:id/spec/approve` — chỉ khi `IN_REVIEW_SPEC` có spec; đặt `specApprovedAt = now`; ticket không đổi cột.
 
-- [ ] **Step 1: Viết test hỏng**
+- [x] **Step 1: Viết test hỏng**
 
 ```ts
 it('only allows TODO → IN_SPEC in this plan', () => {
@@ -369,18 +397,18 @@ it('locks the repo while an agent runs', async () => { /* agentRun.count → 1; 
 it('locks the project after TODO', async () => { /* status IN_SPEC; update({ projectId: 4 }) → ConflictException */ });
 ```
 
-- [ ] **Step 2: Chạy test, xác nhận hỏng**
+- [x] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter daemon test -- tickets`
 Expected: FAIL
 
-- [ ] **Step 3: Cài đặt utils, service, DTO, controller** (`@ApiOkResponse` schema cho `BoardTicket` mới, theo mẫu hiện có)
-- [ ] **Step 4: Chạy toàn bộ test và build**
+- [x] **Step 3: Cài đặt utils, service, DTO, controller** (`@ApiOkResponse` schema cho `BoardTicket` mới, theo mẫu hiện có)
+- [x] **Step 4: Chạy toàn bộ test và build**
 
 Run: `pnpm --filter daemon test && pnpm --filter daemon build && pnpm --filter daemon check`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/daemon/src/modules/tickets
@@ -407,19 +435,19 @@ git commit -m "Add ticket moves, spec review API and board labels"
   - `BoardCard` thêm prop `onOpen: (ticketId: number) => void` (Task 7 nối dialog), hiện `TmnBadge` theo nhãn (`running` xanh dương, `approved` xanh lá, `needs_you` cam) và `v<n>` khi có `specVersion`.
 - Kéo thả bằng `TmnDnD` theo mẫu `StoreColumn`/`StoreTicketCard`. Khi đang pending thì card hiện loading và không kéo lại được.
 
-- [ ] **Step 1: Cài đặt theo Interfaces, i18n** `ticket.label.running|approved|needs_you`
-- [ ] **Step 2: Chạy bộ verify web**
+- [x] **Step 1: Cài đặt theo Interfaces, i18n** `ticket.label.running|approved|needs_you`
+- [x] **Step 2: Chạy bộ verify web**
 
 Run: `pnpm --filter web audit:codestyle && pnpm --filter web typecheck && pnpm --filter web exec biome check . && pnpm --filter web build`
 Expected: tất cả exit 0
 
-- [ ] **Step 3: Kiểm tra trên trình duyệt (skill `web-browser-testing`)**
+- [~] **Step 3: Kiểm tra trên trình duyệt (skill `web-browser-testing`)** — một phần: board 8 cột, kéo ticket thiếu repo bị báo lỗi và ở lại To Do; chưa kéo với agent thật, chưa thử hai tab
   - Kéo một card To Do sang In Spec: thấy nhãn "đang chạy" và pane mới mở trong Herdr đúng thư mục repo.
   - Kéo card To Do sang cột khác thì không thả được.
   - Ticket chưa có repo: thấy thông báo lỗi, card vẫn ở To Do.
   - Mở hai tab: tab kia tự cập nhật khi card đổi cột.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/src/modules/tickets apps/web/src/i18n
@@ -455,10 +483,10 @@ git commit -m "Enable moving tickets into spec with live board updates"
   - Tab **Agent**: `RunList` (bước, agent, trạng thái, pane ID để mở trong Herdr, lỗi, thời gian).
   - Lỗi 409/400 từ daemon hiện tại chỗ, giữ nguyên dữ liệu đang nhập.
 
-- [ ] **Step 1: Thêm `react-markdown`** (đợi pane khác rảnh `pnpm-lock.yaml`)
-- [ ] **Step 2: Cài đặt component, hooks, i18n**
-- [ ] **Step 3: Chạy bộ verify web như Task 6** — Expected: tất cả exit 0
-- [ ] **Step 4: Kiểm tra end-to-end với agent thật** (skill `web-browser-testing`; tạo trước một file agent Claude trong `~/.the-agents-org/agents/`)
+- [x] **Step 1: Thêm `react-markdown`** (đợi pane khác rảnh `pnpm-lock.yaml`)
+- [x] **Step 2: Cài đặt component, hooks, i18n**
+- [x] **Step 3: Chạy bộ verify web như Task 6** — Expected: tất cả exit 0
+- [ ] **Step 4: Kiểm tra end-to-end với agent thật** — bỏ qua theo yêu cầu chủ dự án, chủ dự án tự test (skill `web-browser-testing`; tạo trước một file agent Claude trong `~/.the-agents-org/agents/`)
   1. Kéo ticket sang In Spec.
   2. Agent viết spec và gọi callback; card tự sang In Review Spec với nhãn `v1`.
   3. Mở dialog, sửa một dòng ở tab Sửa rồi Lưu.
@@ -466,7 +494,7 @@ git commit -m "Enable moving tickets into spec with live board updates"
   5. Approve: card ở yên In Review Spec với nhãn "đã duyệt".
   6. Đổi repo khi agent đang chạy: bị chặn.
   7. Cho agent hỏi lại giữa chừng: card hiện "cần bạn".
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/src/modules/tickets apps/web/src/i18n apps/web/package.json pnpm-lock.yaml

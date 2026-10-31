@@ -52,7 +52,7 @@ const TicketSettingsForm = ({ ticket, profiles }: ITicketSettingsFormProps) => {
     none,
     ...profiles.map(p => ({
       value: p.slug,
-      label: `${p.name} · ${p.provider}${p.model ? ` · ${p.model}` : ''}`
+      label: `${p.name} - ${p.provider}${p.model ? ` - ${p.model}` : ''}`
     }))
   ];
   const missing = AGENT_STEPS.map(step => ticket[step]).filter(
@@ -93,7 +93,7 @@ const TicketSettingsForm = ({ ticket, profiles }: ITicketSettingsFormProps) => {
               onChange={field.onChange}
               options={ticket.projects.map(p => ({
                 value: String(p.id),
-                label: `${p.code} · ${p.name}`
+                label: `${p.code} - ${p.name}`
               }))}
             />
           )}
@@ -112,7 +112,7 @@ const TicketSettingsForm = ({ ticket, profiles }: ITicketSettingsFormProps) => {
               none,
               ...ticket.repos.map(r => ({
                 value: String(r.id),
-                label: `${r.name} · ${r.path}`
+                label: `${r.name} - ${r.path}`
               }))
             ]}
           />

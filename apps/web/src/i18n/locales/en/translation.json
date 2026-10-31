@@ -50,7 +50,7 @@
     "cancel": "Cancel",
     "load_failed": "Could not load workspaces",
     "not_found": "Workspace or project not found",
-    "summary": "{{workspaces}} workspaces · {{projects}} projects",
+    "summary": "{{workspaces}} workspaces - {{projects}} projects",
     "details": "Project details",
     "parent": "Workspace",
     "open": "View details",

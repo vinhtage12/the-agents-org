@@ -10,10 +10,12 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-30-kanban-board-design.md`
 
+**Trạng thái:** ✅ Hoàn thành, merge vào `main` qua PR #1 (`feat/kanban-tickets`).
+
 ### Lộ trình (3 plan, mỗi plan ra phần mềm chạy được)
-1. **Plan này:** dữ liệu, kho agent, Sync Jira, Ticket Store, cài đặt project, board chỉ đọc.
-2. **Kanban 02 — Agent run + bước Spec:** mở rộng Herdr (cwd, args, env, dừng pane), bảng `AgentRun` và callback hoàn thành, kéo To Do → In Spec, dialog card (review spec, sửa, feedback, approve, đổi agent/repo/project, phần thêm rules/skills), realtime board.
-3. **Kanban 03 — Dev ↔ Testing + Canceled:** chạy song song Dev và Testing, test case, vòng sửa có giới hạn 2, In Review, Done, dừng agent khi Canceled, cảnh báo trùng repo.
+1. ✅ **Plan này:** dữ liệu, kho agent, Sync Jira, Ticket Store, cài đặt project, board chỉ đọc.
+2. ✅ **Kanban 02 — Agent run + bước Spec** (`2026-10-31-kanban-02-agent-run-spec.md`, PR #2; còn chờ e2e với agent thật): mở rộng Herdr (cwd, args, env, dừng pane), bảng `AgentRun` và callback hoàn thành, kéo To Do → In Spec, dialog card (review spec, sửa, feedback, approve, đổi agent/repo/project, phần thêm rules/skills), realtime board.
+3. ⏭️ **Kanban 03 — Dev ↔ Testing + Canceled** (chưa viết): chạy song song Dev và Testing, test case, vòng sửa có giới hạn 2, In Review, Done, dừng agent khi Canceled, cảnh báo trùng repo.
 
 Plan 02 và 03 được viết sau khi plan này xong, dựa trên code thật.
 
@@ -52,18 +54,18 @@ Plan 02 và 03 được viết sau khi plan này xong, dựa trên code thật.
   - `Ticket { id Int, jiraKey String @unique @db.VarChar(64), summary String @db.VarChar(1024), description String @db.Text (plain text), issueType String @db.VarChar(64), jiraStatus String @db.VarChar(128), jiraUrl String @db.VarChar(1024), status TicketStatus @default(TODO), projectId Int?, repoId Int?, specAgent String?, devAgent String?, testAgent String?, linkedAt DateTime?, createdAt DateTime @default(now()), updatedAt DateTime @updatedAt }`, map `tickets`, index `projectId`. `projectId` → Project `onDelete: Restrict`; `repoId` → ProjectRepo `onDelete: SetNull`.
   - Cột DB snake_case qua `@map`, theo mẫu `workspace_id` hiện có.
 
-- [ ] **Step 1: Sửa `schema.prisma` theo Interfaces**
-- [ ] **Step 2: Sinh migration và client**
+- [x] **Step 1: Sửa `schema.prisma` theo Interfaces**
+- [x] **Step 2: Sinh migration và client**
 
 Run: `cd apps/daemon && pnpm db:migrate:dev --name tickets_foundation`
 Expected: migration mới tạo bảng `project_repos`, `tickets`, enum `TicketStatus`; `prisma generate` chạy xong không lỗi.
 
-- [ ] **Step 3: Chạy test hiện có để chắc không vỡ**
+- [x] **Step 3: Chạy test hiện có để chắc không vỡ**
 
 Run: `pnpm --filter daemon test`
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/daemon/prisma
@@ -105,7 +107,7 @@ Phần thân: mô tả hành vi, cách tư duy, rules (markdown tự do).
   - HTTP: `GET /api/v1/agent-profiles` → `AgentProfileList`.
   - Thư mục: `AGENTS_DIR` hoặc `path.join(os.homedir(), '.the-agents-org', 'agents')`; thư mục chưa tồn tại → `{ profiles: [], errors: [] }`.
 
-- [ ] **Step 1: Viết test hỏng**
+- [x] **Step 1: Viết test hỏng**
 
 ```ts
 describe('parseAgentProfile', () => {
@@ -140,21 +142,21 @@ describe('AgentProfilesService', () => {
 });
 ```
 
-- [ ] **Step 2: Chạy test, xác nhận hỏng**
+- [x] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter daemon test -- agent-profiles`
 Expected: FAIL, "Cannot find module './agent-profiles.service'"
 
-- [ ] **Step 3: Cài đặt service, controller, env, đăng ký vào `AppModule`**
+- [x] **Step 3: Cài đặt service, controller, env, đăng ký vào `AppModule`**
 
 Dùng `fs/promises.readdir/readFile`; `ENOENT` của thư mục → danh sách rỗng.
 
-- [ ] **Step 4: Chạy test, xác nhận pass**
+- [x] **Step 4: Chạy test, xác nhận pass**
 
 Run: `pnpm --filter daemon test -- agent-profiles`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/daemon/src/agent-profiles apps/daemon/src/configuration apps/daemon/src/app.module.ts apps/daemon/.env.example
@@ -181,7 +183,7 @@ git commit -m "Add file-based agent profiles"
   - Hàm export `assertRepoPath(path: string): Promise<void>` — path phải tuyệt đối và là thư mục tồn tại (`fs.stat().isDirectory()`), không thì `BadRequestException('Repo path must be an absolute existing directory')`.
 - `defaultRepoId` phải thuộc chính project đó, không thì 400. Trùng `name` trong project → 409 (P2002).
 
-- [ ] **Step 1: Viết test hỏng** (mock Prisma theo mẫu `workspaces.controller.spec.ts`)
+- [x] **Step 1: Viết test hỏng** (mock Prisma theo mẫu `workspaces.controller.spec.ts`)
 
 ```ts
 it('rejects relative or missing repo paths', async () => {
@@ -205,18 +207,18 @@ it('rejects unknown agent slugs', async () => {
 });
 ```
 
-- [ ] **Step 2: Chạy test, xác nhận hỏng**
+- [x] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter daemon test -- project-settings`
 Expected: FAIL, module not found
 
-- [ ] **Step 3: Cài đặt controller và DTO (class-validator theo mẫu `workspaces.controller.ts`), đăng ký vào `AppModule`**
-- [ ] **Step 4: Chạy test, xác nhận pass**
+- [x] **Step 3: Cài đặt controller và DTO (class-validator theo mẫu `workspaces.controller.ts`), đăng ký vào `AppModule`**
+- [x] **Step 4: Chạy test, xác nhận pass**
 
 Run: `pnpm --filter daemon test -- project-settings`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/daemon/src/project-settings.controller*.ts apps/daemon/src/app.module.ts
@@ -249,7 +251,7 @@ git commit -m "Add project repos and default agents API"
 3. Ticket trong DB có `status ∉ {DONE, CANCELED}` mà không có trong `issues`: tra lại `search('key in (K1,K2,…)')` theo lô 50 key. Nếu `assigneeAccountId !== me.accountId` → `status CANCELED`. Nếu vẫn là mình (bị đóng trên Jira) → chỉ cập nhật nội dung. Key không còn trên Jira (bị xoá) → CANCELED.
 4. Ticket `CANCELED` có trong `issues` (assign lại cho mình) → `TODO` (giữ `projectId`, agent, repo), tính vào `reopened`.
 
-- [ ] **Step 1: Viết test hỏng**
+- [x] **Step 1: Viết test hỏng**
 
 ```ts
 // adf.spec.ts
@@ -271,18 +273,18 @@ it('reopens canceled tickets assigned back to TODO', async () => { /* DB CANCELE
 it('throws 503 when Jira is not configured', async () => { /* isConfigured false → ServiceUnavailableException */ });
 ```
 
-- [ ] **Step 2: Chạy test, xác nhận hỏng**
+- [x] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter daemon test -- jira`
 Expected: FAIL, module not found
 
-- [ ] **Step 3: Cài đặt `adf.ts`, `jira.client.ts`, `jira-sync.service.ts`, env, provider trong `AppModule`**
-- [ ] **Step 4: Chạy test, xác nhận pass**
+- [x] **Step 3: Cài đặt `adf.ts`, `jira.client.ts`, `jira-sync.service.ts`, env, provider trong `AppModule`**
+- [x] **Step 4: Chạy test, xác nhận pass**
 
 Run: `pnpm --filter daemon test -- jira`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/daemon/src/jira apps/daemon/src/configuration apps/daemon/src/app.module.ts apps/daemon/.env.example
@@ -307,7 +309,7 @@ git commit -m "Add Jira client and ticket sync"
   - `POST /api/v1/tickets/link` body `LinkTicketsDto { links: { ticketId: number; projectId: number }[] }` (1–200 phần tử) → `{ linked: number }`. Trong một `$transaction`: mỗi ticket phải đang `projectId = null`, không thì `ConflictException('Ticket <key> is already linked')` và rollback toàn bộ. Set `projectId`, `status TODO`, `linkedAt now`, `repoId = project.defaultRepoId`, `specAgent/devAgent/testAgent = project.*`.
   - `GET /api/v1/projects/:projectId/tickets` → `BoardTicket[]` với `BoardTicket = { id; jiraKey; summary; status: TicketStatus; jiraUrl }`, sắp theo `linkedAt` tăng dần.
 
-- [ ] **Step 1: Viết test hỏng**
+- [x] **Step 1: Viết test hỏng**
 
 ```ts
 it('suggests by key prefix, case-insensitive', () => {
@@ -331,18 +333,18 @@ it('store excludes linked and canceled tickets', async () => {
 });
 ```
 
-- [ ] **Step 2: Chạy test, xác nhận hỏng**
+- [x] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter daemon test -- tickets`
 Expected: FAIL, module not found
 
-- [ ] **Step 3: Cài đặt service, controller, DTO; đăng ký vào `AppModule`**
-- [ ] **Step 4: Chạy toàn bộ test daemon**
+- [x] **Step 3: Cài đặt service, controller, DTO; đăng ký vào `AppModule`**
+- [x] **Step 4: Chạy toàn bộ test daemon**
 
 Run: `pnpm --filter daemon test`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/daemon/src/tickets apps/daemon/src/app.module.ts
@@ -362,14 +364,14 @@ git commit -m "Add ticket store, link and board API"
 - Produces: `ProjectSettings` (props `IProjectSettingsProps { workspaceId: number; projectId: number }`); hooks `useProjectSettings(workspaceId, projectId)`, `useAgentProfiles()`, `useProjectSettingsMutation()` (invalidate key settings sau thành công).
 - UI: danh sách repo (tên, đường dẫn, đánh dấu mặc định, sửa, xoá qua `UIUtils.alert`), form thêm repo, ba `TmnSelect` cho agent Spec/Dev/Testing lấy từ `useAgentProfiles`, select repo mặc định. `errors` của `useAgentProfiles` hiện bằng `TmnCallout` để người dùng biết file agent nào hỏng.
 
-- [ ] **Step 1: Cài đặt module theo Interfaces và rules web**
-- [ ] **Step 2: Chạy bộ verify web**
+- [x] **Step 1: Cài đặt module theo Interfaces và rules web**
+- [x] **Step 2: Chạy bộ verify web**
 
 Run: `pnpm --filter web audit:codestyle && pnpm --filter web typecheck && pnpm --filter web exec biome check . && pnpm --filter web build`
 Expected: tất cả exit 0
 
-- [ ] **Step 3: Kiểm tra tay** — thêm 2 repo (`ff-web`, `ff-web-2`), repo đầu tự thành mặc định; nhập đường dẫn sai thấy lỗi tại field; chọn ba agent, tải lại trang vẫn giữ.
-- [ ] **Step 4: Commit**
+- [x] **Step 3: Kiểm tra tay** — thêm 2 repo (`ff-web`, `ff-web-2`), repo đầu tự thành mặc định; nhập đường dẫn sai thấy lỗi tại field; chọn ba agent, tải lại trang vẫn giữ.
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/src/modules/projects apps/web/src/modules/workspaces/WorkspacePage.tsx apps/web/src/i18n
@@ -393,13 +395,13 @@ git commit -m "Add project settings for repos and default agents"
   - `toLinks(placement: Record<number, number | null>): ILinkTicket[]` — bỏ ticket còn `null`.
 - UI (mockup A đã chọn): cột "Chưa xác định" + một cột mỗi project, ticket xếp theo gợi ý, kéo bằng `TmnDnD` (theo mẫu `WorkspaceTree`/`ProjectRow`). Nút **Sync** (pending khi đang chạy, `UIUtils.notify` báo created/updated/canceled/reopened; 503 → thông báo "Chưa cấu hình Jira"). Nút **Lưu (n)** với n = số ticket đã có project; sau khi lưu thì invalidate store. Card: key, summary, nhãn "gợi ý" nếu chưa bị kéo. Trống → empty state.
 
-- [ ] **Step 1: Cài đặt module, route, menu, i18n**
-- [ ] **Step 2: Chạy `pnpm --filter web generate-routes` rồi bộ verify web như Task 6**
+- [x] **Step 1: Cài đặt module, route, menu, i18n**
+- [x] **Step 2: Chạy `pnpm --filter web generate-routes` rồi bộ verify web như Task 6**
 
 Expected: tất cả exit 0, `routeTree.gen.ts` có `/_app/tickets`.
 
-- [ ] **Step 3: Kiểm tra tay** với Jira thật — Sync, thấy ticket `FMS-…` nằm ở cột project `FMS`, ticket lạ ở "Chưa xác định"; kéo một ticket sang project khác; Lưu; ticket biến khỏi store.
-- [ ] **Step 4: Commit**
+- [x] **Step 3: Kiểm tra tay** với Jira thật — Sync, thấy ticket `FMS-…` nằm ở cột project `FMS`, ticket lạ ở "Chưa xác định"; kéo một ticket sang project khác; Lưu; ticket biến khỏi store.
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/src/modules/tickets apps/web/src/routes apps/web/src/routeTree.gen.ts apps/web/src/constants apps/web/src/i18n
@@ -419,13 +421,13 @@ git commit -m "Add Ticket Store page"
 - Produces: `ProjectBoard` (props `IProjectBoardProps { projectId: number }`), `useProjectTickets(projectId)`. Plan 02 sẽ bật kéo thả và dialog trên các component này.
 - UI (mockup A, card gọn): 8 cột theo thứ tự `TICKET_STATUSES`, tiêu đề cột kèm số lượng, card hiện `jiraKey` + `summary` (truncate), cuộn ngang khi hẹp. Chưa có kéo thả hay dialog trong plan này.
 
-- [ ] **Step 1: Cài đặt component, hook, i18n tên 8 cột**
-- [ ] **Step 2: Chạy bộ verify web như Task 6**
+- [x] **Step 1: Cài đặt component, hook, i18n tên 8 cột**
+- [x] **Step 2: Chạy bộ verify web như Task 6**
 
 Expected: tất cả exit 0
 
-- [ ] **Step 3: Kiểm tra tay** — mở project đã link ticket ở Task 7, thấy ticket ở cột To Do; kiểm tra light/dark và màn hẹp.
-- [ ] **Step 4: Commit**
+- [x] **Step 3: Kiểm tra tay** — mở project đã link ticket ở Task 7, thấy ticket ở cột To Do; kiểm tra light/dark và màn hẹp.
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/src/modules/tickets apps/web/src/modules/workspaces/WorkspacePage.tsx apps/web/src/i18n

@@ -74,7 +74,7 @@ const ProjectPage = () => {
       <TmnFlex direction="column" gap={4}>
         <TmnText size="6" weight="bold" asChild>
           <h1>
-            {project.name} · {trans('project.settings')}
+            {project.name} - {trans('project.settings')}
           </h1>
         </TmnText>
         <ProjectSettings workspaceId={workspace.id} projectId={project.id} />

@@ -1,6 +1,6 @@
 # Kanban board cho project (luồng Jira → agent)
 
-Ngày: 2026-10-30 · Trạng thái: bản nháp, chờ chủ dự án duyệt
+Ngày: 2026-10-30 - Trạng thái: bản nháp, chờ chủ dự án duyệt
 
 ## 1. Mục đích
 

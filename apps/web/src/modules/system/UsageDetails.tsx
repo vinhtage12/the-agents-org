@@ -37,7 +37,7 @@ const UsageDetails = ({ item, error = false }: IUsageDetailsProps) => {
         item.windows.map(w => (
           <TmnBox key={w.label}>
             <MetricChart
-              title={`${w.label} · ${w.usedPercent}%`}
+              title={`${w.label} - ${w.usedPercent}%`}
               labels={[trans('machine.used'), trans('machine.remaining')]}
               values={[w.usedPercent, 100 - w.usedPercent]}
             />

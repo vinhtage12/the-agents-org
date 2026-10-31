@@ -50,7 +50,7 @@
     "cancel": "Hủy",
     "load_failed": "Không tải được workspace",
     "not_found": "Không tìm thấy workspace hoặc project",
-    "summary": "{{workspaces}} workspace · {{projects}} project",
+    "summary": "{{workspaces}} workspace - {{projects}} project",
     "details": "Thông tin project",
     "parent": "Workspace",
     "open": "Xem chi tiết",

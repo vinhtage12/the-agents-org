@@ -102,7 +102,7 @@ const WorkspacePage = () => {
           : data?.map(w => (
               <TmnCard key={w.id} header={{ title: w.name }}>
                 <TmnText as="p" className="text-sm text-muted-foreground">
-                  {w.code} ·{' '}
+                  {w.code} -{' '}
                   {trans('workspace.project_count', {
                     count: w.projects.length
                   })}

@@ -57,7 +57,7 @@ const DefaultsForm = ({
     none,
     ...profiles.map(p => ({
       value: p.slug,
-      label: `${p.name} · ${p.provider}${p.model ? ` · ${p.model}` : ''}`
+      label: `${p.name} - ${p.provider}${p.model ? ` - ${p.model}` : ''}`
     }))
   ];
   const repoOptions = [
