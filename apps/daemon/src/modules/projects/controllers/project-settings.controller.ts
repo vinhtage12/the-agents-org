@@ -1,6 +1,3 @@
-import { stat } from 'node:fs/promises';
-import { isAbsolute } from 'node:path';
-
 import {
   BadRequestException,
   Body,
@@ -29,19 +26,9 @@ import { CreateRepoDto } from '../dtos/create-repo.dto';
 import { UpdateProjectSettingsDto } from '../dtos/update-project-settings.dto';
 import { UpdateRepoDto } from '../dtos/update-repo.dto';
 import { ProjectRepoEntity } from '../entities/project-repo.entity';
+import { assertRepoPath } from '../utils/repo-path';
 
-export async function assertRepoPath(path: string): Promise<void> {
-  if (isAbsolute(path)) {
-    try {
-      if ((await stat(path)).isDirectory()) return;
-    } catch {
-      /* Invalid path. */
-    }
-  }
-  throw new BadRequestException(
-    'Repo path must be an absolute existing directory'
-  );
-}
+export { assertRepoPath } from '../utils/repo-path';
 @Controller('workspaces/:id/projects/:projectId')
 @ApiTags('projects')
 @ApiExtraModels(ProjectRepoEntity)
