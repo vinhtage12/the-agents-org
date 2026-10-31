@@ -49,6 +49,10 @@ for (const file of files) {
     true
   );
   const components = [];
+  // Route files (.ts or .tsx) export `Route` with inline JSX; they follow TanStack naming, not component naming.
+  const isRoute = path
+    .relative(appRoot, file)
+    .startsWith(path.join('src', 'routes') + path.sep);
 
   if (path.basename(file) === 'index.tsx') {
     report(
@@ -94,6 +98,7 @@ for (const file of files) {
     }
 
     if (
+      !isRoute &&
       ts.isVariableDeclaration(node) &&
       ts.isIdentifier(node.name) &&
       /^[A-Z]/.test(node.name.text) &&

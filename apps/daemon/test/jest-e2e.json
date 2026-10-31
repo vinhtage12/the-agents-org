@@ -7,6 +7,16 @@
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "moduleNameMapper": {
-    "^(\\.{1,2}/.*)\\.js$": "$1"
-  }
+    "^(\\.{1,2}/.*)\\.js$": "$1",
+    "^\\#/(.*)$": "<rootDir>/../src/$1",
+    "^\\#configuration/(.*)$": "<rootDir>/../src/configuration/$1",
+    "^\\#constants/(.*)$": "<rootDir>/../src/common/constants/$1",
+    "^\\#common/(.*)$": "<rootDir>/../src/common/$1",
+    "^\\#interceptors/(.*)$": "<rootDir>/../src/common/interceptors/$1",
+    "^\\#filters/(.*)$": "<rootDir>/../src/common/filters/$1",
+    "^\\#guards/(.*)$": "<rootDir>/../src/common/guards/$1",
+    "^\\#modules/(.*)$": "<rootDir>/../src/modules/$1",
+    "^\\#database/(.*)$": "<rootDir>/../src/database/$1"
+  },
+  "watchman": false
 }

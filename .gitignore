@@ -8,3 +8,5 @@ dist
 .remember
 .codegraph
 .superpowers/
+
+__pycache__/

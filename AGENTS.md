@@ -1,25 +1,69 @@
 # Repository Guidelines
 
-## Project Structure
+The Agents Org: a local control plane for coding agents. A NestJS daemon talks to Herdr (terminal multiplexer
+for agents), Jira and PostgreSQL; a React web app is its dashboard.
 
-This pnpm workspace keeps applications under `apps/`: `web/` is the React, Vite, and TanStack Router frontend; `daemon/` is the NestJS API with Prisma schema and migrations in `apps/daemon/prisma/`; and `infrastructure/` contains local service configuration and a Makefile. Frontend routes live in `apps/web/src/routes/`, shared UI in `components/`, and feature code in `modules/`. Tests currently live beside daemon source as `*.spec.ts`, with end-to-end tests in `apps/daemon/test/`.
+## Project structure
 
-## Build, Test, and Development
+pnpm workspace (`pnpm-workspace.yaml`: `apps/*`, `packages/*`):
 
-Run `pnpm install` from the repository root. `pnpm dev` starts workspace development servers; use `pnpm --filter web dev` or `pnpm --filter daemon dev` to start one app. Build with `pnpm --filter web build` or `pnpm --filter daemon build`. Run daemon tests with `pnpm --filter daemon test` and end-to-end tests with `pnpm --filter daemon test:e2e`. `pnpm check` runs workspace checks. Root `pnpm test` is a placeholder and currently exits with an error. The web app has no test script yet.
+| Path | What | Guide |
+|---|---|---|
+| `apps/daemon/` | NestJS 11 API, Prisma 7 + PostgreSQL, Socket.IO gateway, Jest. `src/modules/<domain>/`, `src/common/`, `src/configuration/`, `src/database/` | [apps/daemon/AGENTS.md](apps/daemon/AGENTS.md) |
+| `apps/web/` | React 19 + Vite SPA, TanStack Router/Query, `@truyenmoinhu/*` UI kit, i18n `vi`/`en` | [apps/web/AGENTS.md](apps/web/AGENTS.md) |
+| `apps/infrastructure/` | Docker Compose services (postgres) driven by `make` + `compose.py`; not a pnpm package | [apps/infrastructure/AGENTS.md](apps/infrastructure/AGENTS.md) |
+| `docs/` | Specs and plans (`docs/superpowers/`) | — |
 
-## Style and Organization
+Runtime: web (Vite :3000) proxies `/api` → daemon (`127.0.0.1:3005`, prefix `api/v1`) → postgres (`127.0.0.1:5432`).
 
-Use TypeScript and follow the Biome configuration in the root and app directories. `pnpm format` formats workspace files; `pnpm lint` runs configured lint commands, which may apply fixes. For frontend features, follow `apps/web/src/modules/README.md`: keep modules under `src/modules/<name>/`, expose them through `index.ts`, and respect the documented one-way dependency layers. Add routes as files in `src/routes/`; do not hand-edit generated `routeTree.gen.ts`.
+**Before editing inside an app, read that app's `AGENTS.md` and the rules it links** (each app keeps its rules in
+`apps/<app>/.agents/rules/`). App rules apply only to that app.
 
-## Tests and Configuration
+## Skills
 
-Name daemon unit tests `*.spec.ts` and e2e tests `*.e2e-spec.ts`. Add or update tests when changing daemon behavior. Copy `.env.example` to a local environment file and configure database/API settings as needed; never commit secrets. Prisma changes belong in the schema and a migration.
+Skill sources live next to the code they serve (`apps/<app>/.agents/skills/`); `.agents/skills/` and
+`.claude/skills/` at the root are symlinks so every agent finds them from the repo root.
 
-## Commits and Pull Requests
+| Skill | Use for |
+|---|---|
+| `daemon-create-module` | **Required** for any new daemon module |
+| `daemon-testing` | Writing and running daemon unit/e2e tests |
+| `web-create-module` | **Required** for any new web feature module |
+| `web-create-component` | Standard web component |
+| `web-browser-testing` | Verifying web UI changes in a browser |
+| `infra-create-service` | **Required** for any new infrastructure service |
+| `infra-run-tests` | Testing infrastructure changes |
+| `repo-quality-checks` | Format, lint and type-check before finishing |
 
-Recent history uses short imperative summaries (for example, `Setup web`). Lefthook prefixes commit subjects with the branch name, such as `feat/abc` becoming `feat(abc): ...`. Keep pull requests focused, describe behavior and validation commands, link related issues, and include screenshots for visible frontend changes.
+Migrations: follow [apps/daemon/.agents/rules/daemon-migrations.md](apps/daemon/.agents/rules/daemon-migrations.md).
+To add a skill: create it under the owning app, then symlink it into both root directories
+(`ln -s ../../apps/<app>/.agents/skills/<name> .agents/skills/<name>` and the same for `.claude/skills/`).
 
-## Scoped Agent Rules
+## Build, test and development
 
-Before editing `apps/web`, read the applicable files in `.agent/rules/`: [architecture](.agent/rules/web-architecture.md), [TypeScript](.agent/rules/web-typescript.md), [UI/forms/i18n](.agent/rules/web-ui-forms.md), and [queries/mutations](.agent/rules/web-data.md). These rules apply to package `web` only; do not apply them to daemon, infrastructure or external packages. See each file's scope and exclusions.
+```bash
+pnpm install                       # also runs prisma generate for daemon
+pnpm dev                           # all dev servers; or pnpm --filter web|daemon dev
+pnpm --filter web build            # / pnpm --filter daemon build
+pnpm --filter daemon test          # unit; test:e2e for e2e
+python3 .agents/skills/repo-quality-checks/scripts/check.py   # format + lint + typecheck, check only
+```
+
+Root `pnpm test` is a placeholder that exits with an error. `pnpm format` / `pnpm lint` write fixes across apps.
+
+## Style
+
+TypeScript everywhere, formatted and linted by Biome (root `biome.json` + per-app configs extending
+`@truyenmoinhu/biome-config`). Python 3 stdlib only for skill scripts. Never commit secrets: copy
+`.env.example` to `.env.<environment>` (git-ignored).
+
+## Commits and pull requests
+
+Short imperative summaries. Lefthook runs `pnpm format` and `pnpm lint` on pre-commit and prefixes commit
+subjects with the branch (`feat/abc` → `feat(abc): ...`). Keep PRs focused, describe behavior and validation
+commands, link issues, and include screenshots for visible frontend changes.
+
+## Working alongside other agents
+
+Several agents may work in this repo at once (Herdr panes). Stay inside the app you were assigned; before editing
+shared files (root configs, this file, `pnpm-lock.yaml`), wait until other panes touching them are idle.

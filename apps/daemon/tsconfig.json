@@ -17,13 +17,13 @@
     "paths": {
       "#/*": ["src/*"],
       "#configuration/*": ["src/configuration/*"],
-      "#features/*": ["src/features/*"],
       "#constants/*": ["src/common/constants/*"],
       "#common/*": ["src/common/*"],
       "#interceptors/*": ["src/common/interceptors/*"],
-      "#filters/*": ["src/filters/*"],
+      "#filters/*": ["src/common/filters/*"],
       "#guards/*": ["src/common/guards/*"],
-      "#security/*": ["src/security/*"]
+      "#modules/*": ["src/modules/*"],
+      "#database/*": ["src/database/*"]
     },
     "incremental": true,
     "skipLibCheck": true,

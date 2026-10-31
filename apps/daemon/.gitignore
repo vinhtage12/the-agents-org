@@ -20,3 +20,6 @@ node_modules/
 
 # prisma client
 src/generated/
+
+# Python skill script caches
+__pycache__/

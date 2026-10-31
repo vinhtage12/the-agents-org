@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 
-import { PrismaService } from '../src/prisma/prisma.service';
-import { WorkspacesController } from '../src/workspaces.controller';
+import { PrismaService } from '../src/database/prisma.service';
+import { WorkspacesController } from '../src/modules/workspaces/controllers/workspaces.controller';
 
 const databaseSuite = process.env.TEST_DATABASE_URL ? describe : describe.skip;
 databaseSuite('Workspace API with PostgreSQL', () => {

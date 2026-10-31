@@ -1,6 +1,6 @@
 # Modules
 
-See the scoped rules in [web architecture](../../../../.agent/rules/web-architecture.md).
+See the scoped rules in [web architecture](../../.agents/rules/web-architecture.md).
 
 One folder per feature under `src/modules/<name>/`. Every component has its own PascalCase `.tsx` file. There are no `index.tsx` files; `index.ts` is exclusively a portal that re-exports the module's components, hooks, types, constants and helpers.
 
