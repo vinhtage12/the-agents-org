@@ -25,6 +25,60 @@ model Project {
   code        String    @unique @db.VarChar(32)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
 
+  defaultRepoId Int? @map("default_repo_id")
+  defaultRepo ProjectRepo? @relation("DefaultRepo", fields: [defaultRepoId], references: [id], onDelete: SetNull)
+  specAgent String? @map("spec_agent") @db.VarChar(128)
+  devAgent String? @map("dev_agent") @db.VarChar(128)
+  testAgent String? @map("test_agent") @db.VarChar(128)
+  repos ProjectRepo[] @relation("ProjectRepos")
+  tickets Ticket[]
+
   @@index([workspaceId])
   @@map("projects")
+}
+
+enum TicketStatus {
+  TODO
+  IN_SPEC
+  IN_REVIEW_SPEC
+  IN_PROGRESS
+  IN_TESTING
+  IN_REVIEW
+  DONE
+  CANCELED
+}
+
+model ProjectRepo {
+  id Int @id @default(autoincrement())
+  projectId Int @map("project_id")
+  name String @db.VarChar(64)
+  path String @db.VarChar(1024)
+  project Project @relation("ProjectRepos", fields: [projectId], references: [id], onDelete: Cascade)
+  defaultFor Project[] @relation("DefaultRepo")
+  tickets Ticket[]
+  @@unique([projectId, name])
+  @@map("project_repos")
+}
+
+model Ticket {
+  id Int @id @default(autoincrement())
+  jiraKey String @unique @map("jira_key") @db.VarChar(64)
+  summary String @db.VarChar(1024)
+  description String @db.Text
+  issueType String @map("issue_type") @db.VarChar(64)
+  jiraStatus String @map("jira_status") @db.VarChar(128)
+  jiraUrl String @map("jira_url") @db.VarChar(1024)
+  status TicketStatus @default(TODO)
+  projectId Int? @map("project_id")
+  repoId Int? @map("repo_id")
+  specAgent String? @map("spec_agent") @db.VarChar(128)
+  devAgent String? @map("dev_agent") @db.VarChar(128)
+  testAgent String? @map("test_agent") @db.VarChar(128)
+  linkedAt DateTime? @map("linked_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  repo ProjectRepo? @relation(fields: [repoId], references: [id], onDelete: SetNull)
+  @@index([projectId])
+  @@map("tickets")
 }

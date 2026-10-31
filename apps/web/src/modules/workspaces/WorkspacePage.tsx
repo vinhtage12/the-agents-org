@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useLocation } from '@tanstack/react-router';
-import { Plus } from 'lucide-react';
+import { Plus, Settings } from 'lucide-react';
 
 import {
   TmnBox,
@@ -12,6 +12,8 @@ import {
 } from '@truyenmoinhu/uikit';
 
 import { trans } from '#i18n';
+import { ProjectSettings } from '#modules/projects';
+import { ProjectBoard } from '#modules/tickets';
 
 import EntityActions from './EntityActions';
 import EntityForm from './EntityForm';
@@ -65,6 +67,18 @@ const WorkspacePage = () => {
       />
     );
   }
+  if (workspace && project && parts.length === 5 && parts[4] === 'settings') {
+    return (
+      <TmnFlex direction="column" gap={4}>
+        <TmnText size="6" weight="bold" asChild>
+          <h1>
+            {project.name} · {trans('project.settings')}
+          </h1>
+        </TmnText>
+        <ProjectSettings workspaceId={workspace.id} projectId={project.id} />
+      </TmnFlex>
+    );
+  }
   if (
     !overview &&
     (!workspace ||
@@ -113,28 +127,22 @@ const WorkspacePage = () => {
               )}
             </WorkspaceLink>
           )}
+          {workspace && project && (
+            <WorkspaceLink
+              path={`${workspace.id}/projects/${project.id}/settings`}
+              button
+            >
+              <Settings size={14} />
+              {trans('project.settings')}
+            </WorkspaceLink>
+          )}
           {workspace && (
             <EntityActions workspace={workspace} project={project} />
           )}
         </TmnFlex>
       </TmnFlex>
       {project && workspace ? (
-        <TmnCard header={{ title: trans('workspace.details') }}>
-          <TmnFlex direction="column" gap={3}>
-            <TmnText>
-              {trans('workspace.name')}: {project.name}
-            </TmnText>
-            <TmnText>
-              {trans('workspace.code')}: {project.code}
-            </TmnText>
-            <TmnText>
-              {trans('workspace.parent')}:{' '}
-              <WorkspaceLink path={String(workspace.id)}>
-                {workspace.name}
-              </WorkspaceLink>
-            </TmnText>
-          </TmnFlex>
-        </TmnCard>
+        <ProjectBoard projectId={project.id} />
       ) : (
         <TmnBox className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {workspace
