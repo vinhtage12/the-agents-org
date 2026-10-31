@@ -225,6 +225,7 @@
     "fix_round": "Fix round {{round}} / {{max}}",
     "fix_rounds_exhausted": "Used all {{max}} fix rounds",
     "fix_rounds_exhausted_hint": "Send feedback to the dev agent below, or drag the card to In Review yourself.",
+    "idle_hint": "No agent is running. Send feedback to let Dev continue.",
     "tests_empty": "No test cases yet.",
     "test_passed": "passed",
     "test_failed": "failed",

@@ -114,6 +114,8 @@ export class AgentRunsService implements OnModuleInit {
       include: { repo: true }
     });
     if (!ticket) throw new NotFoundException('Ticket not found');
+    if (ticket.status === 'DONE' || ticket.status === 'CANCELED')
+      throw new ConflictException('Ticket is closed');
     if (!ticket.repo) throw new BadRequestException('Ticket has no repo');
     const slot = {
       SPEC: 'specAgent',
@@ -135,16 +137,30 @@ export class AgentRunsService implements OnModuleInit {
         `${step[0]}${step.slice(1).toLowerCase()} agent is already running`
       );
 
-    const run = await this.prisma.agentRun.create({
-      data: {
-        ticketId,
-        step,
-        agentSlug: profile.slug,
-        token: randomBytes(24).toString('hex'),
-        feedback: options?.feedback,
-        testMode: options?.testMode
-      }
-    });
+    let run: AgentRunEntity;
+    try {
+      run = await this.prisma.agentRun.create({
+        data: {
+          ticketId,
+          step,
+          agentSlug: profile.slug,
+          token: randomBytes(24).toString('hex'),
+          feedback: options?.feedback,
+          testMode: options?.testMode
+        }
+      });
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2002'
+      )
+        throw new ConflictException(
+          `${step[0]}${step.slice(1).toLowerCase()} agent is already running`
+        );
+      throw error;
+    }
     const dir = join(this.runsDir, String(run.id));
     let paneId: string | undefined;
     try {
@@ -191,13 +207,26 @@ export class AgentRunsService implements OnModuleInit {
       });
       throw error;
     }
-    const started = await this.prisma.agentRun.update({
-      where: { id: run.id },
+    const updated = await this.prisma.agentRun.updateMany({
+      where: { id: run.id, status: 'RUNNING' },
       data: { paneId }
     });
+    if (updated.count === 0) {
+      try {
+        await this.herdr.closeAgent(paneId);
+      } catch (error) {
+        this.logger.warn(`Could not close pane ${paneId}: ${String(error)}`);
+      }
+      throw new ConflictException('Agent run was stopped while starting');
+    }
+    const started = await this.prisma.agentRun.findUnique({
+      where: { id: run.id }
+    });
+    if (!started) throw new NotFoundException('Agent run not found');
     const { projectId } = ticket;
     if (projectId !== null) {
       this.watch(run.id, paneId, projectId);
+      this.board.emitChanged(projectId);
       // The board label changes when the grace ends even if Herdr sends no event.
       setTimeout(
         () => this.board.emitChanged(projectId),
