@@ -1,3 +1,4 @@
+import { AgentRunsModule } from './agent-runs/agent-runs.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
@@ -16,6 +17,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
   imports: [
+    AgentRunsModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env.development',
