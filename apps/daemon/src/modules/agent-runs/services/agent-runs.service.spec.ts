@@ -87,6 +87,12 @@ describe('AgentRunsService', () => {
     });
     prisma.agentRun.count.mockResolvedValue(0);
     prisma.agentRun.findFirst.mockResolvedValue(null);
+    prisma.agentRun.updateMany.mockResolvedValue({ count: 1 });
+    prisma.agentRun.findUnique.mockImplementation(async ({ where }) => ({
+      id: where.id,
+      paneId: 'w1:p9',
+      status: 'RUNNING'
+    }));
     prisma.agentRun.create.mockResolvedValue({ id: 1, token: 'tok' });
     prisma.agentRun.update.mockImplementation(async ({ data }) => ({
       id: 1,
@@ -113,15 +119,47 @@ describe('AgentRunsService', () => {
       'w1:p9',
       expect.stringContaining(join(runsDir, '1', 'output.md'))
     );
-    expect(prisma.agentRun.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ paneId: 'w1:p9' })
-      })
-    );
+    expect(prisma.agentRun.updateMany).toHaveBeenCalledWith({
+      where: { id: 1, status: 'RUNNING' },
+      data: { paneId: 'w1:p9' }
+    });
     expect(herdr.subscribeAgent).toHaveBeenCalledWith(
       'w1:p9',
       expect.any(Function)
     );
+  });
+
+  it('rejects a concurrent start of the same step', async () => {
+    prisma.agentRun.create.mockRejectedValue({ code: 'P2002' });
+    await expect(service.startSpec(10)).rejects.toThrow(
+      'Spec agent is already running'
+    );
+    expect(herdr.createAgent).not.toHaveBeenCalled();
+    expect(herdr.sendPrompt).not.toHaveBeenCalled();
+  });
+
+  it('does not start agents on canceled tickets', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      id: 10,
+      status: 'CANCELED',
+      repo: { id: 5, path: repoDir },
+      specAgent: 'analyst'
+    });
+    await expect(service.startSpec(10)).rejects.toThrow('Ticket is closed');
+    expect(prisma.agentRun.create).not.toHaveBeenCalled();
+  });
+
+  it('closes the pane when the run was stopped while starting', async () => {
+    prisma.agentRun.updateMany.mockResolvedValue({ count: 0 });
+    await expect(service.startSpec(10)).rejects.toThrow(
+      'Agent run was stopped while starting'
+    );
+    expect(herdr.closeAgent).toHaveBeenCalledWith('w1:p9');
+  });
+
+  it('announces a started run on the board immediately', async () => {
+    await service.startSpec(10);
+    expect(board.emitChanged).toHaveBeenCalledWith(3);
   });
 
   it('stores the feedback on the run', async () => {
@@ -409,6 +447,7 @@ describe('AgentRunsService', () => {
     const unsubscribe = jest.fn();
     herdr.subscribeAgent.mockReturnValue(unsubscribe);
     await service.startSpec(10);
+    board.emitChanged.mockClear();
     service.afterFinish(1, 3);
     service.afterFinish(1, null);
     expect(unsubscribe).toHaveBeenCalledTimes(1);

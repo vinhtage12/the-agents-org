@@ -103,6 +103,7 @@ enum AgentRunStatus {
   STOPPED
 }
 
+// Partial unique index is defined in migration 20261031100617_running_run_unique.
 model AgentRun {
   id Int @id @default(autoincrement())
   ticketId Int @map("ticket_id")

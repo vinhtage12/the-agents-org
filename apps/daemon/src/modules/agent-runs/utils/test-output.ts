@@ -32,7 +32,10 @@ export function parseTestCases(
       const text = item[key];
       if (typeof text !== 'string' || !text.trim())
         throw new Error(`${key} must be a non-empty string`);
-      return text.trim();
+      const trimmed = text.trim();
+      if (key === 'title' && trimmed.length > 512)
+        throw new Error('title must be at most 512 characters');
+      return trimmed;
     };
     return {
       title: field('title'),

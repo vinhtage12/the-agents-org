@@ -64,3 +64,13 @@ it('rejects extra positions and malformed result envelopes', () => {
     parseTestResults('{"results":[{"position":3,"passed":true}]}', [1])
   ).toThrow('3');
 });
+
+it('rejects case titles longer than 512 characters', () => {
+  expect(() =>
+    parseTestCases(
+      JSON.stringify({
+        cases: [{ title: 'x'.repeat(513), steps: 's', expected: 'e' }]
+      })
+    )
+  ).toThrow('title must be at most 512 characters');
+});
