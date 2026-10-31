@@ -44,6 +44,13 @@ export class JiraClient {
   private get baseUrl(): string {
     return (this.config.get<string>('JIRA_BASE_URL') || '').replace(/\/+$/, '');
   }
+  // Scoped API tokens only work through https://api.atlassian.com/ex/jira/<cloudId>.
+  private get apiUrl(): string {
+    return (this.config.get<string>('JIRA_API_URL') || this.baseUrl).replace(
+      /\/+$/,
+      ''
+    );
+  }
   isConfigured(): boolean {
     return Boolean(
       this.baseUrl &&
@@ -53,7 +60,7 @@ export class JiraClient {
   }
   private async request<T>(path: string, body?: unknown): Promise<T> {
     try {
-      const response = await fetch(`${this.baseUrl}/rest/api/3/${path}`, {
+      const response = await fetch(`${this.apiUrl}/rest/api/3/${path}`, {
         method: body === undefined ? 'GET' : 'POST',
         headers: {
           Authorization: `Basic ${Buffer.from(`${this.config.get('JIRA_EMAIL')}:${this.config.get('JIRA_API_TOKEN')}`).toString('base64')}`,

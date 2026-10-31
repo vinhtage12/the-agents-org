@@ -64,6 +64,25 @@ describe('JiraClient', () => {
     );
     expect(client.browseUrl('FMS-1')).toBe('https://jira/browse/FMS-1');
   });
+  it('sends API calls to JIRA_API_URL when set, but browses on the site', async () => {
+    const scoped = new JiraClient(
+      new ConfigService({
+        JIRA_BASE_URL: 'https://site',
+        JIRA_API_URL: 'https://api.atlassian.com/ex/jira/cloud/',
+        JIRA_EMAIL: 'me@example.com',
+        JIRA_API_TOKEN: 'token'
+      })
+    );
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ accountId: 'me' })
+    });
+    await scoped.myself();
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://api.atlassian.com/ex/jira/cloud/rest/api/3/myself'
+    );
+    expect(scoped.browseUrl('FMS-1')).toBe('https://site/browse/FMS-1');
+  });
   it('reports HTTP errors', async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 401 });
     await expect(client.myself()).rejects.toBeInstanceOf(BadGatewayException);

@@ -1,5 +1,6 @@
 export interface Env {
   JIRA_BASE_URL?: string;
+  JIRA_API_URL?: string;
   JIRA_EMAIL?: string;
   JIRA_API_TOKEN?: string;
   AGENTS_DIR?: string;
@@ -42,7 +43,12 @@ export function validate(config: Record<string, unknown>): Env {
   if (config.AGENTS_DIR !== undefined && typeof config.AGENTS_DIR !== 'string')
     throw new Error('AGENTS_DIR must be a string');
 
-  for (const key of ['JIRA_BASE_URL', 'JIRA_EMAIL', 'JIRA_API_TOKEN']) {
+  for (const key of [
+    'JIRA_BASE_URL',
+    'JIRA_API_URL',
+    'JIRA_EMAIL',
+    'JIRA_API_TOKEN'
+  ]) {
     if (config[key] !== undefined && typeof config[key] !== 'string')
       throw new Error(`${key} must be a string`);
   }
@@ -52,6 +58,7 @@ export function validate(config: Record<string, unknown>): Env {
       /\/+$/,
       ''
     ),
+    JIRA_API_URL: config.JIRA_API_URL as string | undefined,
     JIRA_EMAIL: config.JIRA_EMAIL as string | undefined,
     JIRA_API_TOKEN: config.JIRA_API_TOKEN as string | undefined,
     AGENTS_DIR: config.AGENTS_DIR as string | undefined,
