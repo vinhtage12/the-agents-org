@@ -5,6 +5,7 @@ import {
   TmnBox,
   TmnCard,
   TmnFlex,
+  TmnHeading,
   TmnLoading,
   TmnText
 } from '@truyenmoinhu/uikit';
@@ -21,11 +22,9 @@ const SystemOverview = () => {
   const docker = useDocker();
   return (
     <TmnFlex direction="column" gap={4}>
-      <h2>
-        <TmnText size="5" weight="bold">
-          {trans('machine.overview')}
-        </TmnText>
-      </h2>
+      <TmnHeading as="h2" size="5" weight="bold">
+        {trans('machine.overview')}
+      </TmnHeading>
       <TmnBox className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
         {SYSTEM_PROVIDERS.map(p => (
           <TmnCard

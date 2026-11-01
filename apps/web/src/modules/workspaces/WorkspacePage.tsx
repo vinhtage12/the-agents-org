@@ -7,6 +7,7 @@ import {
   TmnButton,
   TmnCard,
   TmnFlex,
+  TmnHeading,
   TmnLoading,
   TmnText
 } from '@truyenmoinhu/uikit';
@@ -62,9 +63,9 @@ const WorkspacePage = () => {
         gap={3}
       >
         <TmnBox>
-          <TmnText size="6" weight="bold" asChild>
-            <h1>{workspace?.name ?? trans('workspace.title')}</h1>
-          </TmnText>
+          <TmnHeading as="h1" size="6" weight="bold">
+            {workspace?.name ?? trans('workspace.title')}
+          </TmnHeading>
           <TmnText as="p" className="mt-1 text-sm text-muted-foreground">
             {workspace?.code ??
               trans('workspace.summary', {

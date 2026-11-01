@@ -7,6 +7,7 @@ import {
   TmnDnD,
   type TmnDnDRootProps,
   TmnFlex,
+  TmnHeading,
   TmnLoading,
   TmnText,
   UIUtils
@@ -106,9 +107,9 @@ const TicketStorePage = () => {
         wrap="wrap"
         gap={3}
       >
-        <TmnText size="6" weight="bold" asChild>
-          <h1>{trans('ticket.store_title')}</h1>
-        </TmnText>
+        <TmnHeading as="h1" size="6" weight="bold">
+          {trans('ticket.store_title')}
+        </TmnHeading>
         <TmnFlex direction="row" gap={2}>
           <TmnButton startIcon={RefreshCw} disabled={busy} onClick={runSync}>
             {trans(sync.isPending ? 'ticket.syncing' : 'ticket.sync')}

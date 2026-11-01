@@ -7,6 +7,7 @@ import {
   TmnButton,
   TmnCard,
   TmnFlex,
+  TmnHeading,
   TmnLoading,
   TmnText
 } from '@truyenmoinhu/uikit';
@@ -72,11 +73,9 @@ const ProjectPage = () => {
   if (parts[1] === 'settings') {
     return (
       <TmnFlex direction="column" gap={4}>
-        <TmnText size="6" weight="bold" asChild>
-          <h1>
-            {project.name} - {trans('project.settings')}
-          </h1>
-        </TmnText>
+        <TmnHeading as="h1" size="6" weight="bold">
+          {project.name} - {trans('project.settings')}
+        </TmnHeading>
         <ProjectSettings workspaceId={workspace.id} projectId={project.id} />
       </TmnFlex>
     );
@@ -91,9 +90,9 @@ const ProjectPage = () => {
         gap={3}
       >
         <TmnBox>
-          <TmnText size="6" weight="bold" asChild>
-            <h1>{project.name}</h1>
-          </TmnText>
+          <TmnHeading as="h1" size="6" weight="bold">
+            {project.name}
+          </TmnHeading>
           <TmnText as="p" className="mt-1 text-sm text-muted-foreground">
             {project.code}
           </TmnText>
