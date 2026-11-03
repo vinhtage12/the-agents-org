@@ -10,7 +10,7 @@ describe('ticket schema contract', () => {
     expect(schema).toMatch(
       /enum TicketStatus\s*{\s*TODO\s+IN_SPEC\s+IN_REVIEW_SPEC\s+IN_PROGRESS\s+IN_TESTING\s+IN_REVIEW\s+DONE\s+CANCELED\s*}/
     );
-    expect(schema).toContain('@@unique([projectId, name])');
+    expect(schema).toContain('@@unique([repoId, name])');
     expect(schema).toMatch(/model Ticket\s*{[\s\S]*onDelete: Restrict/);
     expect(schema).toContain('@@map("tickets")');
   });

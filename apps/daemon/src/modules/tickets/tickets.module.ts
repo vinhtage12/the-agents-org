@@ -2,12 +2,13 @@ import { Module } from '@nestjs/common';
 
 import { AgentProfilesModule } from '../agent-profiles/agent-profiles.module';
 import { AgentRunsModule } from '../agent-runs/agent-runs.module';
+import { GitModule } from '../git/git.module';
 import { JiraModule } from '../jira/jira.module';
 import { TicketsController } from './controllers/tickets.controller';
 import { TicketsService } from './services/tickets.service';
 
 @Module({
-  imports: [JiraModule, AgentRunsModule, AgentProfilesModule],
+  imports: [JiraModule, AgentRunsModule, AgentProfilesModule, GitModule],
   controllers: [TicketsController],
   providers: [TicketsService]
 })

@@ -14,7 +14,6 @@ import {
 import { TicketStatus } from '../../../generated/prisma/client';
 
 import type { Ticket as TicketModel } from '../../../generated/prisma/client';
-import type { ProjectRepoEntity } from '../../projects/entities/project-repo.entity';
 import type { ProjectEntity } from '../../workspaces/entities/project.entity';
 
 export { TicketStatus };
@@ -85,6 +84,29 @@ export class TicketEntity implements TicketModel {
   testAgent!: string | null;
 
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(2147483647)
+  specAgentId!: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(2147483647)
+  devAgentId!: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(2147483647)
+  testAgentId!: number | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  branch!: string | null;
+
+  @IsOptional()
   @IsDate()
   linkedAt!: Date | null;
 
@@ -111,5 +133,4 @@ export class TicketEntity implements TicketModel {
   updatedAt!: Date;
 
   project?: ProjectEntity | null;
-  repo?: ProjectRepoEntity | null;
 }

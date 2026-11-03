@@ -148,8 +148,8 @@ describe('TicketFlowService', () => {
     const [id, step, build] = runs.start.mock.calls[0];
     expect([id, step]).toEqual([10, 'DEV']);
     const prompt = build({
-      profile: { skills: [], instructions: '' },
-      ticket: { extraSkills: [], extraInstructions: '' },
+      profile: { skills: [], rules: [], path: '/m' },
+      ticket: { skills: [], rules: [], extraInstructions: '' },
       repoPath: '/repo',
       run: { dir: '/runs/22' }
     });
@@ -355,7 +355,8 @@ describe('SPEC completion migrated from AgentRunsService', () => {
       board as never,
       {
         get: (key: string) => ({ RUNS_DIR: runsDir, PORT: 3005 })[key]
-      } as never
+      } as never,
+      {} as never
     );
     flow = new TicketFlowService(prisma as unknown as PrismaService, service);
     tx.agentRun.updateMany.mockResolvedValue({ count: 1 });

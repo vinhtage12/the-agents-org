@@ -4,10 +4,12 @@ import {
   TmnController,
   TmnForm,
   useFormResolver,
+  useWatch,
   validation
 } from '@truyenmoinhu/form';
 import { RequestMethods } from '@truyenmoinhu/query';
 import {
+  TmnAutocomplete,
   TmnButton,
   TmnCallout,
   TmnFlex,
@@ -16,26 +18,29 @@ import {
 } from '@truyenmoinhu/uikit';
 
 import { trans } from '#i18n';
+import {
+  type IOption,
+  WAREHOUSE_ENDPOINTS,
+  agentLabel,
+  optionLabel
+} from '#modules/warehouse';
 
-import { AGENT_ROLES } from './constants';
+import { AGENT_FIELDS } from './constants';
 import { useProjectSettingsMutation } from './hooks';
-import { settingsPath, toNullable } from './utils';
+import { settingsPath } from './utils';
 
 import type {
-  IAgentProfile,
   IProjectDefaultsValues,
   IProjectSettings,
   IProjectSettingsProps
 } from './types';
 export interface IDefaultsFormProps extends IProjectSettingsProps {
   settings: IProjectSettings;
-  profiles: IAgentProfile[];
 }
 const DefaultsForm = ({
   workspaceId,
   projectId,
-  settings,
-  profiles
+  settings
 }: IDefaultsFormProps) => {
   const [message, setMessage] = useState('');
   const mutation = useProjectSettingsMutation();
@@ -43,41 +48,37 @@ const DefaultsForm = ({
     schema: createSchema(),
     configs: {
       defaultValues: {
+        repos: settings.repos,
         defaultRepoId: settings.defaultRepoId
           ? String(settings.defaultRepoId)
           : '',
-        specAgent: settings.specAgent ?? '',
-        devAgent: settings.devAgent ?? '',
-        testAgent: settings.testAgent ?? ''
+        specAgent: settings.specAgent,
+        devAgent: settings.devAgent,
+        testAgent: settings.testAgent
       }
     }
   });
-  const none = { value: '', label: trans('project.none') };
-  const agentOptions = [
-    none,
-    ...profiles.map(p => ({
-      value: p.slug,
-      label: `${p.name} - ${p.provider}${p.model ? ` - ${p.model}` : ''}`
-    }))
-  ];
+  const repos = useWatch({ control: form.control, name: 'repos' });
   const repoOptions = [
-    none,
-    ...settings.repos.map(r => ({ value: String(r.id), label: r.name }))
+    { value: '', label: trans('project.none') },
+    ...repos.map(r => ({ value: String(r.id), label: optionLabel(r) }))
   ];
 
   const submit = form.handleSubmit(async values => {
     setMessage('');
+    const defaultRepoId = Number(values.defaultRepoId);
     try {
       await mutation.mutateAsync({
         url: settingsPath(workspaceId, projectId),
         method: RequestMethods.PATCH,
         data: {
-          defaultRepoId: values.defaultRepoId
-            ? Number(values.defaultRepoId)
+          repoIds: values.repos.map(r => r.id),
+          defaultRepoId: values.repos.some(r => r.id === defaultRepoId)
+            ? defaultRepoId
             : null,
-          specAgent: toNullable(values.specAgent),
-          devAgent: toNullable(values.devAgent),
-          testAgent: toNullable(values.testAgent)
+          specAgentId: values.specAgent?.id ?? null,
+          devAgentId: values.devAgent?.id ?? null,
+          testAgentId: values.testAgent?.id ?? null
         }
       });
       UIUtils.notify.success(trans('project.defaults_saved'));
@@ -90,6 +91,21 @@ const DefaultsForm = ({
     <TmnForm onSubmit={submit} className="flex flex-col gap-4">
       <TmnController
         control={form.control}
+        name="repos"
+        render={({ field }) => (
+          <TmnAutocomplete
+            multiple
+            label={trans('project.repos')}
+            apiUrl={WAREHOUSE_ENDPOINTS.repositories()}
+            initFetch
+            value={field.value}
+            onChange={value => field.onChange((value as IOption[]) ?? [])}
+            getOptionLabel={optionLabel}
+          />
+        )}
+      />
+      <TmnController
+        control={form.control}
         name="defaultRepoId"
         render={({ field }) => (
           <TmnInput.Select
@@ -100,17 +116,22 @@ const DefaultsForm = ({
           />
         )}
       />
-      {AGENT_ROLES.map(role => (
+      {AGENT_FIELDS.map(({ field: name, role }) => (
         <TmnController
-          key={role}
+          key={name}
           control={form.control}
-          name={role}
+          name={name}
           render={({ field }) => (
-            <TmnInput.Select
-              label={trans(`project.${role}`)}
+            <TmnAutocomplete
+              label={trans(`project.${name}`)}
+              apiUrl={WAREHOUSE_ENDPOINTS.agents()}
+              apiParams={{ role }}
+              initFetch
               value={field.value}
-              onChange={field.onChange}
-              options={agentOptions}
+              onChange={value =>
+                field.onChange((value as IOption | null) ?? null)
+              }
+              getOptionLabel={agentLabel}
             />
           )}
         />
@@ -137,8 +158,9 @@ const DefaultsForm = ({
 export default memo(DefaultsForm);
 const createSchema = () =>
   validation.object({
+    repos: validation.array().defined(),
     defaultRepoId: validation.string().defined(),
-    specAgent: validation.string().defined(),
-    devAgent: validation.string().defined(),
-    testAgent: validation.string().defined()
+    specAgent: validation.mixed<IOption>().nullable().defined(),
+    devAgent: validation.mixed<IOption>().nullable().defined(),
+    testAgent: validation.mixed<IOption>().nullable().defined()
   });

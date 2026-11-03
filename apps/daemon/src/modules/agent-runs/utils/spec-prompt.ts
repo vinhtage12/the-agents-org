@@ -1,16 +1,28 @@
 import { outputContract, promptHeader } from './prompt-parts';
 
-import type { AgentProfile } from '../../agent-profiles/services/agent-profiles.service';
+export interface RunAgent {
+  id: number;
+  name: string;
+  provider: string;
+  model: string | null;
+  effort: string | null;
+  /** Folder holding AGENT.md. */
+  path: string;
+  allowedTools: string[];
+  skills: { command: string; description: string; provider: string }[];
+  rules: { path: string }[];
+}
 
 export interface SpecPromptInput {
-  profile: AgentProfile;
+  profile: RunAgent;
   ticket: {
     jiraKey: string;
     summary: string;
     description: string;
     jiraUrl: string;
     extraInstructions: string;
-    extraSkills: string[];
+    skills: { command: string; description: string; provider: string }[];
+    rules: { path: string }[];
   };
   repoPath: string;
   run: { id: number; token: string; dir: string; callbackUrl: string };

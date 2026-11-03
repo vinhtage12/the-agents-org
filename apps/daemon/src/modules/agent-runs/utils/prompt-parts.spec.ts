@@ -2,11 +2,17 @@ import { type PromptBase, outputContract, promptHeader } from './prompt-parts';
 
 const base: PromptBase = {
   profile: {
-    slug: 'analyst',
+    id: 1,
     name: 'Analyst',
     provider: 'claude',
-    skills: ['brainstorming'],
-    instructions: 'Think hard.'
+    model: null,
+    effort: null,
+    path: '/x/members/analyst',
+    allowedTools: [],
+    skills: [
+      { command: '/brainstorming', description: 'Plan', provider: 'claude' }
+    ],
+    rules: [{ path: '/rules/a.md' }]
   },
   ticket: {
     jiraKey: 'FMS-1',
@@ -14,7 +20,12 @@ const base: PromptBase = {
     description: 'Users log in',
     jiraUrl: 'https://j/browse/FMS-1',
     extraInstructions: 'Use SSO.',
-    extraSkills: ['brainstorming', 'jira']
+    skills: [
+      { command: '/brainstorming', description: 'Plan', provider: 'claude' },
+      { command: '/jira', description: 'Jira', provider: 'claude' },
+      { command: '$other', description: 'Codex only', provider: 'codex' }
+    ],
+    rules: [{ path: '/rules/a.md' }, { path: '/rules/b.md' }]
   },
   repoPath: '/repos/ff-web',
   run: {
@@ -24,11 +35,12 @@ const base: PromptBase = {
     callbackUrl: 'http://127.0.0.1:3005/api/v1'
   }
 };
-it('preserves shared sections and deduplicates skills', () => {
+it('points the prompt at AGENT.md, rule paths and same-provider skills', () => {
   expect(promptHeader(base)).toEqual([
-    'Think hard.',
+    'Read and follow your role description: /x/members/analyst/AGENT.md',
     'Use SSO.',
-    'Skills: brainstorming, jira',
+    'Rules (read each before starting):\n- /rules/a.md\n- /rules/b.md',
+    'Skills you can use:\n- /brainstorming: Plan\n- /jira: Jira',
     'Ticket FMS-1: Login\nhttps://j/browse/FMS-1\n\nUsers log in',
     'Repository: /repos/ff-web'
   ]);

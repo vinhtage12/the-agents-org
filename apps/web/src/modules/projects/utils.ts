@@ -6,5 +6,3 @@ export const settingsPath = (
   path = 'settings'
 ) =>
   PROJECT_ENDPOINTS.workspaces(`${workspaceId}/projects/${projectId}/${path}`);
-
-export const toNullable = (value: string) => (value ? value : null);

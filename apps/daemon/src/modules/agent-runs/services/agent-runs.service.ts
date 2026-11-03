@@ -1,5 +1,5 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, readFile, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -16,8 +16,9 @@ import { ConfigService } from '@nestjs/config';
 
 import { PrismaService } from '../../../database/prisma.service';
 import { AgentProfilesService } from '../../agent-profiles/services/agent-profiles.service';
+import { GitService } from '../../git/services/git.service';
 import { HerdrService } from '../../herdr/services/herdr.service';
-import { assertRepoPath } from '../../projects/utils/repo-path';
+import { assertRepoPath } from '../../repositories/utils/repo-path';
 import { BoardGateway } from '../gateways/board.gateway';
 import { buildAgentArgs } from '../utils/agent-args';
 import { STARTUP_GRACE_MS } from '../utils/constants';
@@ -52,7 +53,8 @@ export class AgentRunsService implements OnModuleInit {
     private readonly herdr: HerdrService,
     private readonly profiles: AgentProfilesService,
     private readonly board: BoardGateway,
-    config: ConfigService
+    config: ConfigService,
+    private readonly git: GitService
   ) {
     this.runsDir =
       config.get<string>('RUNS_DIR') ||
@@ -111,24 +113,39 @@ export class AgentRunsService implements OnModuleInit {
   ): Promise<AgentRunEntity> {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
-      include: { repo: true }
+      include: { repo: true, skills: true, rules: true }
     });
     if (!ticket) throw new NotFoundException('Ticket not found');
     if (ticket.status === 'DONE' || ticket.status === 'CANCELED')
       throw new ConflictException('Ticket is closed');
     if (!ticket.repo) throw new BadRequestException('Ticket has no repo');
     const slot = {
-      SPEC: 'specAgent',
-      DEV: 'devAgent',
-      TEST: 'testAgent'
+      SPEC: 'specAgentId',
+      DEV: 'devAgentId',
+      TEST: 'testAgentId'
     } as const;
-    const slug = ticket[slot[step]];
-    if (!slug)
+    const agentId = ticket[slot[step]];
+    if (!agentId)
       throw new BadRequestException(
         `Ticket has no ${step.toLowerCase()} agent`
       );
     await assertRepoPath(ticket.repo.path);
-    const profile = await this.profiles.get(slug);
+    const profile = await this.profiles.get(agentId);
+    try {
+      await stat(join(profile.path, 'AGENT.md'));
+    } catch {
+      throw new BadRequestException(
+        `Agent folder is missing AGENT.md: ${profile.path}`
+      );
+    }
+    // shortcut: legacy tickets have no saved branch; drop once none are in progress
+    if (ticket.branch !== null && (step === 'DEV' || step === 'TEST')) {
+      const current = await this.git.currentBranch(ticket.repo.path);
+      if (current !== ticket.branch)
+        throw new ConflictException(
+          `Repo ${ticket.repo.path} is on ${current}, expected ${ticket.branch}`
+        );
+    }
     const running = await this.prisma.agentRun.count({
       where: { ticketId, step, status: 'RUNNING' }
     });
@@ -143,7 +160,8 @@ export class AgentRunsService implements OnModuleInit {
         data: {
           ticketId,
           step,
-          agentSlug: profile.slug,
+          agentSlug: profile.name,
+          agentId: profile.id,
           token: randomBytes(24).toString('hex'),
           feedback: options?.feedback,
           testMode: options?.testMode
@@ -179,7 +197,7 @@ export class AgentRunsService implements OnModuleInit {
       paneId = await this.reusablePane(
         ticketId,
         step,
-        profile.slug,
+        profile.id,
         ticket.repo.path
       );
       if (!paneId) {
@@ -330,7 +348,7 @@ export class AgentRunsService implements OnModuleInit {
   private async reusablePane(
     ticketId: number,
     step: AgentStep,
-    agentSlug: string,
+    agentId: number,
     repoPath: string
   ): Promise<string | undefined> {
     const last = await this.prisma.agentRun.findFirst({
@@ -343,7 +361,7 @@ export class AgentRunsService implements OnModuleInit {
     );
     if (!agent) return undefined;
     if (
-      last.agentSlug === agentSlug &&
+      last.agentId === agentId &&
       agent.cwd &&
       resolve(agent.cwd) === resolve(repoPath)
     )

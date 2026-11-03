@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   BadRequestException,
   ConflictException,
   Injectable,
@@ -10,11 +11,13 @@ import { AgentProfilesService } from '../../agent-profiles/services/agent-profil
 import { BoardGateway } from '../../agent-runs/gateways/board.gateway';
 import { AgentRunsService } from '../../agent-runs/services/agent-runs.service';
 import { TicketFlowService } from '../../agent-runs/services/ticket-flow.service';
+import { GitService } from '../../git/services/git.service';
 import { type BoardLabel, boardLabel } from '../utils/board-label';
 import { assertTransition } from '../utils/transitions';
 
+import type { Prisma } from '../../../generated/prisma/client';
 import type { AgentRunEntity } from '../../agent-runs/entities/agent-run.entity';
-import type { ProjectRepoEntity } from '../../projects/entities/project-repo.entity';
+import type { RepoEntity } from '../../repositories/entities/repo.entity';
 import type { ProjectEntity } from '../../workspaces/entities/project.entity';
 import type { SpecVersionEntity } from '../entities/spec-version.entity';
 import type { TicketEntity, TicketStatus } from '../entities/ticket.entity';
@@ -25,8 +28,12 @@ type TicketStoreItem = Pick<
 >;
 type TicketBoardItem = Pick<
   TicketEntity,
-  'id' | 'jiraKey' | 'summary' | 'status' | 'jiraUrl'
-> & { label: BoardLabel; specVersion: number | null };
+  'id' | 'jiraKey' | 'summary' | 'status' | 'jiraUrl' | 'branch' | 'repoId'
+> & {
+  label: BoardLabel;
+  specVersion: number | null;
+  agent: { id: number; name: string } | null;
+};
 export type TicketDetail = Pick<
   TicketEntity,
   | 'id'
@@ -37,14 +44,16 @@ export type TicketDetail = Pick<
   | 'status'
   | 'projectId'
   | 'repoId'
-  | 'specAgent'
-  | 'devAgent'
-  | 'testAgent'
+  | 'branch'
   | 'extraInstructions'
-  | 'extraSkills'
   | 'fixRound'
   | 'specApprovedAt'
 > & {
+  specAgent: AgentRef | null;
+  devAgent: AgentRef | null;
+  testAgent: AgentRef | null;
+  skills: { id: number; name: string; provider: string; command: string }[];
+  rules: { id: number; name: string }[];
   testCases: {
     id: number;
     position: number;
@@ -62,24 +71,36 @@ export type TicketDetail = Pick<
     SpecVersionEntity,
     'version' | 'content' | 'editedAt' | 'feedback'
   > | null;
-  repos: Pick<ProjectRepoEntity, 'id' | 'name' | 'path'>[];
+  repos: Pick<RepoEntity, 'id' | 'name' | 'path'>[];
   projects: Pick<ProjectEntity, 'id' | 'name' | 'code'>[];
   runs: Omit<AgentRunEntity, 'token' | 'ticketId' | 'feedback'>[];
+};
+export type AgentRef = {
+  id: number;
+  name: string;
+  role: string;
+  provider: string;
+  model: string | null;
 };
 export interface UpdateTicketInput {
   projectId?: number;
   repoId?: number | null;
-  specAgent?: string | null;
-  devAgent?: string | null;
-  testAgent?: string | null;
+  specAgentId?: number | null;
+  devAgentId?: number | null;
+  testAgentId?: number | null;
+  skillIds?: number[];
+  ruleIds?: number[];
   extraInstructions?: string;
-  extraSkills?: string[];
 }
+const AGENT_REF = {
+  select: { id: true, name: true, role: true, provider: true, model: true }
+} as const;
 const RUN_SELECT = {
   id: true,
   step: true,
   testMode: true,
   agentSlug: true,
+  agentId: true,
   status: true,
   paneId: true,
   error: true,
@@ -103,7 +124,8 @@ export class TicketsService {
     private readonly agentRuns: AgentRunsService,
     private readonly boardEvents: BoardGateway,
     private readonly profiles: AgentProfilesService,
-    private readonly flow: TicketFlowService
+    private readonly flow: TicketFlowService,
+    private readonly git: GitService
   ) {}
   async store(): Promise<{
     tickets: (TicketStoreItem & { suggestedProjectId: number | null })[];
@@ -156,9 +178,9 @@ export class TicketsService {
             status: 'TODO',
             linkedAt: new Date(),
             repoId: project.defaultRepoId,
-            specAgent: project.specAgent,
-            devAgent: project.devAgent,
-            testAgent: project.testAgent
+            specAgentId: project.specAgentId,
+            devAgentId: project.devAgentId,
+            testAgentId: project.testAgentId
           }
         });
         if (updated.count !== 1)
@@ -181,9 +203,16 @@ export class TicketsService {
           summary: true,
           status: true,
           jiraUrl: true,
+          branch: true,
+          repoId: true,
           specApprovedAt: true,
           runs: {
-            select: { status: true, paneId: true, startedAt: true },
+            select: {
+              status: true,
+              paneId: true,
+              startedAt: true,
+              agent: { select: { id: true, name: true } }
+            },
             orderBy: { id: 'desc' }
           },
           specs: {
@@ -199,6 +228,7 @@ export class TicketsService {
     const now = new Date();
     return tickets.map(({ runs, specs, specApprovedAt, ...ticket }) => ({
       ...ticket,
+      agent: runs.find(run => run.status === 'RUNNING')?.agent ?? null,
       label: boardLabel({
         status: ticket.status,
         specApprovedAt,
@@ -217,8 +247,8 @@ export class TicketsService {
       await Promise.all([
         ticket.projectId === null
           ? []
-          : this.prisma.projectRepo.findMany({
-              where: { projectId: ticket.projectId },
+          : this.prisma.repo.findMany({
+              where: { projects: { some: { id: ticket.projectId } } },
               select: { id: true, name: true, path: true },
               orderBy: { name: 'asc' }
             }),
@@ -279,11 +309,13 @@ export class TicketsService {
       status: ticket.status,
       projectId: ticket.projectId,
       repoId: ticket.repoId,
-      specAgent: ticket.specAgent,
-      devAgent: ticket.devAgent,
-      testAgent: ticket.testAgent,
+      branch: ticket.branch,
+      specAgent: ticket.specAgentRef,
+      devAgent: ticket.devAgentRef,
+      testAgent: ticket.testAgentRef,
+      skills: ticket.skills,
+      rules: ticket.rules,
       extraInstructions: ticket.extraInstructions,
-      extraSkills: ticket.extraSkills,
       fixRound: ticket.fixRound,
       testCases,
       testResults: testRun
@@ -318,7 +350,11 @@ export class TicketsService {
     };
   }
 
-  async move(id: number, to: TicketStatus): Promise<TicketDetail> {
+  async move(
+    id: number,
+    to: TicketStatus,
+    branch?: { base: string; name: string; push: boolean }
+  ): Promise<TicketDetail> {
     const ticket = await this.find(id);
     assertTransition(ticket.status, to);
     if (to === 'IN_SPEC') {
@@ -330,6 +366,8 @@ export class TicketsService {
         throw new ConflictException('Spec is not approved');
       if (to === 'IN_REVIEW' && (await this.runningCount(id)))
         throw new ConflictException('An agent is still running');
+      if (to === 'IN_PROGRESS' && ticket.branch === null)
+        await this.createBranch(ticket, branch);
       await this.enterStatus(
         ticket,
         ticket.status,
@@ -342,6 +380,45 @@ export class TicketsService {
       );
     }
     return this.detail(id);
+  }
+
+  // First move to In Progress: cut the ticket branch before any agent runs.
+  private async createBranch(
+    ticket: { id: number; repoId: number | null },
+    branch?: { base: string; name: string; push: boolean }
+  ) {
+    if (!branch) throw new ConflictException('Branch required');
+    if (ticket.repoId === null)
+      throw new BadRequestException('Ticket has no repo');
+    const repo = await this.prisma.repo.findUnique({
+      where: { id: ticket.repoId }
+    });
+    if (!repo) throw new BadRequestException('Ticket has no repo');
+    const { tickets: busy } = await this.repoConflicts(ticket.id);
+    if (busy.length)
+      throw new ConflictException(
+        `Repo is busy with ${busy.map(t => t.jiraKey).join(', ')}`
+      );
+    await this.git.assertBranchName(branch.name);
+    if (!(await this.git.isClean(repo.path)))
+      throw new ConflictException('Repo has uncommitted changes');
+    if (await this.git.branchExists(repo.path, branch.name))
+      throw new ConflictException(`Branch ${branch.name} already exists`);
+    await this.git.createBranch(repo.path, branch.base, branch.name);
+    await this.prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { branch: branch.name }
+    });
+    if (branch.push) {
+      try {
+        await this.git.push(repo.path, branch.name);
+      } catch (error) {
+        // The local branch stays checked out and saved; the owner pushes it by hand.
+        throw new BadGatewayException(
+          `Branch created but push failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
   }
 
   async specFeedback(id: number, feedback: string): Promise<TicketDetail> {
@@ -444,7 +521,7 @@ export class TicketsService {
 
   async update(id: number, input: UpdateTicketInput): Promise<TicketDetail> {
     const ticket = await this.find(id);
-    const data: UpdateTicketInput = {};
+    const data: Prisma.TicketUncheckedUpdateInput = {};
     let projectId = ticket.projectId;
     if (input.projectId !== undefined && input.projectId !== ticket.projectId) {
       if (ticket.status !== 'TODO')
@@ -457,47 +534,48 @@ export class TicketsService {
       Object.assign(data, {
         projectId: project.id,
         repoId: project.defaultRepoId,
-        specAgent: project.specAgent,
-        devAgent: project.devAgent,
-        testAgent: project.testAgent
+        branch: null,
+        specAgentId: project.specAgentId,
+        devAgentId: project.devAgentId,
+        testAgentId: project.testAgentId
       });
     }
     if (input.repoId !== undefined && input.repoId !== ticket.repoId) {
       if (
         input.repoId !== null &&
-        !(await this.prisma.projectRepo.findFirst({
-          where: { id: input.repoId, projectId: projectId ?? undefined }
+        !(await this.prisma.repo.findFirst({
+          where: {
+            id: input.repoId,
+            projects: { some: { id: projectId ?? undefined } }
+          }
         }))
       )
         throw new BadRequestException('Repo does not belong to the project');
       if (await this.runningCount(id))
         throw new ConflictException('Repo is locked while an agent runs');
       data.repoId = input.repoId;
+      // The saved branch belongs to the old repo.
+      if (ticket.branch !== null) data.branch = null;
     }
     const steps = {
-      specAgent: 'SPEC',
-      devAgent: 'DEV',
-      testAgent: 'TEST'
+      specAgentId: ['SPEC', 'BA'],
+      devAgentId: ['DEV', 'DEV'],
+      testAgentId: ['TEST', 'QC']
     } as const;
-    for (const key of ['specAgent', 'devAgent', 'testAgent'] as const) {
-      if (input[key] !== undefined) data[key] = input[key];
-      if (
-        data[key] !== undefined &&
-        data[key] !== ticket[key] &&
-        (await this.runningCount(id, steps[key]))
-      )
-        throw new ConflictException(
-          `${steps[key]} agent is locked while it runs`
-        );
+    for (const key of Object.keys(steps) as (keyof typeof steps)[]) {
+      if (input[key] === undefined || input[key] === ticket[key]) continue;
+      const [step, role] = steps[key];
+      if (await this.runningCount(id, step))
+        throw new ConflictException(`${step} agent is locked while it runs`);
+      await this.profiles.assertRole(input[key], role);
+      data[key] = input[key];
     }
-    await this.profiles.assertExists(
-      (['specAgent', 'devAgent', 'testAgent'] as const)
-        .filter(key => data[key] !== undefined && data[key] !== ticket[key])
-        .map(key => data[key])
-    );
     if (input.extraInstructions !== undefined)
       data.extraInstructions = input.extraInstructions;
-    if (input.extraSkills !== undefined) data.extraSkills = input.extraSkills;
+    if (input.skillIds !== undefined)
+      data.skills = { set: input.skillIds.map(id => ({ id })) };
+    if (input.ruleIds !== undefined)
+      data.rules = { set: input.ruleIds.map(id => ({ id })) };
     await this.prisma.ticket.update({ where: { id }, data });
     this.emit(ticket.projectId);
     if (projectId !== ticket.projectId) this.emit(projectId);
@@ -507,7 +585,16 @@ export class TicketsService {
   private async find(id: number) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id },
-      include: { project: { select: { id: true, workspaceId: true } } }
+      include: {
+        project: { select: { id: true, workspaceId: true } },
+        specAgentRef: AGENT_REF,
+        devAgentRef: AGENT_REF,
+        testAgentRef: AGENT_REF,
+        skills: {
+          select: { id: true, name: true, provider: true, command: true }
+        },
+        rules: { select: { id: true, name: true } }
+      }
     });
     if (!ticket) throw new NotFoundException('Ticket not found');
     return ticket;

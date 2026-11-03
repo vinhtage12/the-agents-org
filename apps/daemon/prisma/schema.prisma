@@ -26,11 +26,18 @@ model Project {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
 
   defaultRepoId Int? @map("default_repo_id")
-  defaultRepo ProjectRepo? @relation("DefaultRepo", fields: [defaultRepoId], references: [id], onDelete: SetNull)
+  defaultRepo Repo? @relation("DefaultRepo", fields: [defaultRepoId], references: [id], onDelete: SetNull)
+  // legacy slug, read only by AgentImportService; drop after import
   specAgent String? @map("spec_agent") @db.VarChar(128)
   devAgent String? @map("dev_agent") @db.VarChar(128)
   testAgent String? @map("test_agent") @db.VarChar(128)
-  repos ProjectRepo[] @relation("ProjectRepos")
+  specAgentId Int? @map("spec_agent_id")
+  devAgentId Int? @map("dev_agent_id")
+  testAgentId Int? @map("test_agent_id")
+  specAgentRef Agent? @relation("ProjectSpecAgent", fields: [specAgentId], references: [id], onDelete: SetNull)
+  devAgentRef Agent? @relation("ProjectDevAgent", fields: [devAgentId], references: [id], onDelete: SetNull)
+  testAgentRef Agent? @relation("ProjectTestAgent", fields: [testAgentId], references: [id], onDelete: SetNull)
+  repos Repo[] @relation("ProjectRepos")
   tickets Ticket[]
 
   @@index([workspaceId])
@@ -48,16 +55,98 @@ enum TicketStatus {
   CANCELED
 }
 
-model ProjectRepo {
+enum AgentRole {
+  BA
+  DEV
+  QC
+  FILE_PROCESSOR
+}
+enum BranchKind {
+  CHECKOUT_BASE
+  PR_TARGET
+  NONE
+}
+
+model Repo {
   id Int @id @default(autoincrement())
-  projectId Int @map("project_id")
-  name String @db.VarChar(64)
-  path String @db.VarChar(1024)
-  project Project @relation("ProjectRepos", fields: [projectId], references: [id], onDelete: Cascade)
+  name String @unique @db.VarChar(64)
+  path String @unique @db.VarChar(1024)
+  description String @default("") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  environments RepoEnvironment[]
+  projects Project[] @relation("ProjectRepos")
   defaultFor Project[] @relation("DefaultRepo")
   tickets Ticket[]
-  @@unique([projectId, name])
-  @@map("project_repos")
+  @@map("repos")
+}
+
+model RepoEnvironment {
+  id Int @id @default(autoincrement())
+  repoId Int @map("repo_id")
+  name String @db.VarChar(64)
+  envFile String @default("") @map("env_file") @db.VarChar(255)
+  repo Repo @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  branches RepoBranch[]
+  @@unique([repoId, name])
+  @@map("repo_environments")
+}
+
+// One CHECKOUT_BASE per repo: partial unique index in migration SQL; repoId is denormalized for it.
+model RepoBranch {
+  id Int @id @default(autoincrement())
+  environmentId Int @map("environment_id")
+  repoId Int @map("repo_id")
+  name String @db.VarChar(255)
+  kind BranchKind @default(NONE)
+  environment RepoEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  @@unique([environmentId, name])
+  @@map("repo_branches")
+}
+
+model Agent {
+  id Int @id @default(autoincrement())
+  name String @unique @db.VarChar(128)
+  role AgentRole
+  provider String @db.VarChar(16)
+  model String? @db.VarChar(128)
+  effort String? @db.VarChar(32)
+  path String @db.VarChar(1024)
+  description String @default("") @db.VarChar(512)
+  allowedTools String[] @default([]) @map("allowed_tools")
+  skills Skill[]
+  rules Rule[]
+  projectsAsSpec Project[] @relation("ProjectSpecAgent")
+  projectsAsDev Project[] @relation("ProjectDevAgent")
+  projectsAsTest Project[] @relation("ProjectTestAgent")
+  ticketsAsSpec Ticket[] @relation("TicketSpecAgent")
+  ticketsAsDev Ticket[] @relation("TicketDevAgent")
+  ticketsAsTest Ticket[] @relation("TicketTestAgent")
+  runs AgentRun[]
+  @@map("agents")
+}
+
+model Skill {
+  id Int @id @default(autoincrement())
+  name String @db.VarChar(128)
+  provider String @db.VarChar(16)
+  command String @db.VarChar(128)
+  path String @db.VarChar(1024)
+  description String @default("") @db.Text
+  agents Agent[]
+  tickets Ticket[]
+  @@unique([provider, name])
+  @@map("skills")
+}
+
+model Rule {
+  id Int @id @default(autoincrement())
+  name String @unique @db.VarChar(128)
+  path String @db.VarChar(1024)
+  description String @default("") @db.Text
+  agents Agent[]
+  tickets Ticket[]
+  @@map("rules")
 }
 
 model Ticket {
@@ -71,9 +160,19 @@ model Ticket {
   status TicketStatus @default(TODO)
   projectId Int? @map("project_id")
   repoId Int? @map("repo_id")
+  // legacy slugs/extraSkills, read only by AgentImportService; drop after import
   specAgent String? @map("spec_agent") @db.VarChar(128)
   devAgent String? @map("dev_agent") @db.VarChar(128)
   testAgent String? @map("test_agent") @db.VarChar(128)
+  specAgentId Int? @map("spec_agent_id")
+  devAgentId Int? @map("dev_agent_id")
+  testAgentId Int? @map("test_agent_id")
+  specAgentRef Agent? @relation("TicketSpecAgent", fields: [specAgentId], references: [id], onDelete: SetNull)
+  devAgentRef Agent? @relation("TicketDevAgent", fields: [devAgentId], references: [id], onDelete: SetNull)
+  testAgentRef Agent? @relation("TicketTestAgent", fields: [testAgentId], references: [id], onDelete: SetNull)
+  skills Skill[]
+  rules Rule[]
+  branch String? @db.VarChar(255)
   linkedAt DateTime? @map("linked_at")
   specApprovedAt DateTime? @map("spec_approved_at")
   extraInstructions String @default("") @map("extra_instructions") @db.Text
@@ -81,7 +180,7 @@ model Ticket {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   project Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
-  repo ProjectRepo? @relation(fields: [repoId], references: [id], onDelete: SetNull)
+  repo Repo? @relation(fields: [repoId], references: [id], onDelete: SetNull)
   runs AgentRun[]
   specs SpecVersion[]
   fixRound Int @default(0) @map("fix_round")
@@ -110,7 +209,10 @@ model AgentRun {
   step AgentStep
   testMode TestMode? @map("test_mode")
   results TestResult[]
+  // Agent name at run time, kept for history.
   agentSlug String @map("agent_slug") @db.VarChar(128)
+  agentId Int? @map("agent_id")
+  agent Agent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
   paneId String? @map("pane_id") @db.VarChar(128)
   token String @db.VarChar(64)
   status AgentRunStatus @default(RUNNING)

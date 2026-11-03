@@ -4,6 +4,7 @@ export interface Env {
   JIRA_EMAIL?: string;
   JIRA_API_TOKEN?: string;
   AGENTS_DIR?: string;
+  MEMBERS_DIR?: string;
   RUNS_DIR?: string;
   DATABASE_URL: string;
   PORT: number;
@@ -43,6 +44,11 @@ export function validate(config: Record<string, unknown>): Env {
 
   if (config.AGENTS_DIR !== undefined && typeof config.AGENTS_DIR !== 'string')
     throw new Error('AGENTS_DIR must be a string');
+  if (
+    config.MEMBERS_DIR !== undefined &&
+    typeof config.MEMBERS_DIR !== 'string'
+  )
+    throw new Error('MEMBERS_DIR must be a string');
   if (config.RUNS_DIR !== undefined && typeof config.RUNS_DIR !== 'string')
     throw new Error('RUNS_DIR must be a string');
 
@@ -65,6 +71,7 @@ export function validate(config: Record<string, unknown>): Env {
     JIRA_EMAIL: config.JIRA_EMAIL as string | undefined,
     JIRA_API_TOKEN: config.JIRA_API_TOKEN as string | undefined,
     AGENTS_DIR: config.AGENTS_DIR as string | undefined,
+    MEMBERS_DIR: config.MEMBERS_DIR as string | undefined,
     RUNS_DIR: config.RUNS_DIR as string | undefined,
     DATABASE_URL,
     PORT: port,

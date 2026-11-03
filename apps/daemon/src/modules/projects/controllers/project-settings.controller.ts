@@ -1,177 +1,101 @@
 import {
   BadRequestException,
   Body,
-  ConflictException,
   Controller,
-  Delete,
   Get,
-  HttpCode,
   NotFoundException,
   Param,
   ParseIntPipe,
-  Patch,
-  Post
+  Patch
 } from '@nestjs/common';
-import {
-  ApiCreatedResponse,
-  ApiExtraModels,
-  ApiOkResponse,
-  ApiTags,
-  getSchemaPath
-} from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 
 import { PrismaService } from '../../../database/prisma.service';
 import { AgentProfilesService } from '../../agent-profiles/services/agent-profiles.service';
-import { CreateRepoDto } from '../dtos/create-repo.dto';
 import { UpdateProjectSettingsDto } from '../dtos/update-project-settings.dto';
-import { UpdateRepoDto } from '../dtos/update-repo.dto';
-import { ProjectRepoEntity } from '../entities/project-repo.entity';
-import { assertRepoPath } from '../utils/repo-path';
 
-export { assertRepoPath } from '../utils/repo-path';
+export { assertRepoPath } from '../../repositories/utils/repo-path';
+
+const AGENT_REF = {
+  select: { id: true, name: true, role: true, provider: true, model: true }
+} as const;
+
 @Controller('workspaces/:id/projects/:projectId')
 @ApiTags('projects')
-@ApiExtraModels(ProjectRepoEntity)
 export class ProjectSettingsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly agentProfiles: AgentProfilesService
   ) {}
+
   private async project(workspaceId: number, id: number) {
     if (workspaceId <= 0 || id <= 0)
       throw new BadRequestException('ID must be positive');
     const project = await this.prisma.project.findFirst({
-      where: { id, workspaceId }
+      where: { id, workspaceId },
+      include: {
+        repos: { orderBy: { id: 'asc' } },
+        specAgentRef: AGENT_REF,
+        devAgentRef: AGENT_REF,
+        testAgentRef: AGENT_REF
+      }
     });
     if (!project) throw new NotFoundException('Project not found');
     return project;
   }
+
   @Get('settings')
-  @ApiOkResponse({
-    schema: {
-      type: 'object',
-      properties: {
-        repos: {
-          type: 'array',
-          items: { $ref: getSchemaPath(ProjectRepoEntity) }
-        },
-        defaultRepoId: { type: 'number', nullable: true },
-        specAgent: { type: 'string', nullable: true },
-        devAgent: { type: 'string', nullable: true },
-        testAgent: { type: 'string', nullable: true }
-      }
-    }
-  })
   async settings(
     @Param('id', ParseIntPipe) workspaceId: number,
     @Param('projectId', ParseIntPipe) projectId: number
-  ): Promise<{
-    repos: ProjectRepoEntity[];
-    defaultRepoId: number | null;
-    specAgent: string | null;
-    devAgent: string | null;
-    testAgent: string | null;
-  }> {
+  ) {
     const project = await this.project(workspaceId, projectId);
-    const repos = await this.prisma.projectRepo.findMany({
-      where: { projectId },
-      orderBy: { id: 'asc' }
-    });
     return {
-      repos,
+      repos: project.repos,
       defaultRepoId: project.defaultRepoId,
-      specAgent: project.specAgent,
-      devAgent: project.devAgent,
-      testAgent: project.testAgent
+      specAgent: project.specAgentRef,
+      devAgent: project.devAgentRef,
+      testAgent: project.testAgentRef
     };
   }
-  @Post('repos')
-  @ApiCreatedResponse({ type: ProjectRepoEntity })
-  async createRepo(
-    @Param('id', ParseIntPipe) workspaceId: number,
-    @Param('projectId', ParseIntPipe) projectId: number,
-    @Body() data: CreateRepoDto
-  ): Promise<ProjectRepoEntity> {
-    const project = await this.project(workspaceId, projectId);
-    await assertRepoPath(data.path);
-    try {
-      const repo = await this.prisma.projectRepo.create({
-        data: { ...data, projectId }
-      });
-      if (project.defaultRepoId === null)
-        await this.prisma.project.update({
-          where: { id: projectId },
-          data: { defaultRepoId: repo.id }
-        });
-      return repo;
-    } catch (error) {
-      this.rethrow(error);
-    }
-  }
-  private async repo(workspaceId: number, projectId: number, id: number) {
-    await this.project(workspaceId, projectId);
-    const repo = await this.prisma.projectRepo.findFirst({
-      where: { id, projectId }
-    });
-    if (!repo) throw new NotFoundException('Repo not found');
-    return repo;
-  }
-  @Patch('repos/:repoId')
-  @ApiOkResponse({ type: ProjectRepoEntity })
-  async updateRepo(
-    @Param('id', ParseIntPipe) workspaceId: number,
-    @Param('projectId', ParseIntPipe) projectId: number,
-    @Param('repoId', ParseIntPipe) id: number,
-    @Body() data: UpdateRepoDto
-  ): Promise<ProjectRepoEntity> {
-    await this.repo(workspaceId, projectId, id);
-    if (data.path !== undefined) await assertRepoPath(data.path);
-    try {
-      return await this.prisma.projectRepo.update({ where: { id }, data });
-    } catch (error) {
-      this.rethrow(error);
-    }
-  }
-  @Delete('repos/:repoId')
-  @HttpCode(204)
-  async deleteRepo(
-    @Param('id', ParseIntPipe) workspaceId: number,
-    @Param('projectId', ParseIntPipe) projectId: number,
-    @Param('repoId', ParseIntPipe) id: number
-  ) {
-    await this.repo(workspaceId, projectId, id);
-    await this.prisma.projectRepo.delete({ where: { id } });
-  }
+
   @Patch('settings')
   async updateSettings(
     @Param('id', ParseIntPipe) workspaceId: number,
     @Param('projectId', ParseIntPipe) projectId: number,
     @Body() data: UpdateProjectSettingsDto
   ) {
-    await this.project(workspaceId, projectId);
-    if (
-      data.defaultRepoId != null &&
-      !(await this.prisma.projectRepo.findFirst({
-        where: { id: data.defaultRepoId, projectId }
-      }))
-    )
-      throw new BadRequestException('Default repo must belong to this project');
-    await this.agentProfiles.assertExists([
-      data.specAgent,
-      data.devAgent,
-      data.testAgent
-    ]);
-    await this.prisma.project.update({ where: { id: projectId }, data });
+    const project = await this.project(workspaceId, projectId);
+    const { repoIds, ...rest } = data;
+    const effective = repoIds ?? project.repos.map(r => r.id);
+    const defaultRepoId =
+      rest.defaultRepoId === undefined
+        ? project.defaultRepoId
+        : rest.defaultRepoId;
+    if (defaultRepoId != null && !effective.includes(defaultRepoId)) {
+      if (rest.defaultRepoId != null)
+        throw new BadRequestException(
+          'Default repo must be one of the project repos'
+        );
+      rest.defaultRepoId = null; // the old default was just unlinked
+    }
+    if (repoIds) {
+      const found = await this.prisma.repo.count({
+        where: { id: { in: repoIds } }
+      });
+      if (found !== new Set(repoIds).size)
+        throw new BadRequestException('Unknown repo');
+    }
+    await this.agentProfiles.assertRole(rest.specAgentId, 'BA');
+    await this.agentProfiles.assertRole(rest.devAgentId, 'DEV');
+    await this.agentProfiles.assertRole(rest.testAgentId, 'QC');
+    await this.prisma.project.update({
+      where: { id: projectId },
+      data: {
+        ...rest,
+        ...(repoIds && { repos: { set: repoIds.map(id => ({ id })) } })
+      }
+    });
     return this.settings(workspaceId, projectId);
-  }
-  private rethrow(error: unknown): never {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      error.code === 'P2002'
-    )
-      throw new ConflictException('Repo name already exists');
-    throw error;
   }
 }

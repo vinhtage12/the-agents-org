@@ -1,6 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router';
-
-import { TicketStorePage } from '#modules/tickets';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 export const Route = createFileRoute('/_app/tickets')({
-  component: TicketStorePage
+  beforeLoad: () => {
+    throw redirect({ to: '/warehouse/tickets', replace: true });
+  }
 });

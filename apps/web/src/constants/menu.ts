@@ -1,4 +1,4 @@
-import { Inbox, LayoutDashboard } from 'lucide-react';
+import { LayoutDashboard, Warehouse } from 'lucide-react';
 
 import { ROUTE_PATHS } from './routes';
 
@@ -11,9 +11,9 @@ export const MENU_ITEMS: IMenuItem[] = [
     to: ROUTE_PATHS.dashboard
   },
   {
-    key: 'tickets',
-    titleKey: 'menu.tickets',
-    icon: Inbox,
-    to: ROUTE_PATHS.tickets
+    key: 'warehouse',
+    titleKey: 'menu.warehouse',
+    icon: Warehouse,
+    to: ROUTE_PATHS.warehouse
   }
 ];

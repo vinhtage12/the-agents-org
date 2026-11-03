@@ -45,6 +45,12 @@ export class AgentRunEntity implements AgentRunModel {
   agentSlug!: string;
 
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(2147483647)
+  agentId!: number | null;
+
+  @IsOptional()
   @IsString()
   @MaxLength(128)
   paneId!: string | null;

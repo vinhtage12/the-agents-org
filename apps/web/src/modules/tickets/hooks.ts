@@ -18,6 +18,7 @@ import { openBoardEvents } from './socket';
 
 import type {
   IBoardTicket,
+  IGitBranches,
   ILinkTicket,
   IMoveTicket,
   IReplyAgent,
@@ -118,7 +119,7 @@ export const useMoveTicket = () => {
         const result = await apiManager.sendRequest<unknown>({
           url: TICKET_ENDPOINTS.tickets(`${variables.ticketId}/move`),
           method: RequestMethods.POST,
-          data: { to: variables.to },
+          data: { to: variables.to, branch: variables.branch },
           suppressNotifyOnError: true
         });
         if (!result.success) {
@@ -260,6 +261,21 @@ export const useReplyAgent = () =>
       });
       if (!result.success) {
         throw new TicketError(result.code, result.message);
+      }
+      return result.payload;
+    }
+  });
+export const useGitBranches = (repoId: number | null) =>
+  useQueryEnhancer<IGitBranches>({
+    queryKey: [TICKET_QUERY_KEYS.gitBranches, repoId],
+    enabled: repoId !== null,
+    queryFn: async ({ apiManager }) => {
+      const result = await apiManager?.sendRequest<IGitBranches>({
+        url: TICKET_ENDPOINTS.repositories(`${repoId}/git-branches`),
+        suppressNotifyOnError: true
+      });
+      if (!result?.success || !result.payload) {
+        throw new TicketError(result?.code, result?.message);
       }
       return result.payload;
     }

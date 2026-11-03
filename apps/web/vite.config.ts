@@ -5,7 +5,7 @@ import viteReact from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 
 const config = defineConfig(({ mode }) => {
-  const { API_PROXY_TARGET } = loadEnv(mode, process.cwd(), '');
+  const { API_PROXY_TARGET, WEB_PORT } = loadEnv(mode, process.cwd(), '');
   return {
     resolve: {
       tsconfigPaths: true,
@@ -23,7 +23,7 @@ const config = defineConfig(({ mode }) => {
     ],
     // The daemon listens on loopback only; proxying keeps the API same-origin for remote browsers.
     server: {
-      port: 3000,
+      port: Number(WEB_PORT),
       proxy: API_PROXY_TARGET
         ? { '/api': { target: API_PROXY_TARGET, ws: true } }
         : undefined

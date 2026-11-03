@@ -6,7 +6,7 @@
     "#*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev",
+    "dev": "until nc -z 127.0.0.1 3005; do sleep 1; done; vite dev",
     "generate-routes": "tsr generate",
     "build": "vite build",
     "preview": "vite preview",

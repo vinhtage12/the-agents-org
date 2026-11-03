@@ -12,6 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
 import { Route as AppTicketsRouteImport } from './routes/_app/tickets'
+import { Route as AppWarehouseRouteImport } from './routes/_app/warehouse'
+import { Route as AppWarehouseHomeRouteImport } from './routes/_app/warehouse.home'
+import { Route as AppWarehouseAgentsRouteImport } from './routes/_app/warehouse.agents'
+import { Route as AppWarehouseRepositoriesRouteImport } from './routes/_app/warehouse.repositories'
+import { Route as AppWarehouseRulesRouteImport } from './routes/_app/warehouse.rules'
+import { Route as AppWarehouseSkillsRouteImport } from './routes/_app/warehouse.skills'
+import { Route as AppWarehouseTicketsRouteImport } from './routes/_app/warehouse.tickets'
 import { Route as AppWorkspacesSplatRouteImport } from './routes/_app/workspaces.$'
 import { Route as AppWorkspacesWorkspaceIdProjectsSplatRouteImport } from './routes/_app/workspaces.$workspaceId.projects.$'
 
@@ -29,6 +36,42 @@ const AppTicketsRoute = AppTicketsRouteImport.update({
   path: '/tickets',
   getParentRoute: () => AppRoute,
 } as any)
+const AppWarehouseRoute = AppWarehouseRouteImport.update({
+  id: '/warehouse',
+  path: '/warehouse',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppWarehouseHomeRoute = AppWarehouseHomeRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppWarehouseRoute,
+} as any)
+const AppWarehouseAgentsRoute = AppWarehouseAgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => AppWarehouseRoute,
+} as any)
+const AppWarehouseRepositoriesRoute =
+  AppWarehouseRepositoriesRouteImport.update({
+    id: '/repositories',
+    path: '/repositories',
+    getParentRoute: () => AppWarehouseRoute,
+  } as any)
+const AppWarehouseRulesRoute = AppWarehouseRulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
+  getParentRoute: () => AppWarehouseRoute,
+} as any)
+const AppWarehouseSkillsRoute = AppWarehouseSkillsRouteImport.update({
+  id: '/skills',
+  path: '/skills',
+  getParentRoute: () => AppWarehouseRoute,
+} as any)
+const AppWarehouseTicketsRoute = AppWarehouseTicketsRouteImport.update({
+  id: '/tickets',
+  path: '/tickets',
+  getParentRoute: () => AppWarehouseRoute,
+} as any)
 const AppWorkspacesSplatRoute = AppWorkspacesSplatRouteImport.update({
   id: '/workspaces/$',
   path: '/workspaces/$',
@@ -44,35 +87,82 @@ const AppWorkspacesWorkspaceIdProjectsSplatRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AppHomeRoute
   '/tickets': typeof AppTicketsRoute
+  '/warehouse': typeof AppWarehouseRouteWithChildren
+  '/warehouse/agents': typeof AppWarehouseAgentsRoute
+  '/warehouse/repositories': typeof AppWarehouseRepositoriesRoute
+  '/warehouse/rules': typeof AppWarehouseRulesRoute
+  '/warehouse/skills': typeof AppWarehouseSkillsRoute
+  '/warehouse/tickets': typeof AppWarehouseTicketsRoute
   '/workspaces/$': typeof AppWorkspacesSplatRoute
+  '/warehouse/': typeof AppWarehouseHomeRoute
   '/workspaces/$workspaceId/projects/$': typeof AppWorkspacesWorkspaceIdProjectsSplatRoute
 }
 export interface FileRoutesByTo {
   '/tickets': typeof AppTicketsRoute
   '/': typeof AppHomeRoute
+  '/warehouse/agents': typeof AppWarehouseAgentsRoute
+  '/warehouse/repositories': typeof AppWarehouseRepositoriesRoute
+  '/warehouse/rules': typeof AppWarehouseRulesRoute
+  '/warehouse/skills': typeof AppWarehouseSkillsRoute
+  '/warehouse/tickets': typeof AppWarehouseTicketsRoute
   '/workspaces/$': typeof AppWorkspacesSplatRoute
+  '/warehouse': typeof AppWarehouseHomeRoute
   '/workspaces/$workspaceId/projects/$': typeof AppWorkspacesWorkspaceIdProjectsSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_app/tickets': typeof AppTicketsRoute
+  '/_app/warehouse': typeof AppWarehouseRouteWithChildren
   '/_app/': typeof AppHomeRoute
+  '/_app/warehouse/agents': typeof AppWarehouseAgentsRoute
+  '/_app/warehouse/repositories': typeof AppWarehouseRepositoriesRoute
+  '/_app/warehouse/rules': typeof AppWarehouseRulesRoute
+  '/_app/warehouse/skills': typeof AppWarehouseSkillsRoute
+  '/_app/warehouse/tickets': typeof AppWarehouseTicketsRoute
   '/_app/workspaces/$': typeof AppWorkspacesSplatRoute
+  '/_app/warehouse/': typeof AppWarehouseHomeRoute
   '/_app/workspaces/$workspaceId/projects/$': typeof AppWorkspacesWorkspaceIdProjectsSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/tickets' | '/workspaces/$' | '/workspaces/$workspaceId/projects/$'
+    | '/'
+    | '/tickets'
+    | '/warehouse'
+    | '/warehouse/agents'
+    | '/warehouse/repositories'
+    | '/warehouse/rules'
+    | '/warehouse/skills'
+    | '/warehouse/tickets'
+    | '/workspaces/$'
+    | '/warehouse/'
+    | '/workspaces/$workspaceId/projects/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/tickets' | '/' | '/workspaces/$' | '/workspaces/$workspaceId/projects/$'
+  to:
+    | '/tickets'
+    | '/'
+    | '/warehouse/agents'
+    | '/warehouse/repositories'
+    | '/warehouse/rules'
+    | '/warehouse/skills'
+    | '/warehouse/tickets'
+    | '/workspaces/$'
+    | '/warehouse'
+    | '/workspaces/$workspaceId/projects/$'
   id:
     | '__root__'
     | '/_app'
     | '/_app/tickets'
+    | '/_app/warehouse'
     | '/_app/'
+    | '/_app/warehouse/agents'
+    | '/_app/warehouse/repositories'
+    | '/_app/warehouse/rules'
+    | '/_app/warehouse/skills'
+    | '/_app/warehouse/tickets'
     | '/_app/workspaces/$'
+    | '/_app/warehouse/'
     | '/_app/workspaces/$workspaceId/projects/$'
   fileRoutesById: FileRoutesById
 }
@@ -103,6 +193,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTicketsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/warehouse': {
+      id: '/_app/warehouse'
+      path: '/warehouse'
+      fullPath: '/warehouse'
+      preLoaderRoute: typeof AppWarehouseRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/warehouse/': {
+      id: '/_app/warehouse/'
+      path: '/'
+      fullPath: '/warehouse/'
+      preLoaderRoute: typeof AppWarehouseHomeRouteImport
+      parentRoute: typeof AppWarehouseRoute
+    }
+    '/_app/warehouse/agents': {
+      id: '/_app/warehouse/agents'
+      path: '/agents'
+      fullPath: '/warehouse/agents'
+      preLoaderRoute: typeof AppWarehouseAgentsRouteImport
+      parentRoute: typeof AppWarehouseRoute
+    }
+    '/_app/warehouse/repositories': {
+      id: '/_app/warehouse/repositories'
+      path: '/repositories'
+      fullPath: '/warehouse/repositories'
+      preLoaderRoute: typeof AppWarehouseRepositoriesRouteImport
+      parentRoute: typeof AppWarehouseRoute
+    }
+    '/_app/warehouse/rules': {
+      id: '/_app/warehouse/rules'
+      path: '/rules'
+      fullPath: '/warehouse/rules'
+      preLoaderRoute: typeof AppWarehouseRulesRouteImport
+      parentRoute: typeof AppWarehouseRoute
+    }
+    '/_app/warehouse/skills': {
+      id: '/_app/warehouse/skills'
+      path: '/skills'
+      fullPath: '/warehouse/skills'
+      preLoaderRoute: typeof AppWarehouseSkillsRouteImport
+      parentRoute: typeof AppWarehouseRoute
+    }
+    '/_app/warehouse/tickets': {
+      id: '/_app/warehouse/tickets'
+      path: '/tickets'
+      fullPath: '/warehouse/tickets'
+      preLoaderRoute: typeof AppWarehouseTicketsRouteImport
+      parentRoute: typeof AppWarehouseRoute
+    }
     '/_app/workspaces/$': {
       id: '/_app/workspaces/$'
       path: '/workspaces/$'
@@ -120,8 +259,31 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppWarehouseRouteChildren {
+  AppWarehouseAgentsRoute: typeof AppWarehouseAgentsRoute
+  AppWarehouseRepositoriesRoute: typeof AppWarehouseRepositoriesRoute
+  AppWarehouseRulesRoute: typeof AppWarehouseRulesRoute
+  AppWarehouseSkillsRoute: typeof AppWarehouseSkillsRoute
+  AppWarehouseTicketsRoute: typeof AppWarehouseTicketsRoute
+  AppWarehouseHomeRoute: typeof AppWarehouseHomeRoute
+}
+
+const AppWarehouseRouteChildren: AppWarehouseRouteChildren = {
+  AppWarehouseAgentsRoute: AppWarehouseAgentsRoute,
+  AppWarehouseRepositoriesRoute: AppWarehouseRepositoriesRoute,
+  AppWarehouseRulesRoute: AppWarehouseRulesRoute,
+  AppWarehouseSkillsRoute: AppWarehouseSkillsRoute,
+  AppWarehouseTicketsRoute: AppWarehouseTicketsRoute,
+  AppWarehouseHomeRoute: AppWarehouseHomeRoute,
+}
+
+const AppWarehouseRouteWithChildren = AppWarehouseRoute._addFileChildren(
+  AppWarehouseRouteChildren,
+)
+
 interface AppRouteChildren {
   AppTicketsRoute: typeof AppTicketsRoute
+  AppWarehouseRoute: typeof AppWarehouseRouteWithChildren
   AppHomeRoute: typeof AppHomeRoute
   AppWorkspacesSplatRoute: typeof AppWorkspacesSplatRoute
   AppWorkspacesWorkspaceIdProjectsSplatRoute: typeof AppWorkspacesWorkspaceIdProjectsSplatRoute
@@ -129,6 +291,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppTicketsRoute: AppTicketsRoute,
+  AppWarehouseRoute: AppWarehouseRouteWithChildren,
   AppHomeRoute: AppHomeRoute,
   AppWorkspacesSplatRoute: AppWorkspacesSplatRoute,
   AppWorkspacesWorkspaceIdProjectsSplatRoute:

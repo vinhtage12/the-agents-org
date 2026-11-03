@@ -108,7 +108,7 @@ export class TicketsController {
   }
   @Post('tickets/:id/move')
   move(@Param('id', ParseIntPipe) id: number, @Body() body: MoveTicketDto) {
-    return this.tickets.move(id, body.to);
+    return this.tickets.move(id, body.to, body.branch);
   }
   @Put('tickets/:id/spec')
   saveSpec(@Param('id', ParseIntPipe) id: number, @Body() body: UpdateSpecDto) {

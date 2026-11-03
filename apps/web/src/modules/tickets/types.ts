@@ -1,3 +1,4 @@
+import type { IAgentRef, IOption } from '#modules/warehouse';
 import type { TICKET_STATUSES } from './constants';
 
 export type TicketStatus = (typeof TICKET_STATUSES)[number];
@@ -37,24 +38,31 @@ export interface IBoardTicket extends ITicketBase {
   status: TicketStatus;
   label: BoardLabel | null;
   specVersion: number | null;
+  branch: string | null;
+  repoId: number | null;
+  agent: { id: number; name: string } | null;
 }
 export interface IRepoConflict {
   id: number;
   jiraKey: string;
   projectId: number | null;
 }
+export interface INewBranch {
+  base: string;
+  name: string;
+  push: boolean;
+}
 export interface IMoveTicket {
   ticketId: number;
   to: TicketStatus;
+  branch?: INewBranch;
+}
+export interface IGitBranches {
+  data: { label: string }[];
+  base: string | null;
 }
 export type AgentStep = 'SPEC' | 'DEV' | 'TEST';
 export type AgentRunStatus = 'RUNNING' | 'COMPLETED' | 'FAILED' | 'STOPPED';
-export interface IAgentOption {
-  slug: string;
-  name: string;
-  provider: string;
-  model?: string;
-}
 export interface ISpecVersion {
   version: number;
   content: string;
@@ -89,18 +97,22 @@ export interface ITestResults {
   finishedAt: string;
   results: ITestResult[];
 }
-export interface ITicketAgents<TValue = string | null> {
+export interface ITicketAgents<TValue> {
   specAgent: TValue;
   devAgent: TValue;
   testAgent: TValue;
 }
-export interface ITicketDetail extends ITicketBase, ITicketAgents {
+export interface ITicketDetail
+  extends ITicketBase,
+    ITicketAgents<IAgentRef | null> {
   description: string;
   status: TicketStatus;
   projectId: number | null;
   repoId: number | null;
   extraInstructions: string;
-  extraSkills: string[];
+  branch: string | null;
+  skills: { id: number; name: string; provider: string; command: string }[];
+  rules: { id: number; name: string }[];
   specApprovedAt: string | null;
   label: BoardLabel | null;
   spec: ISpecVersion | null;
@@ -111,22 +123,21 @@ export interface ITicketDetail extends ITicketBase, ITicketAgents {
   testCases: ITestCase[];
   testResults: ITestResults | null;
 }
-export type IUpdateTicket = Partial<
-  Pick<
-    ITicketDetail,
-    | 'projectId'
-    | 'repoId'
-    | 'specAgent'
-    | 'devAgent'
-    | 'testAgent'
-    | 'extraInstructions'
-    | 'extraSkills'
-  >
->;
-export interface ITicketSettingsValues extends ITicketAgents<string> {
+export interface IUpdateTicket {
+  projectId?: number;
+  repoId?: number | null;
+  specAgentId?: number | null;
+  devAgentId?: number | null;
+  testAgentId?: number | null;
+  skillIds?: number[];
+  ruleIds?: number[];
+  extraInstructions?: string;
+}
+export interface ITicketSettingsValues extends ITicketAgents<IOption | null> {
   projectId: string;
   repoId: string;
-  extraSkills: string;
+  skills: IOption[];
+  rules: IOption[];
   extraInstructions: string;
 }
 export interface ITicketRequest<TData = unknown> {
@@ -136,4 +147,9 @@ export interface ITicketRequest<TData = unknown> {
 export interface IReplyAgent {
   paneId: string;
   prompt: string;
+}
+export interface IBranchValues {
+  base: { label: string } | null;
+  type: string;
+  name: string;
 }

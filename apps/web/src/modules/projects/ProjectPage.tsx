@@ -1,5 +1,10 @@
-import { memo } from 'react';
-import { useLocation, useParams } from '@tanstack/react-router';
+import { memo, useEffect } from 'react';
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearch
+} from '@tanstack/react-router';
 import { Settings } from 'lucide-react';
 
 import {
@@ -13,7 +18,7 @@ import {
 } from '@truyenmoinhu/uikit';
 
 import { trans } from '#i18n';
-import { ProjectBoard } from '#modules/tickets';
+import { ProjectBoard, openTicketDialog } from '#modules/tickets';
 import {
   EntityActions,
   EntityForm,
@@ -21,17 +26,26 @@ import {
   useWorkspaces
 } from '#modules/workspaces';
 
-import { useAgentProfiles } from './hooks';
 import ProjectSettings from './ProjectSettings';
 
 const ProjectPage = () => {
   const { data, isLoading, error, refetch } = useWorkspaces();
-  const agentProfiles = useAgentProfiles();
+  const navigate = useNavigate();
+  const { ticket } = useSearch({ strict: false }) as { ticket?: number };
   const pathname = useLocation({ select: l => l.pathname });
   const { workspaceId, _splat = '' } = useParams({ strict: false });
   const parts = _splat.split('/').filter(Boolean);
   const workspace = data?.find(w => String(w.id) === workspaceId);
   const project = workspace?.projects.find(p => String(p.id) === parts[0]);
+  // ?ticket=<id> (links from the warehouse) opens that ticket, then drops the param.
+  useEffect(() => {
+    if (!ticket) {
+      return;
+    }
+    openTicketDialog(ticket);
+    void navigate({ to: '.', search: {}, replace: true });
+  }, [ticket, navigate]);
+
   if (isLoading) {
     return <TmnLoading />;
   }
@@ -108,10 +122,7 @@ const ProjectPage = () => {
           <EntityActions workspace={workspace} project={project} />
         </TmnFlex>
       </TmnFlex>
-      <ProjectBoard
-        projectId={project.id}
-        profiles={agentProfiles.data?.profiles ?? []}
-      />
+      <ProjectBoard projectId={project.id} />
     </TmnFlex>
   );
 };

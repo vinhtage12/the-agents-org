@@ -1,15 +1,17 @@
 import { buildAgentArgs } from './agent-args';
 
-import type { AgentProfile } from '../../agent-profiles/services/agent-profiles.service';
+import type { RunAgent } from './spec-prompt';
 
-const profile: AgentProfile = {
-  slug: 'analyst',
+const profile: RunAgent = {
+  id: 1,
   name: 'Analyst',
   provider: 'claude',
   model: 'claude-opus-5-5',
   effort: 'high',
-  skills: ['brainstorming'],
-  instructions: 'Think hard.'
+  path: '/x',
+  allowedTools: [],
+  skills: [],
+  rules: []
 };
 
 describe('buildAgentArgs', () => {
@@ -44,9 +46,21 @@ describe('buildAgentArgs', () => {
     ]);
     expect(
       buildAgentArgs(
-        { ...profile, provider: 'agy', model: undefined, effort: undefined },
+        { ...profile, provider: 'agy', model: null, effort: null },
         '/runs'
       )
     ).toEqual([]);
+  });
+
+  it('passes allowed tools to claude and copilot only', () => {
+    const tools = { ...profile, allowedTools: ['Bash', 'Edit'] };
+    expect(buildAgentArgs(tools, '/runs')).toContain('Bash,Edit');
+    expect(buildAgentArgs(tools, '/runs')).toContain('--allowedTools');
+    expect(buildAgentArgs({ ...tools, provider: 'copilot' }, '/runs')).toEqual(
+      expect.arrayContaining(['--allow-tool', 'Bash', 'Edit'])
+    );
+    expect(
+      buildAgentArgs({ ...tools, provider: 'codex' }, '/runs').join(' ')
+    ).not.toMatch(/Bash/);
   });
 });

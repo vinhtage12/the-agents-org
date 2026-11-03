@@ -17,7 +17,8 @@ export const TICKET_QUERY_KEYS = {
   store: generateQueryKey('ticket-store'),
   board: generateQueryKey('project-board'),
   detail: generateQueryKey('ticket-detail'),
-  output: generateQueryKey('agent-output')
+  output: generateQueryKey('agent-output'),
+  gitBranches: generateQueryKey('git-branches')
 };
 // Drag moves the daemon accepts (its assertTransition table).
 export const MOVABLE: Partial<Record<TicketStatus, TicketStatus[]>> = {
@@ -38,13 +39,29 @@ export const BOARD_EVENT = 'board-changed';
 export const TICKET_ENDPOINTS = {
   tickets: withGenerateEndpoint('tickets'),
   projects: withGenerateEndpoint('projects'),
+  repositories: withGenerateEndpoint('repositories'),
   agents: withGenerateEndpoint('agents')
 };
 export const MAX_FIX_ROUNDS = 2;
 export const OUTPUT_REFETCH_MS = 2000;
 export const OUTPUT_LINES = 200;
 export const UNASSIGNED_COLUMN = 'store-col-none';
-export const AGENT_STEPS = ['specAgent', 'devAgent', 'testAgent'] as const;
+// Settings field -> agent role the daemon accepts for that step.
+export const AGENT_STEPS = [
+  { step: 'specAgent', role: 'BA' },
+  { step: 'devAgent', role: 'DEV' },
+  { step: 'testAgent', role: 'QC' }
+] as const;
+export const BRANCH_DIALOG = 'branch-dialog';
+export const BRANCH_TYPES = [
+  'feat',
+  'bug',
+  'hotfix',
+  'refactor',
+  'chore',
+  'docs',
+  'test'
+] as const;
 export const TICKET_DIALOG = 'ticket-dialog';
 // No typography plugin: style rendered markdown from the wrapper.
 export const MARKDOWN_CLASS =

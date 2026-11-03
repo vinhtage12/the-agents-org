@@ -8,7 +8,6 @@ import {
 } from 'class-validator';
 
 import type { Project as ProjectModel } from '../../../generated/prisma/client';
-import type { ProjectRepoEntity } from '../../projects/entities/project-repo.entity';
 import type { TicketEntity } from '../../tickets/entities/ticket.entity';
 import type { WorkspaceEntity } from './workspace.entity';
 
@@ -53,8 +52,24 @@ export class ProjectEntity implements ProjectModel {
   @MaxLength(128)
   testAgent!: string | null;
 
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(2147483647)
+  specAgentId!: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(2147483647)
+  devAgentId!: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(2147483647)
+  testAgentId!: number | null;
+
   workspace?: WorkspaceEntity;
-  defaultRepo?: ProjectRepoEntity | null;
-  repos?: ProjectRepoEntity[];
   tickets?: TicketEntity[];
 }

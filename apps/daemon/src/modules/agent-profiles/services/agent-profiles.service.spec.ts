@@ -2,8 +2,9 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { ConfigService } from '@nestjs/config';
+import { BadRequestException } from '@nestjs/common';
 
+import { PrismaService } from '../../../database/prisma.service';
 import {
   AgentProfilesService,
   parseAgentProfile
@@ -43,36 +44,53 @@ describe('parseAgentProfile', () => {
     expect(() => parseAgentProfile('x', 'hello')).toThrow('frontmatter');
   });
 });
+
 describe('AgentProfilesService', () => {
+  const prisma = {
+    agent: { findUnique: jest.fn(), create: jest.fn() },
+    skill: { findMany: jest.fn() },
+    rule: { findMany: jest.fn() }
+  };
+  const service = new AgentProfilesService(prisma as unknown as PrismaService);
   let dir: string;
-  let service: AgentProfilesService;
+  const body = (path: string, extra = {}) => ({
+    name: 'Dev',
+    role: 'DEV' as const,
+    provider: 'claude',
+    path,
+    description: '',
+    allowedTools: [],
+    skillIds: [],
+    ruleIds: [],
+    ...extra
+  });
+
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), 'profiles-'));
-    service = new AgentProfilesService(new ConfigService({ AGENTS_DIR: dir }));
-    await writeFile(join(dir, 'good.md'), '---\nprovider: codex\n---\nHello');
+    jest.resetAllMocks();
+    dir = await mkdtemp(join(tmpdir(), 'agent-dir-'));
   });
-  afterEach(async () => {
-    await rm(dir, { recursive: true, force: true });
-  });
-  it('reports invalid files without failing the list', async () => {
-    await writeFile(join(dir, 'bad.md'), '---\nname: Bad\n---\n');
-    await writeFile(join(dir, 'notes.txt'), 'notes');
-    const result = await service.list();
-    expect(result.profiles.map(p => p.slug)).toEqual(['good']);
-    expect(result.errors).toEqual([
-      { file: 'bad.md', message: expect.stringContaining('provider') }
-    ]);
-  });
-  it('returns empty when the directory does not exist', async () => {
-    service = new AgentProfilesService(
-      new ConfigService({ AGENTS_DIR: join(dir, 'missing') })
+  afterEach(() => rm(dir, { recursive: true, force: true }));
+
+  it('rejects an agent folder without AGENT.md', async () => {
+    await expect(service.create(body(dir))).rejects.toBeInstanceOf(
+      BadRequestException
     );
-    await expect(service.list()).resolves.toEqual({ profiles: [], errors: [] });
   });
-  it('assertExists throws for unknown slug and ignores null', async () => {
-    await expect(service.assertExists([null, 'good'])).resolves.toBeUndefined();
-    await expect(service.assertExists(['missing'])).rejects.toThrow(
-      'Unknown agent: missing'
+
+  it('rejects skills of another provider', async () => {
+    await writeFile(join(dir, 'AGENT.md'), 'x');
+    prisma.skill.findMany.mockResolvedValue([{ id: 3, provider: 'codex' }]);
+    await expect(
+      service.create(body(dir, { skillIds: [3] }))
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.agent.create).not.toHaveBeenCalled();
+  });
+
+  it('assertRole rejects a DEV agent for the spec step', async () => {
+    prisma.agent.findUnique.mockResolvedValue({ id: 1, role: 'DEV' });
+    await expect(service.assertRole(1, 'BA')).rejects.toBeInstanceOf(
+      BadRequestException
     );
+    await expect(service.assertRole(null, 'BA')).resolves.toBeUndefined();
   });
 });

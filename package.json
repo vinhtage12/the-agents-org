@@ -5,11 +5,13 @@
   "private": "true",
   "main": "index.js",
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
+    "dev": "turbo run dev",
     "format": "pnpm -r --parallel format",
     "lint": "pnpm --filter web run lint && pnpm --filter daemon run lint",
     "check": "pnpm -r --parallel check",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "turbo run test",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck"
   },
   "keywords": [],
   "author": "",
@@ -17,7 +19,8 @@
   "packageManager": "pnpm@10.12.1",
   "devDependencies": {
     "@biomejs/biome": "2.4.2",
-    "lefthook": "^2.2.2"
+    "lefthook": "^2.2.2",
+    "turbo": "^2.11.10"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

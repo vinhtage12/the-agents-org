@@ -24,12 +24,10 @@ import StopAgentsButton from './StopAgentsButton';
 import TestPanel from './TestPanel';
 import TicketSettingsForm from './TicketSettingsForm';
 
-import type { IAgentOption } from './types';
 export interface ITicketDialogProps {
   ticketId: number;
-  profiles: IAgentOption[];
 }
-const TicketDialog = ({ ticketId, profiles }: ITicketDialogProps) => {
+const TicketDialog = ({ ticketId }: ITicketDialogProps) => {
   const { data, isLoading, error, refetch } = useTicketDetail(ticketId);
   const [editDirty, setEditDirty] = useState(false);
   const [tab, setTab] = useState('spec');
@@ -110,7 +108,6 @@ const TicketDialog = ({ ticketId, profiles }: ITicketDialogProps) => {
           <TicketSettingsForm
             key={`${data.projectId}-${data.status}`}
             ticket={data}
-            profiles={profiles}
           />
         </TmnTab.Content>
         <TmnTab.Content value="test">

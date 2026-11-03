@@ -2,11 +2,17 @@ import { type SpecPromptInput, buildSpecPrompt } from './spec-prompt';
 
 const input: SpecPromptInput = {
   profile: {
-    slug: 'analyst',
+    id: 1,
     name: 'Analyst',
     provider: 'claude',
-    skills: ['brainstorming'],
-    instructions: 'Think hard.'
+    model: null,
+    effort: null,
+    path: '/x/members/analyst',
+    allowedTools: [],
+    skills: [
+      { command: '/brainstorming', description: 'Plan', provider: 'claude' }
+    ],
+    rules: [{ path: '/rules/a.md' }]
   },
   ticket: {
     jiraKey: 'FMS-1',
@@ -14,7 +20,12 @@ const input: SpecPromptInput = {
     description: 'Users log in',
     jiraUrl: 'https://j/browse/FMS-1',
     extraInstructions: 'Use SSO.',
-    extraSkills: ['brainstorming', 'jira']
+    skills: [
+      { command: '/brainstorming', description: 'Plan', provider: 'claude' },
+      { command: '/jira', description: 'Jira', provider: 'claude' },
+      { command: '$other', description: 'Codex only', provider: 'codex' }
+    ],
+    rules: [{ path: '/rules/a.md' }, { path: '/rules/b.md' }]
   },
   repoPath: '/repos/ff-web',
   run: {
@@ -28,9 +39,9 @@ const input: SpecPromptInput = {
 describe('buildSpecPrompt', () => {
   it('builds the first spec prompt with the callback contract', () => {
     const text = buildSpecPrompt(input);
-    expect(text).toContain('Think hard.');
+    expect(text).toContain('/x/members/analyst/AGENT.md');
     expect(text).toContain('Use SSO.');
-    expect(text).toContain('Skills: brainstorming, jira');
+    expect(text).toContain('- /jira: Jira');
     expect(text).toContain('FMS-1');
     expect(text).toContain('Users log in');
     expect(text).toContain('/repos/ff-web');
@@ -45,9 +56,9 @@ describe('buildSpecPrompt', () => {
     const text = buildSpecPrompt({
       ...input,
       profile: { ...input.profile, skills: [] },
-      ticket: { ...input.ticket, extraSkills: [] }
+      ticket: { ...input.ticket, skills: [] }
     });
-    expect(text).not.toContain('Skills:');
+    expect(text).not.toContain('Skills you can use');
   });
 
   it('includes the hand-edited spec and feedback', () => {

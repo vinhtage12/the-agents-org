@@ -1,16 +1,18 @@
-import type { AgentProfile } from '../../agent-profiles/services/agent-profiles.service';
+import type { RunAgent } from './spec-prompt';
 
 // CLI flags per provider, checked against each CLI's --help.
 const FLAGS: Record<
-  AgentProfile['provider'],
+  string,
   {
     model: string;
+    tools?: (tools: string[]) => string[];
     effort: (effort: string) => string[];
     dir: (dir: string) => string[];
   }
 > = {
   claude: {
     model: '--model',
+    tools: t => ['--allowedTools', t.join(',')],
     effort: e => ['--effort', e],
     dir: d => ['--add-dir', d]
   },
@@ -27,20 +29,22 @@ const FLAGS: Record<
   },
   copilot: {
     model: '--model',
+    tools: t => t.flatMap(tool => ['--allow-tool', tool]),
     effort: e => ['--reasoning-effort', e],
     dir: d => ['--add-dir', d]
   },
   agy: { model: '--model', effort: e => ['--effort', e], dir: () => [] }
 };
 
-export function buildAgentArgs(
-  profile: AgentProfile,
-  runsDir: string
-): string[] {
-  const flags = FLAGS[profile.provider];
+export function buildAgentArgs(agent: RunAgent, runsDir: string): string[] {
+  const flags = FLAGS[agent.provider];
   return [
-    ...(profile.model ? [flags.model, profile.model] : []),
-    ...(profile.effort ? flags.effort(profile.effort) : []),
+    ...(agent.model ? [flags.model, agent.model] : []),
+    ...(agent.effort ? flags.effort(agent.effort) : []),
+    // codex and agy have no per-tool allow flag.
+    ...(agent.allowedTools.length
+      ? (flags.tools?.(agent.allowedTools) ?? [])
+      : []),
     ...flags.dir(runsDir)
   ];
 }

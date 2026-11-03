@@ -7,7 +7,6 @@ import {
   type TmnDnDRootProps,
   TmnFlex,
   TmnLoading,
-  type TmnPopupItemRendererParams,
   TmnScrollArea,
   TmnText,
   UIUtils
@@ -16,10 +15,11 @@ import {
 import { trans } from '#i18n';
 
 import BoardColumn from './BoardColumn';
+import BranchDialogRenderer from './BranchDialogRenderer';
 import {
   AGENT_START_STATUSES,
+  BRANCH_DIALOG,
   MOVABLE,
-  TICKET_DIALOG,
   TICKET_STATUSES
 } from './constants';
 import { TicketError } from './error';
@@ -29,38 +29,30 @@ import {
   useProjectTickets,
   useRepoConflicts
 } from './hooks';
-import TicketDialog from './TicketDialog';
+import { openTicketDialog } from './TicketDialogRenderer';
 
-import type { ITicketDialogProps } from './TicketDialog';
-import type { IAgentOption, IRepoConflict, TicketStatus } from './types';
-
-const TicketDialogRenderer = ({
-  params
-}: TmnPopupItemRendererParams<ITicketDialogProps>) => {
-  const { profiles, ticketId } = params || {};
-  if (!profiles || !ticketId) {
-    return null;
-  }
-  return <TicketDialog profiles={profiles} ticketId={ticketId} />;
-};
+import type { IBoardTicket, IRepoConflict, TicketStatus } from './types';
 
 export interface IProjectBoardProps {
   projectId: number;
-  profiles: IAgentOption[];
 }
-const ProjectBoard = ({ projectId, profiles }: IProjectBoardProps) => {
+const ProjectBoard = ({ projectId }: IProjectBoardProps) => {
   const { data, isLoading, error, refetch } = useProjectTickets(projectId);
   const move = useMoveTicket();
   const conflicts = useRepoConflicts();
   const [pendingId, setPendingId] = useState<number | null>(null);
   useBoardEvents(projectId);
 
-  const openTicket = (ticketId: number) => {
+  const openBranchDialog = (ticket: IBoardTicket) => {
     UIUtils.popup.open({
-      name: TICKET_DIALOG,
-      size: 'xl',
-      renderer: TicketDialogRenderer,
-      params: { ticketId, profiles }
+      name: BRANCH_DIALOG,
+      size: 'md',
+      renderer: BranchDialogRenderer,
+      params: {
+        ticketId: ticket.id,
+        jiraKey: ticket.jiraKey,
+        repoId: ticket.repoId
+      }
     });
   };
 
@@ -94,6 +86,12 @@ const ProjectBoard = ({ projectId, profiles }: IProjectBoardProps) => {
       return;
     }
     const ticketId: number = source.ticketId;
+    const ticket = data?.find(t => t.id === ticketId);
+    // First move to In Progress: pick the branch before anything runs.
+    if (to === 'IN_PROGRESS' && ticket && ticket.branch === null) {
+      openBranchDialog(ticket);
+      return;
+    }
     if (AGENT_START_STATUSES.includes(to)) {
       let overlapping: IRepoConflict[] = [];
       try {
@@ -149,7 +147,7 @@ const ProjectBoard = ({ projectId, profiles }: IProjectBoardProps) => {
               status={status}
               tickets={data.filter(t => t.status === status)}
               pendingId={pendingId}
-              onOpen={openTicket}
+              onOpen={openTicketDialog}
             />
           ))}
         </TmnFlex>

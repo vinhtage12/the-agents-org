@@ -2,11 +2,14 @@ import { generateQueryKey } from '@truyenmoinhu/query';
 
 import { withGenerateEndpoint } from '#utils/query';
 export const PROJECT_QUERY_KEYS = {
-  settings: generateQueryKey('project-settings'),
-  agentProfiles: generateQueryKey('agent-profiles')
+  settings: generateQueryKey('project-settings')
 };
 export const PROJECT_ENDPOINTS = {
-  workspaces: withGenerateEndpoint('workspaces'),
-  agentProfiles: withGenerateEndpoint('agent-profiles')
+  workspaces: withGenerateEndpoint('workspaces')
 };
-export const AGENT_ROLES = ['specAgent', 'devAgent', 'testAgent'] as const;
+// Form field -> agent role the daemon accepts for that step.
+export const AGENT_FIELDS = [
+  { field: 'specAgent', role: 'BA' },
+  { field: 'devAgent', role: 'DEV' },
+  { field: 'testAgent', role: 'QC' }
+] as const;

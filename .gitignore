@@ -9,5 +9,8 @@ dist
 .codegraph
 .superpowers
 .playwright-mcp
+.pnpm-store
 
 __pycache__/
+
+.turbo

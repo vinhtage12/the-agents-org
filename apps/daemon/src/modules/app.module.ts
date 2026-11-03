@@ -8,15 +8,23 @@ import { AgentRunsModule } from './agent-runs/agent-runs.module';
 import { AgentUsageModule } from './agent-usage/agent-usage.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { GitModule } from './git/git.module';
 import { HerdrModule } from './herdr/herdr.module';
 import { JiraModule } from './jira/jira.module';
 import { ProjectsModule } from './projects/projects.module';
+import { RepositoriesModule } from './repositories/repositories.module';
+import { RulesModule } from './rules/rules.module';
+import { SkillsModule } from './skills/skills.module';
 import { SystemModule } from './system/system.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
   imports: [
+    RulesModule,
+    SkillsModule,
+    RepositoriesModule,
+    GitModule,
     AgentRunsModule,
     ConfigModule.forRoot({
       isGlobal: true,

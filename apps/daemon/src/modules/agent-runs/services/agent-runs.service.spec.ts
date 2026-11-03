@@ -15,6 +15,7 @@ import { AgentRunsService } from './agent-runs.service';
 
 import type { PrismaService } from '../../../database/prisma.service';
 import type { AgentProfilesService } from '../../agent-profiles/services/agent-profiles.service';
+import type { GitService } from '../../git/services/git.service';
 import type { HerdrService } from '../../herdr/services/herdr.service';
 import type { BoardGateway } from '../gateways/board.gateway';
 
@@ -47,6 +48,8 @@ describe('AgentRunsService', () => {
     subscribeAgent: jest.fn()
   };
   const profiles = { get: jest.fn() };
+  const git = { currentBranch: jest.fn() };
+  let agentDir: string;
   const board = { emitChanged: jest.fn() };
   let service: AgentRunsService;
 
@@ -60,8 +63,11 @@ describe('AgentRunsService', () => {
       board as unknown as BoardGateway,
       {
         get: (key: string) => ({ RUNS_DIR: runsDir, PORT: 3005 })[key]
-      } as never
+      } as never,
+      git as unknown as GitService
     );
+    agentDir = await mkdtemp(join(tmpdir(), 'agent-'));
+    await writeFile(join(agentDir, 'AGENT.md'), 'Think hard.');
     prisma.ticket.findUnique.mockResolvedValue({
       id: 10,
       projectId: 3,
@@ -70,20 +76,25 @@ describe('AgentRunsService', () => {
       description: 'Users log in',
       jiraUrl: 'https://j/browse/FMS-1',
       extraInstructions: '',
-      extraSkills: [],
-      specAgent: 'analyst',
-      devAgent: 'fe-dev',
-      testAgent: 'tester',
+      skills: [],
+      rules: [],
+      branch: null,
+      specAgentId: 1,
+      devAgentId: 2,
+      testAgentId: 3,
       repoId: 5,
       repo: { id: 5, path: repoDir }
     });
     profiles.get.mockResolvedValue({
-      slug: 'analyst',
+      id: 1,
       name: 'Analyst',
       provider: 'claude',
       model: 'claude-opus-5-5',
+      effort: null,
+      path: agentDir,
+      allowedTools: [],
       skills: [],
-      instructions: 'Think hard.'
+      rules: []
     });
     prisma.agentRun.count.mockResolvedValue(0);
     prisma.agentRun.findFirst.mockResolvedValue(null);
@@ -143,7 +154,7 @@ describe('AgentRunsService', () => {
       id: 10,
       status: 'CANCELED',
       repo: { id: 5, path: repoDir },
-      specAgent: 'analyst'
+      specAgentId: 1
     });
     await expect(service.startSpec(10)).rejects.toThrow('Ticket is closed');
     expect(prisma.agentRun.create).not.toHaveBeenCalled();
@@ -168,7 +179,8 @@ describe('AgentRunsService', () => {
       data: expect.objectContaining({
         ticketId: 10,
         step: 'SPEC',
-        agentSlug: 'analyst',
+        agentSlug: 'Analyst',
+        agentId: 1,
         feedback: 'F'
       })
     });
@@ -178,7 +190,7 @@ describe('AgentRunsService', () => {
     prisma.agentRun.findFirst.mockResolvedValue({
       id: 3,
       paneId: 'w1:p4',
-      agentSlug: 'analyst',
+      agentId: 1,
       status: 'FAILED'
     });
     herdr.listAgents.mockResolvedValue([
@@ -193,7 +205,7 @@ describe('AgentRunsService', () => {
     prisma.agentRun.findFirst.mockResolvedValue({
       id: 3,
       paneId: 'w1:p4',
-      agentSlug: 'old',
+      agentId: 99,
       status: 'COMPLETED'
     });
     herdr.listAgents.mockResolvedValue([
@@ -209,7 +221,7 @@ describe('AgentRunsService', () => {
     prisma.agentRun.findFirst.mockResolvedValue({
       id: 3,
       paneId: 'w1:p4',
-      agentSlug: 'analyst',
+      agentId: 1,
       status: 'FAILED'
     });
     herdr.listAgents.mockResolvedValue([
@@ -274,9 +286,7 @@ describe('AgentRunsService', () => {
   });
 
   it('blocks when the agent file is gone', async () => {
-    profiles.get.mockRejectedValue(
-      new NotFoundException('Unknown agent: analyst')
-    );
+    profiles.get.mockRejectedValue(new NotFoundException('Agent not found'));
     await expect(service.startSpec(10)).rejects.toBeInstanceOf(
       NotFoundException
     );
@@ -289,14 +299,14 @@ describe('AgentRunsService', () => {
       id: 10,
       repoId: null,
       repo: null,
-      specAgent: 'analyst'
+      specAgentId: 1
     });
     await expect(service.startSpec(10)).rejects.toThrow('Ticket has no repo');
     prisma.ticket.findUnique.mockResolvedValueOnce({
       id: 10,
       repoId: 5,
       repo: { path: repoDir },
-      specAgent: null
+      specAgentId: null
     });
     await expect(service.startSpec(10)).rejects.toThrow(
       'Ticket has no spec agent'
@@ -310,17 +320,22 @@ describe('AgentRunsService', () => {
 
   it('starts a dev run with the dev agent in its own pane', async () => {
     profiles.get.mockResolvedValue({
-      slug: 'fe-dev',
+      id: 2,
+      name: 'Dev',
       provider: 'claude',
+      model: null,
+      effort: null,
+      path: agentDir,
+      allowedTools: [],
       skills: [],
-      instructions: ''
+      rules: []
     });
     prisma.agentRun.findFirst.mockImplementation(async ({ where }) =>
-      where.step === 'SPEC' ? { paneId: 'w1:p4', agentSlug: 'fe-dev' } : null
+      where.step === 'SPEC' ? { paneId: 'w1:p4', agentId: 2 } : null
     );
     herdr.listAgents.mockResolvedValue([{ paneId: 'w1:p4', cwd: repoDir }]);
     await service.start(10, 'DEV', () => 'Implement');
-    expect(profiles.get).toHaveBeenCalledWith('fe-dev');
+    expect(profiles.get).toHaveBeenCalledWith(2);
     expect(prisma.agentRun.count).toHaveBeenCalledWith({
       where: { ticketId: 10, step: 'DEV', status: 'RUNNING' }
     });
@@ -333,9 +348,44 @@ describe('AgentRunsService', () => {
     expect(herdr.closeAgent).not.toHaveBeenCalled();
   });
 
+  it('refuses to start when AGENT.md is missing', async () => {
+    profiles.get.mockResolvedValue({
+      id: 1,
+      name: 'Analyst',
+      provider: 'claude',
+      path: join(agentDir, 'gone'),
+      allowedTools: [],
+      skills: [],
+      rules: []
+    });
+    await expect(service.startSpec(10)).rejects.toThrow(
+      `Agent folder is missing AGENT.md: ${join(agentDir, 'gone')}`
+    );
+    expect(herdr.createAgent).not.toHaveBeenCalled();
+    expect(prisma.agentRun.create).not.toHaveBeenCalled();
+  });
+
+  it('refuses DEV when the repo is on another branch', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...(await prisma.ticket.findUnique({})),
+      branch: 'feat/FMS-1'
+    });
+    git.currentBranch.mockResolvedValue('main');
+    await expect(
+      service.start(10, 'DEV', () => 'Implement')
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.agentRun.create).not.toHaveBeenCalled();
+  });
+
+  it('skips the branch check for legacy tickets without a branch', async () => {
+    await service.start(10, 'DEV', () => 'Implement');
+    expect(git.currentBranch).not.toHaveBeenCalled();
+    expect(herdr.sendPrompt).toHaveBeenCalled();
+  });
+
   it('stores the test mode on the run', async () => {
     await service.start(10, 'TEST', () => 'Test', { testMode: 'WRITE_CASES' });
-    expect(profiles.get).toHaveBeenCalledWith('tester');
+    expect(profiles.get).toHaveBeenCalledWith(3);
     expect(prisma.agentRun.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ step: 'TEST', testMode: 'WRITE_CASES' })
     });

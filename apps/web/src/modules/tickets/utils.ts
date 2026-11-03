@@ -35,15 +35,14 @@ export const applyMoves = (
     ])
   );
 
-const toNullable = (value: string) => value || null;
-
 // A project change resets repo and agents to the new project's defaults on the daemon.
 export const toTicketUpdate = (
   values: ITicketSettingsValues,
   ticket: ITicketDetail
 ): IUpdateTicket => {
   const extras = {
-    extraSkills: values.extraSkills.split(/[\s,]+/).filter(Boolean),
+    skillIds: values.skills.map(s => s.id),
+    ruleIds: values.rules.map(r => r.id),
     extraInstructions: values.extraInstructions
   };
   const projectId = Number(values.projectId);
@@ -52,9 +51,9 @@ export const toTicketUpdate = (
   }
   return {
     repoId: values.repoId ? Number(values.repoId) : null,
-    specAgent: toNullable(values.specAgent),
-    devAgent: toNullable(values.devAgent),
-    testAgent: toNullable(values.testAgent),
+    specAgentId: values.specAgent?.id ?? null,
+    devAgentId: values.devAgent?.id ?? null,
+    testAgentId: values.testAgent?.id ?? null,
     ...extras
   };
 };

@@ -1,4 +1,8 @@
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  ConflictException
+} from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma.service';
 import { TicketsService, suggestProjectId } from './tickets.service';
@@ -19,6 +23,7 @@ describe('TicketsService', () => {
     {} as never,
     {} as never,
     {} as never,
+    {} as never,
     {} as never
   );
   beforeEach(() => {
@@ -34,9 +39,9 @@ describe('TicketsService', () => {
     tx.project.findUnique.mockResolvedValue({
       id: 3,
       defaultRepoId: 5,
-      specAgent: 'analyst',
-      devAgent: 'fe-dev',
-      testAgent: 'qa'
+      specAgentId: 11,
+      devAgentId: 12,
+      testAgentId: 13
     });
     tx.ticket.findMany.mockResolvedValue([]);
     tx.project.findMany.mockResolvedValue([]);
@@ -50,7 +55,7 @@ describe('TicketsService', () => {
     expect(suggestProjectId('APL-FMS-3', projects)).toBe(2);
     expect(suggestProjectId('OPS-88', projects)).toBeNull();
   });
-  it('links with project defaults', async () => {
+  it('copies project default agents by id when linking', async () => {
     await expect(
       service.link([{ ticketId: 10, projectId: 3 }])
     ).resolves.toEqual({ linked: 1 });
@@ -60,9 +65,9 @@ describe('TicketsService', () => {
         projectId: 3,
         status: 'TODO',
         repoId: 5,
-        specAgent: 'analyst',
-        devAgent: 'fe-dev',
-        testAgent: 'qa',
+        specAgentId: 11,
+        devAgentId: 12,
+        testAgentId: 13,
         linkedAt: expect.any(Date)
       })
     });
@@ -114,7 +119,7 @@ describe('TicketsService flow', () => {
       updateMany: jest.fn()
     },
     project: { findUnique: jest.fn(), findMany: jest.fn() },
-    projectRepo: { findFirst: jest.fn(), findMany: jest.fn() },
+    repo: { findFirst: jest.fn(), findMany: jest.fn(), findUnique: jest.fn() },
     specVersion: { findFirst: jest.fn(), update: jest.fn() },
     agentRun: { count: jest.fn(), findMany: jest.fn(), findFirst: jest.fn() },
     testCase: { findMany: jest.fn() },
@@ -127,14 +132,22 @@ describe('TicketsService flow', () => {
     liveStatuses: jest.fn()
   };
   const flow = { startDevelopment: jest.fn() };
+  const git = {
+    assertBranchName: jest.fn(),
+    isClean: jest.fn(),
+    branchExists: jest.fn(),
+    createBranch: jest.fn(),
+    push: jest.fn()
+  };
   const board = { emitChanged: jest.fn() };
-  const profiles = { assertExists: jest.fn() };
+  const profiles = { assertRole: jest.fn() };
   const service = new TicketsService(
     prisma as unknown as PrismaService,
     agentRuns as never,
     board as never,
     profiles as never,
-    flow as never
+    flow as never,
+    git as never
   );
   const ticket = {
     id: 10,
@@ -145,11 +158,16 @@ describe('TicketsService flow', () => {
     status: 'TODO',
     projectId: 3,
     repoId: 5,
-    specAgent: 'analyst',
-    devAgent: 'fe-dev',
-    testAgent: 'qa',
+    specAgentId: 11,
+    devAgentId: 12,
+    testAgentId: 13,
+    specAgentRef: null,
+    devAgentRef: null,
+    testAgentRef: null,
+    skills: [],
+    rules: [],
+    branch: null,
     extraInstructions: '',
-    extraSkills: [],
     fixRound: 0,
     specApprovedAt: null,
     project: { id: 3, workspaceId: 1 }
@@ -163,13 +181,16 @@ describe('TicketsService flow', () => {
     prisma.agentRun.count.mockResolvedValue(0);
     prisma.agentRun.findMany.mockResolvedValue([]);
     prisma.project.findMany.mockResolvedValue([]);
-    prisma.projectRepo.findMany.mockResolvedValue([]);
+    prisma.repo.findMany.mockResolvedValue([]);
     prisma.specVersion.findFirst.mockResolvedValue(null);
     agentRuns.liveStatuses.mockResolvedValue(new Map());
     agentRuns.startSpec.mockResolvedValue({ id: 1 });
     agentRuns.stop.mockResolvedValue(1);
     prisma.testCase.findMany.mockResolvedValue([]);
     prisma.agentRun.findFirst.mockResolvedValue(null);
+    prisma.repo.findUnique.mockResolvedValue({ id: 5, path: '/repo' });
+    git.isClean.mockResolvedValue(true);
+    git.branchExists.mockResolvedValue(false);
   });
 
   it('starts the spec agent when moving TODO → IN_SPEC', async () => {
@@ -296,29 +317,68 @@ describe('TicketsService flow', () => {
   });
 
   it('locks the repo while an agent runs', async () => {
-    prisma.projectRepo.findFirst.mockResolvedValue({ id: 6, projectId: 3 });
+    prisma.repo.findFirst.mockResolvedValue({ id: 6, projectId: 3 });
     prisma.agentRun.count.mockResolvedValue(1);
     await expect(service.update(10, { repoId: 6 })).rejects.toBeInstanceOf(
       ConflictException
     );
     await expect(
-      service.update(10, { specAgent: 'other' })
+      service.update(10, { specAgentId: 99 })
     ).rejects.toBeInstanceOf(ConflictException);
     expect(prisma.ticket.update).not.toHaveBeenCalled();
   });
 
   it('rejects a repo from another project and unknown agents', async () => {
-    prisma.projectRepo.findFirst.mockResolvedValue(null);
+    prisma.repo.findFirst.mockResolvedValue(null);
     await expect(service.update(10, { repoId: 77 })).rejects.toBeInstanceOf(
       BadRequestException
     );
-    profiles.assertExists.mockRejectedValue(
-      new BadRequestException('Unknown agent: x')
-    );
-    await expect(service.update(10, { devAgent: 'x' })).rejects.toBeInstanceOf(
+    profiles.assertRole.mockRejectedValue(new BadRequestException('role'));
+    await expect(service.update(10, { devAgentId: 99 })).rejects.toBeInstanceOf(
       BadRequestException
     );
     expect(prisma.ticket.update).not.toHaveBeenCalled();
+  });
+
+  it('clears the saved branch when the repo changes', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      branch: 'feat/FMS-1'
+    });
+    prisma.repo.findFirst.mockResolvedValue({ id: 5 });
+    await service.update(10, { repoId: 6 });
+    expect(prisma.ticket.update.mock.calls[0][0].data.branch).toBeNull();
+  });
+
+  it('sets skills and rules on update', async () => {
+    await service.update(10, { skillIds: [3], ruleIds: [4] });
+    expect(prisma.ticket.update.mock.calls[0][0].data).toMatchObject({
+      skills: { set: [{ id: 3 }] },
+      rules: { set: [{ id: 4 }] }
+    });
+  });
+
+  it('reports the running agent on board items', async () => {
+    prisma.project.findUnique.mockResolvedValue({ id: 3 });
+    prisma.ticket.findMany.mockResolvedValue([
+      {
+        id: 10,
+        jiraKey: 'FMS-1',
+        status: 'IN_PROGRESS',
+        specApprovedAt: null,
+        runs: [
+          {
+            status: 'RUNNING',
+            paneId: null,
+            startedAt: new Date(),
+            agent: { id: 7, name: 'Dev' }
+          }
+        ],
+        specs: []
+      }
+    ]);
+    const items = await service.board(3);
+    expect(items[0].agent).toEqual({ id: 7, name: 'Dev' });
   });
 
   it('locks the project after TODO', async () => {
@@ -335,20 +395,21 @@ describe('TicketsService flow', () => {
     prisma.project.findUnique.mockResolvedValue({
       id: 4,
       defaultRepoId: 8,
-      specAgent: 'a2',
-      devAgent: 'd2',
-      testAgent: 't2'
+      specAgentId: 21,
+      devAgentId: 22,
+      testAgentId: 23
     });
-    await service.update(10, { projectId: 4, extraSkills: ['jira'] });
+    await service.update(10, { projectId: 4, skillIds: [3] });
     expect(prisma.ticket.update).toHaveBeenCalledWith({
       where: { id: 10 },
       data: {
         projectId: 4,
         repoId: 8,
-        specAgent: 'a2',
-        devAgent: 'd2',
-        testAgent: 't2',
-        extraSkills: ['jira']
+        branch: null,
+        specAgentId: 21,
+        devAgentId: 22,
+        testAgentId: 23,
+        skills: { set: [{ id: 3 }] }
       }
     });
     expect(board.emitChanged).toHaveBeenCalledWith(3);
@@ -413,6 +474,7 @@ describe('TicketsService flow', () => {
   it('starts development with a fresh fix counter', async () => {
     prisma.ticket.findUnique.mockResolvedValue({
       ...ticket,
+      branch: 'feat/FMS-1',
       status: 'IN_REVIEW_SPEC',
       specApprovedAt: new Date(),
       fixRound: 2
@@ -496,18 +558,15 @@ describe('TicketsService flow', () => {
   });
   it('locks the dev agent while dev runs', async () => {
     prisma.agentRun.count.mockResolvedValue(1);
-    await expect(
-      service.update(10, { devAgent: 'other' })
-    ).rejects.toBeInstanceOf(ConflictException);
+    await expect(service.update(10, { devAgentId: 99 })).rejects.toBeInstanceOf(
+      ConflictException
+    );
   });
   it('only validates changed agents', async () => {
-    profiles.assertExists.mockImplementation(slugs => {
-      if (slugs.includes('fe-dev')) throw new Error('Deleted profile');
-    });
-    await expect(
-      service.update(10, { devAgent: 'fe-dev', extraInstructions: 'F' })
-    ).resolves.toBeDefined();
-    expect(profiles.assertExists).toHaveBeenCalledWith([]);
+    await service.update(10, { devAgentId: 12, extraInstructions: 'F' });
+    expect(profiles.assertRole).not.toHaveBeenCalled();
+    await service.update(10, { devAgentId: 14 });
+    expect(profiles.assertRole).toHaveBeenCalledWith(14, 'DEV');
   });
 
   it.each([
@@ -530,6 +589,7 @@ describe('TicketsService flow', () => {
   it('restores spec review if development cannot start', async () => {
     prisma.ticket.findUnique.mockResolvedValue({
       ...ticket,
+      branch: 'feat/FMS-1',
       status: 'IN_REVIEW_SPEC',
       specApprovedAt: new Date()
     });
@@ -556,7 +616,7 @@ describe('TicketsService flow', () => {
   it('locks the test agent while tests run', async () => {
     prisma.agentRun.count.mockResolvedValue(1);
     await expect(
-      service.update(10, { testAgent: 'other' })
+      service.update(10, { testAgentId: 99 })
     ).rejects.toBeInstanceOf(ConflictException);
     expect(prisma.agentRun.count).toHaveBeenCalledWith({
       where: { ticketId: 10, status: 'RUNNING', step: 'TEST' }
@@ -618,7 +678,14 @@ describe('TicketsService flow', () => {
         status: 'IN_SPEC',
         jiraUrl: 'u',
         specApprovedAt: null,
-        runs: [{ status: 'RUNNING', paneId: 'w1:p9', startedAt: new Date(0) }],
+        runs: [
+          {
+            status: 'RUNNING',
+            paneId: 'w1:p9',
+            startedAt: new Date(0),
+            agent: { id: 7, name: 'Spec' }
+          }
+        ],
         specs: [{ version: 2 }]
       },
       {
@@ -641,6 +708,9 @@ describe('TicketsService flow', () => {
         summary: 'Login',
         status: 'IN_SPEC',
         jiraUrl: 'u',
+        branch: undefined,
+        repoId: undefined,
+        agent: { id: 7, name: 'Spec' },
         label: 'needs_you',
         specVersion: 2
       },
@@ -650,10 +720,109 @@ describe('TicketsService flow', () => {
         summary: 'Logout',
         status: 'TODO',
         jiraUrl: 'u',
+        branch: undefined,
+        repoId: undefined,
+        agent: null,
         label: null,
         specVersion: null
       }
     ]);
     expect(agentRuns.liveStatuses).toHaveBeenCalledTimes(1);
+  });
+
+  describe('first move to In Progress', () => {
+    const approved = {
+      ...ticket,
+      status: 'IN_REVIEW_SPEC',
+      specApprovedAt: new Date()
+    };
+    const branch = { base: 'main', name: 'feat/FMS-1', push: false };
+    beforeEach(() => {
+      prisma.ticket.findUnique.mockResolvedValue(approved);
+    });
+
+    it('requires a branch on the first move to In Progress', async () => {
+      await expect(service.move(10, 'IN_PROGRESS')).rejects.toThrow(
+        'Branch required'
+      );
+      expect(git.createBranch).not.toHaveBeenCalled();
+    });
+
+    it('blocks when another ticket runs an agent on the repo', async () => {
+      prisma.ticket.findMany.mockResolvedValue([
+        { id: 11, jiraKey: 'FMS-2', projectId: 3 }
+      ]);
+      await expect(
+        service.move(10, 'IN_PROGRESS', branch)
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(git.createBranch).not.toHaveBeenCalled();
+    });
+
+    it('blocks a dirty repo and an existing branch', async () => {
+      prisma.ticket.findMany.mockResolvedValue([]);
+      git.isClean.mockResolvedValue(false);
+      await expect(
+        service.move(10, 'IN_PROGRESS', branch)
+      ).rejects.toBeInstanceOf(ConflictException);
+      git.isClean.mockResolvedValue(true);
+      git.branchExists.mockResolvedValue(true);
+      await expect(
+        service.move(10, 'IN_PROGRESS', branch)
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(git.createBranch).not.toHaveBeenCalled();
+    });
+
+    it('rejects invalid branch names before any git change', async () => {
+      prisma.ticket.findMany.mockResolvedValue([]);
+      git.assertBranchName.mockRejectedValue(new BadRequestException('bad'));
+      await expect(
+        service.move(10, 'IN_PROGRESS', { ...branch, name: 'a b' })
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(git.createBranch).not.toHaveBeenCalled();
+    });
+
+    it('creates the branch before starting agents', async () => {
+      prisma.ticket.findMany.mockResolvedValue([]);
+      const order: string[] = [];
+      git.createBranch.mockImplementation(async () => void order.push('git'));
+      flow.startDevelopment.mockImplementation(
+        async () => void order.push('dev')
+      );
+      await service.move(10, 'IN_PROGRESS', branch);
+      expect(order).toEqual(['git', 'dev']);
+      expect(git.createBranch).toHaveBeenCalledWith(
+        '/repo',
+        'main',
+        'feat/FMS-1'
+      );
+      expect(prisma.ticket.update).toHaveBeenCalledWith({
+        where: { id: 10 },
+        data: { branch: 'feat/FMS-1' }
+      });
+    });
+
+    it('keeps the branch and does not move when push fails', async () => {
+      prisma.ticket.findMany.mockResolvedValue([]);
+      git.push.mockRejectedValue(new Error('no remote'));
+      await expect(
+        service.move(10, 'IN_PROGRESS', { ...branch, push: true })
+      ).rejects.toBeInstanceOf(BadGatewayException);
+      expect(prisma.ticket.update).toHaveBeenCalledWith({
+        where: { id: 10 },
+        data: { branch: 'feat/FMS-1' }
+      });
+      expect(prisma.ticket.updateMany).not.toHaveBeenCalled();
+      expect(flow.startDevelopment).not.toHaveBeenCalled();
+    });
+
+    it('moves without git when the ticket already has a branch', async () => {
+      prisma.ticket.findUnique.mockResolvedValue({
+        ...approved,
+        branch: 'feat/FMS-1'
+      });
+      await service.move(10, 'IN_PROGRESS');
+      expect(git.createBranch).not.toHaveBeenCalled();
+      expect(flow.startDevelopment).toHaveBeenCalled();
+    });
   });
 });

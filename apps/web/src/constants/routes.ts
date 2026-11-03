@@ -1,4 +1,4 @@
 export const ROUTE_PATHS = {
   dashboard: '/',
-  tickets: '/tickets'
+  warehouse: '/warehouse'
 } as const;

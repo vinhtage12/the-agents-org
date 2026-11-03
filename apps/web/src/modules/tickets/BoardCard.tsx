@@ -3,6 +3,7 @@ import { type KeyboardEvent, memo } from 'react';
 import { TmnChip, TmnDnD, TmnFlex, TmnText } from '@truyenmoinhu/uikit';
 
 import { trans } from '#i18n';
+import { AgentAvatar } from '#modules/warehouse';
 
 import { LABEL_COLORS } from './constants';
 import { canDrag } from './utils';
@@ -51,11 +52,16 @@ const BoardCard = ({ ticket, pending, onOpen }: IBoardCardProps) => {
           <TmnText className="truncate text-sm" title={ticket.summary}>
             {ticket.summary}
           </TmnText>
-          {ticket.label && (
-            <TmnChip color={LABEL_COLORS[ticket.label]} className="self-start">
-              {trans(`ticket.label.${ticket.label}`)}
-            </TmnChip>
-          )}
+          <TmnFlex direction="row" align="center" justify="between" gap={2}>
+            {ticket.label ? (
+              <TmnChip color={LABEL_COLORS[ticket.label]}>
+                {trans(`ticket.label.${ticket.label}`)}
+              </TmnChip>
+            ) : (
+              <span />
+            )}
+            <AgentAvatar agent={ticket.agent} size="sm" />
+          </TmnFlex>
         </TmnFlex>
       )}
     </TmnDnD.Draggable>

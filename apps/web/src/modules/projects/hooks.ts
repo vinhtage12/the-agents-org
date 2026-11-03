@@ -2,35 +2,17 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { useMutationEnhancer, useQueryEnhancer } from '@truyenmoinhu/query';
 
-import { PROJECT_ENDPOINTS, PROJECT_QUERY_KEYS } from './constants';
+import { PROJECT_QUERY_KEYS } from './constants';
 import { ProjectError } from './error';
 import { settingsPath } from './utils';
 
-import type {
-  IAgentProfileList,
-  IProjectMutationVariables,
-  IProjectSettings
-} from './types';
+import type { IProjectMutationVariables, IProjectSettings } from './types';
 export const useProjectSettings = (workspaceId: number, projectId: number) =>
   useQueryEnhancer<IProjectSettings>({
     queryKey: [PROJECT_QUERY_KEYS.settings, workspaceId, projectId],
     queryFn: async ({ apiManager }) => {
       const result = await apiManager?.sendRequest<IProjectSettings>({
         url: settingsPath(workspaceId, projectId),
-        suppressNotifyOnError: true
-      });
-      if (!result?.success || !result.payload) {
-        throw new ProjectError(result?.code);
-      }
-      return result.payload;
-    }
-  });
-export const useAgentProfiles = () =>
-  useQueryEnhancer<IAgentProfileList>({
-    queryKey: [PROJECT_QUERY_KEYS.agentProfiles],
-    queryFn: async ({ apiManager }) => {
-      const result = await apiManager?.sendRequest<IAgentProfileList>({
-        url: PROJECT_ENDPOINTS.agentProfiles(),
         suppressNotifyOnError: true
       });
       if (!result?.success || !result.payload) {
