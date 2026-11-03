@@ -7,3 +7,5 @@ One folder per feature under `src/modules/<name>/`. Every component has its own 
 Small modules can use flat files (`types.ts`, `constants.ts`, `hooks.ts`, `utils.ts`, `error.ts`). Larger modules can group these responsibilities into `components/`, `hooks/`, `constants/` and `utils/` directories. Import a module through its public portal from outside; use relative imports within it.
 
 Shared-layer dependencies flow one way: `types/utils/constants → stores → hooks → components → layouts/modules → routes`. Compose feature modules in layouts/modules/routes; shared components must not import feature modules.
+
+When a prefix (first PascalCase word) has more than 2 components, group them in `components/<prefix>/` (e.g. `warehouse/components/agent/AgentPage.tsx`). Routes under `src/routes/_app/` nest by directory: a layout is `<name>/route.ts`, its pages sit beside it.
