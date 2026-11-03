@@ -98,6 +98,8 @@ Watchman to avoid a dependency on the local Watchman installation.
 
 - [daemon-modules](.agents/rules/daemon-modules.md): every new daemon module MUST
   be created with the daemon-create-module skill/script, never by hand or `nest g`.
+- [daemon-module-layers](.agents/rules/daemon-module-layers.md): every domain
+  module separates controllers, DTOs, services, and other concerns by layer.
 - [daemon-migrations](.agents/rules/daemon-migrations.md): schema, migration,
   generation, and deploy workflow.
 - [daemon-create-module](.agents/skills/daemon-create-module/SKILL.md): module

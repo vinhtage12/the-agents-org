@@ -1,12 +1,9 @@
 import {
-  BadRequestException,
   Body,
-  ConflictException,
   Controller,
   Delete,
   Get,
   HttpCode,
-  NotFoundException,
   Param,
   ParseIntPipe,
   Patch,
@@ -14,161 +11,92 @@ import {
 } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { PrismaService } from '../../../database/prisma.service';
 import { CreateProjectDto } from '../dtos/create-project.dto';
 import { CreateWorkspaceDto } from '../dtos/create-workspace.dto';
 import { UpdateProjectDto } from '../dtos/update-project.dto';
 import { UpdateWorkspaceDto } from '../dtos/update-workspace.dto';
 import { ProjectEntity } from '../entities/project.entity';
 import { WorkspaceEntity } from '../entities/workspace.entity';
-import { normalizeSpecSettings } from '../utils/spec-settings';
+import { ProjectsService } from '../../projects/services/projects.service';
+import { WorkspacesService } from '../services/workspaces.service';
 
 @Controller('workspaces')
 @ApiTags('workspaces')
 export class WorkspacesController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly workspaces: WorkspacesService,
+    private readonly projects: ProjectsService
+  ) {}
 
   @Get()
   @ApiOkResponse({ type: WorkspaceEntity, isArray: true })
   list(): Promise<(WorkspaceEntity & { projects: ProjectEntity[] })[]> {
-    return this.prisma.workspace.findMany({
-      orderBy: { id: 'asc' },
-      include: { projects: { orderBy: { id: 'asc' } } }
-    });
+    return this.workspaces.list();
   }
 
   @Get(':id')
   @ApiOkResponse({ type: WorkspaceEntity })
-  async detail(
+  detail(
     @Param('id', ParseIntPipe) id: number
   ): Promise<WorkspaceEntity & { projects: ProjectEntity[] }> {
-    if (id <= 0) throw new BadRequestException('ID must be positive');
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id },
-      include: { projects: { orderBy: { id: 'asc' } } }
-    });
-    if (!workspace) throw new NotFoundException('Workspace not found');
-    return workspace;
+    return this.workspaces.get(id);
   }
 
   @Post()
   @ApiCreatedResponse({ type: WorkspaceEntity })
-  async create(@Body() data: CreateWorkspaceDto): Promise<WorkspaceEntity> {
-    try {
-      return await this.prisma.workspace.create({ data });
-    } catch (error) {
-      this.rethrow(error);
-    }
+  create(@Body() data: CreateWorkspaceDto): Promise<WorkspaceEntity> {
+    return this.workspaces.create(data);
   }
 
   @Post(':id/projects')
   @ApiCreatedResponse({ type: ProjectEntity })
-  async createProject(
+  createProject(
     @Param('id', ParseIntPipe) workspaceId: number,
     @Body() data: CreateProjectDto
   ): Promise<ProjectEntity> {
-    await this.detail(workspaceId);
-    const spec = await normalizeSpecSettings(data);
-    try {
-      return await this.prisma.project.create({
-        data: { ...data, ...spec, workspaceId }
-      });
-    } catch (error) {
-      this.rethrow(error);
-    }
+    return this.projects.create(workspaceId, data);
   }
 
   @Get(':id/projects/:projectId')
   @ApiOkResponse({ type: ProjectEntity })
-  async project(
+  project(
     @Param('id', ParseIntPipe) workspaceId: number,
     @Param('projectId', ParseIntPipe) id: number
-  ): Promise<ProjectEntity & { workspace: WorkspaceEntity }> {
-    if (id <= 0 || workspaceId <= 0)
-      throw new BadRequestException('ID must be positive');
-    const project = await this.prisma.project.findFirst({
-      where: { id, workspaceId },
-      include: { workspace: true }
-    });
-    if (!project) throw new NotFoundException('Project not found');
-    return project;
+  ) {
+    return this.projects.get(workspaceId, id);
   }
 
   @Patch(':id')
   @ApiOkResponse({ type: WorkspaceEntity })
-  async update(
+  update(
     @Param('id', ParseIntPipe) id: number,
     @Body() data: UpdateWorkspaceDto
   ): Promise<WorkspaceEntity> {
-    await this.detail(id);
-    try {
-      return await this.prisma.workspace.update({ where: { id }, data });
-    } catch (error) {
-      this.rethrow(error);
-    }
+    return this.workspaces.update(id, data);
   }
 
   @Delete(':id')
   @HttpCode(204)
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    await this.detail(id);
-    try {
-      await this.prisma.workspace.delete({ where: { id } });
-    } catch (error) {
-      this.rethrow(error);
-    }
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.workspaces.remove(id);
   }
 
   @Patch(':id/projects/:projectId')
   @ApiOkResponse({ type: ProjectEntity })
-  async updateProject(
+  updateProject(
     @Param('id', ParseIntPipe) workspaceId: number,
     @Param('projectId', ParseIntPipe) id: number,
     @Body() data: UpdateProjectDto
   ): Promise<ProjectEntity> {
-    const project = await this.project(workspaceId, id);
-    const spec = await normalizeSpecSettings(data, project);
-    if (data.workspaceId !== undefined) await this.detail(data.workspaceId);
-    try {
-      return await this.prisma.project.update({
-        where: { id, workspaceId },
-        data: { ...data, ...spec }
-      });
-    } catch (error) {
-      this.rethrow(error);
-    }
+    return this.projects.update(workspaceId, id, data);
   }
 
   @Delete(':id/projects/:projectId')
   @HttpCode(204)
-  async removeProject(
+  removeProject(
     @Param('id', ParseIntPipe) workspaceId: number,
     @Param('projectId', ParseIntPipe) id: number
   ) {
-    await this.project(workspaceId, id);
-    try {
-      await this.prisma.project.delete({ where: { id, workspaceId } });
-    } catch (error) {
-      this.rethrow(error);
-    }
-  }
-
-  private rethrow(error: unknown): never {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      error.code === 'P2002'
-    )
-      throw new ConflictException('Code already exists');
-    if (typeof error === 'object' && error !== null && 'code' in error) {
-      if (error.code === 'P2003')
-        throw new ConflictException(
-          'Workspace still contains projects or target workspace no longer exists'
-        );
-      if (error.code === 'P2025')
-        throw new NotFoundException('Workspace or project not found');
-    }
-    throw error;
+    return this.projects.remove(workspaceId, id);
   }
 }

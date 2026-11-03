@@ -11,10 +11,13 @@ import { AppModule } from './app.module';
 import { HerdrController } from './herdr/controllers/herdr.controller';
 import { HerdrGateway } from './herdr/gateways/herdr.gateway';
 import { ProjectSettingsController } from './projects/controllers/project-settings.controller';
+import { ProjectsService } from './projects/services/projects.service';
 import { SprintsController } from './sprints/controllers/sprints.controller';
 import { SystemController } from './system/controllers/system.controller';
+import { SystemService } from './system/services/system.service';
 import { TicketsController } from './tickets/controllers/tickets.controller';
 import { WorkspacesController } from './workspaces/controllers/workspaces.controller';
+import { WorkspacesService } from './workspaces/services/workspaces.service';
 
 describe('AppModule domain wiring', () => {
   it('resolves controllers and cross-module dependencies', async () => {
@@ -33,10 +36,13 @@ describe('AppModule domain wiring', () => {
         HerdrController,
         HerdrGateway,
         ProjectSettingsController,
+        ProjectsService,
         SprintsController,
         SystemController,
+        SystemService,
         TicketsController,
-        WorkspacesController
+        WorkspacesController,
+        WorkspacesService
       ]) {
         expect(module.get(provider)).toBeDefined();
       }

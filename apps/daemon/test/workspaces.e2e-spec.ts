@@ -4,7 +4,10 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 
 import { PrismaService } from '../src/database/prisma.service';
+import { AgentProfilesService } from '../src/modules/agent-profiles/services/agent-profiles.service';
+import { ProjectsService } from '../src/modules/projects/services/projects.service';
 import { WorkspacesController } from '../src/modules/workspaces/controllers/workspaces.controller';
+import { WorkspacesService } from '../src/modules/workspaces/services/workspaces.service';
 
 const databaseSuite = process.env.TEST_DATABASE_URL ? describe : describe.skip;
 databaseSuite('Workspace API with PostgreSQL', () => {
@@ -17,6 +20,9 @@ databaseSuite('Workspace API with PostgreSQL', () => {
       controllers: [WorkspacesController],
       providers: [
         PrismaService,
+        WorkspacesService,
+        ProjectsService,
+        { provide: AgentProfilesService, useValue: { assertRole: jest.fn() } },
         {
           provide: ConfigService,
           useValue: new ConfigService({
