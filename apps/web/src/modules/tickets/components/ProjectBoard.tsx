@@ -32,7 +32,7 @@ import { filterBoard } from '../utils';
 import BacklogSection from './BacklogSection';
 import BoardColumn from './BoardColumn';
 import BranchDialogRenderer from './BranchDialogRenderer';
-import SprintBar from './SprintBar';
+import SprintBar from './sprint/SprintBar';
 import { openTicketDialog } from './ticket/TicketDialogRenderer';
 
 import type { TSpecSource } from '#modules/workspaces';

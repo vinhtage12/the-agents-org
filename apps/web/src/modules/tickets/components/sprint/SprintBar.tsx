@@ -12,14 +12,14 @@ import {
   SPRINT_DIALOG,
   SPRINT_RUNNING,
   TICKET_ENDPOINTS
-} from '../constants';
-import { useSprintMutation } from '../hooks';
-import CompleteSprintDialogRenderer from './CompleteSprintDialogRenderer';
-import LocalTicketDialogRenderer from './LocalTicketDialogRenderer';
+} from '../../constants';
+import { useSprintMutation } from '../../hooks';
+import CompleteSprintDialogRenderer from '../CompleteSprintDialogRenderer';
+import LocalTicketDialogRenderer from '../LocalTicketDialogRenderer';
 import SprintDialogRenderer from './SprintDialogRenderer';
 
 import type { TSpecSource } from '#modules/workspaces';
-import type { ISprint } from '../types';
+import type { ISprint } from '../../types';
 
 export interface ISprintBarProps {
   workspaceId: number;

@@ -11,10 +11,10 @@ import { TmnButton, TmnFlex, TmnInput, UIUtils } from '@truyenmoinhu/uikit';
 
 import { trans } from '#i18n';
 
-import { TICKET_ENDPOINTS } from '../constants';
-import { useSprintMutation } from '../hooks';
+import { TICKET_ENDPOINTS } from '../../constants';
+import { useSprintMutation } from '../../hooks';
 
-import type { ISprint, ISprintValues } from '../types';
+import type { ISprint, ISprintValues } from '../../types';
 
 export interface ISprintDialogProps {
   projectId: number;
