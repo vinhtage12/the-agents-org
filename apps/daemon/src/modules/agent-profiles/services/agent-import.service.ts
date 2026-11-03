@@ -5,10 +5,11 @@ import { join, resolve } from 'node:path';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { PrismaService } from '../../../database/prisma.service';
+import { PrismaService } from '#database/prisma.service';
+
 import { AgentProfile, parseAgentProfile } from './agent-profiles.service';
 
-import type { AgentRole } from '../../../generated/prisma/client';
+import type { AgentRole } from '#/generated/prisma/client';
 
 type Usage = { spec: unknown[]; dev: unknown[]; test: unknown[] };
 const STEPS = [

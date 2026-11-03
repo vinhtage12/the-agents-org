@@ -10,9 +10,9 @@ import {
   Min
 } from 'class-validator';
 
-import { AgentRole } from '../../../generated/prisma/client';
+import { AgentRole } from '#/generated/prisma/client';
 
-import type { Agent as AgentModel } from '../../../generated/prisma/client';
+import type { Agent as AgentModel } from '#/generated/prisma/client';
 
 export { AgentRole };
 

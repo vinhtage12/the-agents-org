@@ -5,7 +5,7 @@ import type {
   SprintSource,
   SprintState,
   TicketSource
-} from '../../../generated/prisma/client';
+} from '#/generated/prisma/client';
 
 // sprint = null means moving the ticket to the Backlog.
 export function assertSprintAssignable(

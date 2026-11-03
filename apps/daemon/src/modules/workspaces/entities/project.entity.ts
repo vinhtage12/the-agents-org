@@ -9,10 +9,10 @@ import {
   Min
 } from 'class-validator';
 
-import { SpecSource } from '../../../generated/prisma/client';
+import { SpecSource } from '#/generated/prisma/client';
 
-import type { Project as ProjectModel } from '../../../generated/prisma/client';
-import type { TicketEntity } from '../../tickets/entities/ticket.entity';
+import type { Project as ProjectModel } from '#/generated/prisma/client';
+import type { TicketEntity } from '#modules/tickets/entities/ticket.entity';
 import type { WorkspaceEntity } from './workspace.entity';
 
 export class ProjectEntity implements ProjectModel {

@@ -10,13 +10,9 @@ import {
   Min
 } from 'class-validator';
 
-import {
-  AgentRunStatus,
-  AgentStep,
-  TestMode
-} from '../../../generated/prisma/client';
+import { AgentRunStatus, AgentStep, TestMode } from '#/generated/prisma/client';
 
-import type { AgentRun as AgentRunModel } from '../../../generated/prisma/client';
+import type { AgentRun as AgentRunModel } from '#/generated/prisma/client';
 
 export { AgentRunStatus, AgentStep, TestMode };
 

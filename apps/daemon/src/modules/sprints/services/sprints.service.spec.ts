@@ -1,4 +1,5 @@
-import { Prisma } from '../../../generated/prisma/client';
+import { Prisma } from '#/generated/prisma/client';
+
 import { SprintsService } from './sprints.service';
 
 const sprint = (over = {}) => ({

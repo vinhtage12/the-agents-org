@@ -14,22 +14,19 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { PrismaService } from '../../../database/prisma.service';
-import { AgentProfilesService } from '../../agent-profiles/services/agent-profiles.service';
-import { GitService } from '../../git/services/git.service';
-import { HerdrService } from '../../herdr/services/herdr.service';
-import { assertRepoPath } from '../../repositories/utils/repo-path';
-import { resolveSpecFile } from '../../tickets/utils/spec-file';
+import { PrismaService } from '#database/prisma.service';
+import { AgentProfilesService } from '#modules/agent-profiles/services/agent-profiles.service';
+import { GitService } from '#modules/git/services/git.service';
+import { HerdrService } from '#modules/herdr/services/herdr.service';
+import { assertRepoPath } from '#modules/repositories/utils/repo-path';
+import { resolveSpecFile } from '#modules/tickets/utils/spec-file';
+
 import { BoardGateway } from '../gateways/board.gateway';
 import { buildAgentArgs } from '../utils/agent-args';
 import { STARTUP_GRACE_MS } from '../utils/constants';
 import { buildSpecPrompt } from '../utils/spec-prompt';
 
-import type {
-  AgentStep,
-  Prisma,
-  TestMode
-} from '../../../generated/prisma/client';
+import type { AgentStep, Prisma, TestMode } from '#/generated/prisma/client';
 import type { PromptBase } from '../utils/prompt-parts';
 
 export type PromptBuilder = (base: PromptBase) => string;

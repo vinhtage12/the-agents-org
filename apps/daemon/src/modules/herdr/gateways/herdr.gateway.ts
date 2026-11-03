@@ -9,7 +9,7 @@ import {
 import { HerdrService } from '../services/herdr.service';
 
 import type { Namespace, Socket } from 'socket.io';
-import type { Env } from '../../../configuration/env.validation';
+import type { Env } from '#configuration/env.validation';
 
 const AGENT_ID_PATTERN = /^[A-Za-z0-9:_-]{1,128}$/;
 

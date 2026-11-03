@@ -8,8 +8,8 @@ import {
   NotFoundException
 } from '@nestjs/common';
 
-import { PrismaService } from '../../../database/prisma.service';
-import { AgentProfilesService } from '../../agent-profiles/services/agent-profiles.service';
+import { PrismaService } from '#database/prisma.service';
+import { AgentProfilesService } from '#modules/agent-profiles/services/agent-profiles.service';
 import { ProjectsService } from './projects.service';
 
 describe('ProjectsService', () => {

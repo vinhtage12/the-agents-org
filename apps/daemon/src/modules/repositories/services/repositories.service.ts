@@ -4,10 +4,11 @@ import {
   NotFoundException
 } from '@nestjs/common';
 
-import { OPEN_TICKET } from '../../../common/constants/open-ticket';
-import { IUsage } from '../../../common/types/usage';
-import { PrismaService } from '../../../database/prisma.service';
-import { GitService } from '../../git/services/git.service';
+import { IUsage } from '#common/types/usage';
+import { OPEN_TICKET } from '#constants/open-ticket';
+import { PrismaService } from '#database/prisma.service';
+import { GitService } from '#modules/git/services/git.service';
+
 import { CreateRepoDto } from '../dtos/create-repo.dto';
 import { SaveEnvironmentDto } from '../dtos/save-environment.dto';
 import { UpdateRepoDto } from '../dtos/update-repo.dto';

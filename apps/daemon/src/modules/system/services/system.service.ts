@@ -3,7 +3,7 @@ import { promisify } from 'node:util';
 
 import { Injectable } from '@nestjs/common';
 
-import { AgentUsageService } from '../../agent-usage/services/agent-usage.service';
+import { AgentUsageService } from '#modules/agent-usage/services/agent-usage.service';
 
 const execute = promisify(execFile);
 

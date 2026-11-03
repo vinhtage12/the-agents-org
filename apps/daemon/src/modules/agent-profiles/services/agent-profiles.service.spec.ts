@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { BadRequestException } from '@nestjs/common';
 
-import { PrismaService } from '../../../database/prisma.service';
+import { PrismaService } from '#database/prisma.service';
 import {
   AgentProfilesService,
   parseAgentProfile

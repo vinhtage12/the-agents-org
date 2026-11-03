@@ -1,4 +1,5 @@
-import { SprintState } from '../../../generated/prisma/client';
+import { SprintState } from '#/generated/prisma/client';
+
 import { JiraSprint } from '../clients/jira.client';
 
 const time = (date: Date | null) => date?.getTime() ?? Infinity;

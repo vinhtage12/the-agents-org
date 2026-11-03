@@ -13,10 +13,10 @@ import {
 import { STARTUP_GRACE_MS } from '../utils/constants';
 import { AgentRunsService } from './agent-runs.service';
 
-import type { PrismaService } from '../../../database/prisma.service';
-import type { AgentProfilesService } from '../../agent-profiles/services/agent-profiles.service';
-import type { GitService } from '../../git/services/git.service';
-import type { HerdrService } from '../../herdr/services/herdr.service';
+import type { PrismaService } from '#database/prisma.service';
+import type { AgentProfilesService } from '#modules/agent-profiles/services/agent-profiles.service';
+import type { GitService } from '#modules/git/services/git.service';
+import type { HerdrService } from '#modules/herdr/services/herdr.service';
 import type { BoardGateway } from '../gateways/board.gateway';
 
 describe('AgentRunsService', () => {

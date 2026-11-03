@@ -8,7 +8,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { AllowWithoutClientHeader } from '../../../common/decorators/allow-without-client-header.decorator';
+import { AllowWithoutClientHeader } from '#common/decorators/allow-without-client-header.decorator';
+
 import { TicketFlowService } from '../services/ticket-flow.service';
 
 @Controller('agent-runs')

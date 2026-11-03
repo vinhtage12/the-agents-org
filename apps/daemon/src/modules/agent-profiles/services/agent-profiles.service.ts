@@ -8,17 +8,18 @@ import {
   NotFoundException
 } from '@nestjs/common';
 
-import { OPEN_TICKET } from '../../../common/constants/open-ticket';
 import {
   IUsage,
   USAGE_TICKET_SELECT,
   toUsageTickets
-} from '../../../common/types/usage';
-import { PrismaService } from '../../../database/prisma.service';
+} from '#common/types/usage';
+import { OPEN_TICKET } from '#constants/open-ticket';
+import { PrismaService } from '#database/prisma.service';
+
 import { SaveAgentDto } from '../dtos/save-agent.dto';
 import { UpdateAgentDto } from '../dtos/update-agent.dto';
 
-import type { AgentRole } from '../../../generated/prisma/client';
+import type { AgentRole } from '#/generated/prisma/client';
 
 export type AgentProvider = 'claude' | 'codex' | 'copilot' | 'agy';
 /** A legacy `<slug>.md` profile; only AgentImportService reads these. */

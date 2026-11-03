@@ -6,12 +6,13 @@ import {
   NotFoundException
 } from '@nestjs/common';
 
-import { PrismaService } from '../../../database/prisma.service';
-import { AgentProfilesService } from '../../agent-profiles/services/agent-profiles.service';
-import { BoardGateway } from '../../agent-runs/gateways/board.gateway';
-import { AgentRunsService } from '../../agent-runs/services/agent-runs.service';
-import { TicketFlowService } from '../../agent-runs/services/ticket-flow.service';
-import { GitService } from '../../git/services/git.service';
+import { PrismaService } from '#database/prisma.service';
+import { AgentProfilesService } from '#modules/agent-profiles/services/agent-profiles.service';
+import { BoardGateway } from '#modules/agent-runs/gateways/board.gateway';
+import { AgentRunsService } from '#modules/agent-runs/services/agent-runs.service';
+import { TicketFlowService } from '#modules/agent-runs/services/ticket-flow.service';
+import { GitService } from '#modules/git/services/git.service';
+
 import { type BoardLabel, boardLabel } from '../utils/board-label';
 import { resolveSpecFile } from '../utils/spec-file';
 import { assertSprintAssignable } from '../utils/sprint-assign';
@@ -21,10 +22,10 @@ import type {
   Prisma,
   SpecSource,
   SprintSource
-} from '../../../generated/prisma/client';
-import type { AgentRunEntity } from '../../agent-runs/entities/agent-run.entity';
-import type { RepoEntity } from '../../repositories/entities/repo.entity';
-import type { ProjectEntity } from '../../workspaces/entities/project.entity';
+} from '#/generated/prisma/client';
+import type { AgentRunEntity } from '#modules/agent-runs/entities/agent-run.entity';
+import type { RepoEntity } from '#modules/repositories/entities/repo.entity';
+import type { ProjectEntity } from '#modules/workspaces/entities/project.entity';
 import type { SpecVersionEntity } from '../entities/spec-version.entity';
 import type { TicketEntity, TicketStatus } from '../entities/ticket.entity';
 

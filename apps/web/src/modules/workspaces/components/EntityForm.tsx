@@ -19,6 +19,7 @@ import {
 
 import { trans } from '#i18n';
 
+import { SpecSource } from '../enum';
 import { WorkspaceError } from '../error';
 import { useWorkspaceMutation } from '../hooks';
 import {
@@ -40,7 +41,7 @@ import type {
 export interface IEntityFormProps extends IEntityFormContext {
   workspaces?: IWorkspace[];
 }
-const SPEC_SOURCES: TSpecSource[] = ['JIRA', 'LOCAL', 'HYBRID'];
+const SPEC_SOURCES = Object.values(SpecSource);
 const EntityForm = ({
   workspace,
   entity,
@@ -57,7 +58,8 @@ const EntityForm = ({
         name: entity?.name ?? '',
         code: entity?.code ?? '',
         workspaceId: String(workspace?.id ?? ''),
-        specSource: (entity as IProject | undefined)?.specSource ?? 'JIRA',
+        specSource:
+          (entity as IProject | undefined)?.specSource ?? SpecSource.JIRA,
         specDir: (entity as IProject | undefined)?.specDir ?? ''
       }
     }
@@ -83,7 +85,9 @@ const EntityForm = ({
             ? {
                 specSource: values.specSource,
                 specDir:
-                  values.specSource === 'JIRA' ? null : values.specDir.trim()
+                  values.specSource === SpecSource.JIRA
+                    ? null
+                    : values.specDir.trim()
               }
             : {})
         }
@@ -179,7 +183,7 @@ const EntityForm = ({
             )}
           />
         )}
-        {projectMode && specSource !== 'JIRA' && (
+        {projectMode && specSource !== SpecSource.JIRA && (
           <TmnController
             control={form.control}
             name="specDir"
@@ -243,6 +247,6 @@ const createSchema = () =>
       .test(
         'required',
         trans('workspace.required'),
-        (value, ctx) => ctx.parent.specSource === 'JIRA' || !!value
+        (value, ctx) => ctx.parent.specSource === SpecSource.JIRA || !!value
       )
   });

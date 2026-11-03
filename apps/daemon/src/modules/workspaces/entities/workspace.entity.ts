@@ -3,7 +3,7 @@ import { IsInt, IsString, Max, MaxLength, Min } from 'class-validator';
 
 import { ProjectEntity } from './project.entity';
 
-import type { Workspace as WorkspaceModel } from '../../../generated/prisma/client';
+import type { Workspace as WorkspaceModel } from '#/generated/prisma/client';
 
 export class WorkspaceEntity implements WorkspaceModel {
   @IsInt()

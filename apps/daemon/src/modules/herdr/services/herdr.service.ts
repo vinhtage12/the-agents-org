@@ -16,7 +16,7 @@ import {
   type HerdrEventHandler
 } from '../clients/herdr.client';
 
-import type { Env } from '../../../configuration/env.validation';
+import type { Env } from '#configuration/env.validation';
 
 export interface AgentInfo {
   id: string;

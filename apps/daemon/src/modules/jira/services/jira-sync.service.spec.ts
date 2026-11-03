@@ -1,6 +1,6 @@
 import { Logger, ServiceUnavailableException } from '@nestjs/common';
 
-import { PrismaService } from '../../../database/prisma.service';
+import { PrismaService } from '#database/prisma.service';
 import { JiraClient, JiraHttpError } from '../clients/jira.client';
 import { JiraSyncService } from './jira-sync.service';
 

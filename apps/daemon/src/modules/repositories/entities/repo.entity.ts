@@ -1,8 +1,8 @@
 import { IsDate, IsInt, IsString, Max, MaxLength, Min } from 'class-validator';
 
-import type { Repo as RepoModel } from '../../../generated/prisma/client';
-import type { TicketEntity } from '../../tickets/entities/ticket.entity';
-import type { ProjectEntity } from '../../workspaces/entities/project.entity';
+import type { Repo as RepoModel } from '#/generated/prisma/client';
+import type { TicketEntity } from '#modules/tickets/entities/ticket.entity';
+import type { ProjectEntity } from '#modules/workspaces/entities/project.entity';
 import type { RepoEnvironmentEntity } from './repo-environment.entity';
 
 export class RepoEntity implements RepoModel {

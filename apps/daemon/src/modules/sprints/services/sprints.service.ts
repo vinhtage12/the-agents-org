@@ -5,11 +5,11 @@ import {
   NotFoundException
 } from '@nestjs/common';
 
-import { PrismaService } from '../../../database/prisma.service';
-import { Prisma } from '../../../generated/prisma/client';
-import { BoardGateway } from '../../agent-runs/gateways/board.gateway';
+import { Prisma } from '#/generated/prisma/client';
+import { PrismaService } from '#database/prisma.service';
+import { BoardGateway } from '#modules/agent-runs/gateways/board.gateway';
 
-import type { SprintState } from '../../../generated/prisma/client';
+import type { SprintState } from '#/generated/prisma/client';
 import type { SprintItem } from '../entities/sprint.entity';
 
 type Db = PrismaService | Prisma.TransactionClient;

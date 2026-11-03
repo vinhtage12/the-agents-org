@@ -6,7 +6,10 @@ export interface IEntityValues {
 export interface IEntity<TId = number> extends IEntityValues {
   id: TId;
 }
-export type TSpecSource = 'LOCAL' | 'JIRA' | 'HYBRID';
+
+import type { SpecSource } from './enum';
+
+export type TSpecSource = SpecSource;
 export interface IProject extends IEntity {
   workspaceId: number;
   specSource: TSpecSource;

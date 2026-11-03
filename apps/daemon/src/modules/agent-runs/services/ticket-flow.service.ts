@@ -5,7 +5,8 @@ import {
   NotFoundException
 } from '@nestjs/common';
 
-import { PrismaService } from '../../../database/prisma.service';
+import { PrismaService } from '#database/prisma.service';
+
 import { MAX_FIX_ROUNDS } from '../utils/constants';
 import { type TestFailure, buildDevPrompt } from '../utils/dev-prompt';
 import { parseTestCases, parseTestResults } from '../utils/test-output';

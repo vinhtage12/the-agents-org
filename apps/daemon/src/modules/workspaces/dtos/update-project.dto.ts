@@ -9,7 +9,8 @@ import {
   ValidateIf
 } from 'class-validator';
 
-import { SpecSource } from '../../../generated/prisma/client';
+import { SpecSource } from '#/generated/prisma/client';
+
 import { UpdateWorkspaceDto } from './update-workspace.dto';
 
 export class UpdateProjectDto extends UpdateWorkspaceDto {

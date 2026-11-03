@@ -10,9 +10,9 @@ import {
   Min
 } from 'class-validator';
 
-import { SprintSource, SprintState } from '../../../generated/prisma/client';
+import { SprintSource, SprintState } from '#/generated/prisma/client';
 
-import type { Sprint as SprintModel } from '../../../generated/prisma/client';
+import type { Sprint as SprintModel } from '#/generated/prisma/client';
 
 export class SprintEntity implements SprintModel {
   @IsInt()

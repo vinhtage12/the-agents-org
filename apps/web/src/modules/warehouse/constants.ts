@@ -2,7 +2,7 @@ import { generateQueryKey } from '@truyenmoinhu/query';
 
 import { withGenerateEndpoint } from '#utils/query';
 
-import type { AgentRole, BranchKind } from './types';
+import { AgentProvider, AgentRole, BranchKind } from './enum';
 
 export const WAREHOUSE_QUERY_KEYS = {
   list: generateQueryKey('warehouse-list'),
@@ -34,12 +34,12 @@ export const WAREHOUSE_TABS = [
 ] as const;
 
 export const WAREHOUSE_DIALOG = 'warehouse-dialog';
-export const PROVIDERS = ['claude', 'codex', 'copilot', 'agy'] as const;
-export const AGENT_ROLES: AgentRole[] = ['BA', 'DEV', 'QC', 'FILE_PROCESSOR'];
-export const BRANCH_KINDS: BranchKind[] = [
-  'NONE',
-  'CHECKOUT_BASE',
-  'PR_TARGET'
+export const PROVIDERS = Object.values(AgentProvider);
+export const AGENT_ROLES = Object.values(AgentRole);
+export const BRANCH_KINDS = [
+  BranchKind.NONE,
+  BranchKind.CHECKOUT_BASE,
+  BranchKind.PR_TARGET
 ];
 export const AVATAR_SIZE = { sm: '1', md: '2', lg: '3' } as const;
 export const AGENT_DIALOG = 'warehouse-agent-dialog';

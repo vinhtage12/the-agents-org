@@ -5,13 +5,14 @@ import {
   NotFoundException
 } from '@nestjs/common';
 
-import { PrismaService } from '../../../database/prisma.service';
-import { AgentProfilesService } from '../../agent-profiles/services/agent-profiles.service';
-import { assertRepoPath } from '../../repositories/utils/repo-path';
-import { CreateProjectDto } from '../../workspaces/dtos/create-project.dto';
-import { UpdateProjectDto } from '../../workspaces/dtos/update-project.dto';
-import { ProjectEntity } from '../../workspaces/entities/project.entity';
-import { normalizeSpecSettings } from '../../workspaces/utils/spec-settings';
+import { PrismaService } from '#database/prisma.service';
+import { AgentProfilesService } from '#modules/agent-profiles/services/agent-profiles.service';
+import { assertRepoPath } from '#modules/repositories/utils/repo-path';
+import { CreateProjectDto } from '#modules/workspaces/dtos/create-project.dto';
+import { UpdateProjectDto } from '#modules/workspaces/dtos/update-project.dto';
+import { ProjectEntity } from '#modules/workspaces/entities/project.entity';
+import { normalizeSpecSettings } from '#modules/workspaces/utils/spec-settings';
+
 import { UpdateProjectSettingsDto } from '../dtos/update-project-settings.dto';
 import { listSpecFiles } from '../utils/spec-files';
 

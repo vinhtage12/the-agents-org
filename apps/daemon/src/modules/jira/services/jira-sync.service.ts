@@ -4,9 +4,10 @@ import {
   ServiceUnavailableException
 } from '@nestjs/common';
 
-import { PrismaService } from '../../../database/prisma.service';
-import { BoardGateway } from '../../agent-runs/gateways/board.gateway';
-import { AgentRunsService } from '../../agent-runs/services/agent-runs.service';
+import { PrismaService } from '#database/prisma.service';
+import { BoardGateway } from '#modules/agent-runs/gateways/board.gateway';
+import { AgentRunsService } from '#modules/agent-runs/services/agent-runs.service';
+
 import {
   JiraClient,
   JiraHttpError,

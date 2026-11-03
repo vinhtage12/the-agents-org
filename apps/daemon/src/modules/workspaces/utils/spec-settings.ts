@@ -1,6 +1,6 @@
-import { assertRepoPath } from '../../repositories/utils/repo-path';
+import { assertRepoPath } from '#modules/repositories/utils/repo-path';
 
-import type { SpecSource } from '../../../generated/prisma/client';
+import type { SpecSource } from '#/generated/prisma/client';
 
 export async function normalizeSpecSettings(
   input: { specSource?: SpecSource; specDir?: string | null },

@@ -1,6 +1,6 @@
 import { IsDate, IsInt, IsString, Max, MaxLength, Min } from 'class-validator';
 
-import type { TestCase as TestCaseModel } from '../../../generated/prisma/client';
+import type { TestCase as TestCaseModel } from '#/generated/prisma/client';
 
 export class TestCaseEntity implements TestCaseModel {
   @IsInt()

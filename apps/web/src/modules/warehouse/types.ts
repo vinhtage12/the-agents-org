@@ -2,8 +2,10 @@ import type { ISendRequestParams } from '@truyenmoinhu/query';
 import type { WAREHOUSE_KINDS } from './constants';
 
 export type WarehouseKind = keyof typeof WAREHOUSE_KINDS;
-export type AgentRole = 'BA' | 'DEV' | 'QC' | 'FILE_PROCESSOR';
-export type BranchKind = 'CHECKOUT_BASE' | 'PR_TARGET' | 'NONE';
+
+import type { AgentRole, BranchKind } from './enum';
+
+export type { AgentRole, BranchKind };
 
 export interface IAgentRef {
   id: number;

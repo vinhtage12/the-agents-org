@@ -6,7 +6,7 @@ import {
 } from '@nestjs/websockets';
 
 import type { Namespace } from 'socket.io';
-import type { Env } from '../../../configuration/env.validation';
+import type { Env } from '#configuration/env.validation';
 
 @WebSocketGateway({
   namespace: '/api/v1/board',

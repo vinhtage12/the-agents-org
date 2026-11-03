@@ -10,7 +10,8 @@ import {
 } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { JiraSyncService } from '../../jira/services/jira-sync.service';
+import { JiraSyncService } from '#modules/jira/services/jira-sync.service';
+
 import { CreateLocalTicketDto } from '../dtos/create-local-ticket.dto';
 import { FeedbackDto } from '../dtos/feedback.dto';
 import { LinkTicketsDto } from '../dtos/link-tickets.dto';

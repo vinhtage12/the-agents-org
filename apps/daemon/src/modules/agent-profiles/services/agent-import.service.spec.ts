@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { ConfigService } from '@nestjs/config';
 
-import { PrismaService } from '../../../database/prisma.service';
+import { PrismaService } from '#database/prisma.service';
 import { AgentImportService, rolesFor } from './agent-import.service';
 
 describe('rolesFor', () => {

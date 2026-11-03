@@ -1,6 +1,6 @@
 import { IsInt, IsString, Max, MaxLength, Min } from 'class-validator';
 
-import type { RepoEnvironment as RepoEnvironmentModel } from '../../../generated/prisma/client';
+import type { RepoEnvironment as RepoEnvironmentModel } from '#/generated/prisma/client';
 import type { RepoEntity } from './repo.entity';
 import type { RepoBranchEntity } from './repo-branch.entity';
 

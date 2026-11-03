@@ -57,6 +57,12 @@ TypeScript everywhere, formatted and linted by Biome (root `biome.json` + per-ap
 `@truyenmoinhu/biome-config`). Python 3 stdlib only for skill scripts. Never commit secrets: copy
 `.env.example` to `.env.<environment>` (git-ignored).
 
+Model finite domain values such as state, status, type, mode, source, role, and provider as enums. Keep each
+module's enums in `<module>/enum.ts` and reusable literal values (limits, event names, endpoints, mappings, etc.)
+in `<module>/constants.ts`; callers must use those exports instead of repeating hard-coded values. Do not extract
+one-off presentation text, arbitrary data, or protocol payload fields unless they are reused or represent a finite
+domain value.
+
 ## Commits and pull requests
 
 Short imperative summaries. Lefthook runs `pnpm format` and `pnpm lint` on pre-commit and prefixes commit

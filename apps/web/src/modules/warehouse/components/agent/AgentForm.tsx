@@ -20,6 +20,7 @@ import {
 import { trans } from '#i18n';
 
 import { AGENT_ROLES, PROVIDERS, WAREHOUSE_ENDPOINTS } from '../../constants';
+import { AgentRole } from '../../enum';
 import { useWarehouseMutation } from '../../hooks';
 import { optionLabel, splitList } from '../../utils';
 
@@ -37,7 +38,7 @@ const AgentForm = ({ agent, onDone }: IAgentFormProps) => {
     configs: {
       defaultValues: {
         name: agent?.name ?? '',
-        role: agent?.role ?? 'DEV',
+        role: agent?.role ?? AgentRole.DEV,
         provider: agent?.provider ?? PROVIDERS[0],
         model: agent?.model ?? '',
         effort: agent?.effort ?? '',

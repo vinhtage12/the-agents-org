@@ -19,6 +19,7 @@ import {
 import { trans } from '#i18n';
 
 import { BRANCH_TYPES, TICKET_ENDPOINTS } from '../constants';
+import { TicketStatus } from '../enum';
 import { useGitBranches, useMoveTicket } from '../hooks';
 
 import type { IBranchValues } from '../types';
@@ -74,7 +75,7 @@ const BranchDialog = ({
       try {
         await move.mutateAsync({
           ticketId,
-          to: 'IN_PROGRESS',
+          to: TicketStatus.IN_PROGRESS,
           branch: {
             base: baseName,
             name: `${values.type}/${values.name}`,

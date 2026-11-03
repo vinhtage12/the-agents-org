@@ -20,6 +20,7 @@ import {
 import { trans } from '#i18n';
 
 import { BRANCH_KINDS } from '../constants';
+import { BranchKind } from '../enum';
 import { useWarehouseMutation } from '../hooks';
 
 import type { IRepoEnvironment, IRepoEnvironmentValues } from '../types';
@@ -141,7 +142,7 @@ const EnvironmentForm = ({
         <TmnButton
           variant="outline"
           startIcon={Plus}
-          onClick={() => branches.append({ name: '', kind: 'NONE' })}
+          onClick={() => branches.append({ name: '', kind: BranchKind.NONE })}
         >
           {trans('warehouse.repo.add_branch')}
         </TmnButton>

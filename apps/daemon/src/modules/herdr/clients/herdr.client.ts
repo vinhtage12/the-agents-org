@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import type { Env } from '../../../configuration/env.validation';
+import type { Env } from '#configuration/env.validation';
 
 interface HerdrResponse<T = unknown> {
   id?: string;

@@ -1,6 +1,6 @@
 import { IsBoolean, IsInt, IsString, Max, Min } from 'class-validator';
 
-import type { TestResult as TestResultModel } from '../../../generated/prisma/client';
+import type { TestResult as TestResultModel } from '#/generated/prisma/client';
 
 export class TestResultEntity implements TestResultModel {
   @IsInt()

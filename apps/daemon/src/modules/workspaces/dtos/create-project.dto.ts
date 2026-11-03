@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString, MaxLength, ValidateIf } from 'class-validator';
 
-import { SpecSource } from '../../../generated/prisma/client';
+import { SpecSource } from '#/generated/prisma/client';
+
 import { CreateWorkspaceDto } from './create-workspace.dto';
 
 export class CreateProjectDto extends CreateWorkspaceDto {

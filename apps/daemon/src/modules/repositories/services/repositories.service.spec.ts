@@ -1,8 +1,8 @@
 import { ConflictException } from '@nestjs/common';
 
-import { OPEN_TICKET } from '../../../common/constants/open-ticket';
-import { PrismaService } from '../../../database/prisma.service';
-import { GitService } from '../../git/services/git.service';
+import { OPEN_TICKET } from '#constants/open-ticket';
+import { PrismaService } from '#database/prisma.service';
+import { GitService } from '#modules/git/services/git.service';
 import { RepositoriesService } from './repositories.service';
 
 describe('RepositoriesService', () => {

@@ -1,6 +1,6 @@
-import { STARTUP_GRACE_MS } from '../../agent-runs/utils/constants';
+import { STARTUP_GRACE_MS } from '#modules/agent-runs/utils/constants';
 
-import type { AgentRunStatus } from '../../agent-runs/entities/agent-run.entity';
+import type { AgentRunStatus } from '#modules/agent-runs/entities/agent-run.entity';
 import type { TicketStatus } from '../entities/ticket.entity';
 
 export type BoardLabel = 'running' | 'approved' | 'needs_you' | null;

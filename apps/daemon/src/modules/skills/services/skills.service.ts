@@ -8,13 +8,14 @@ import {
   NotFoundException
 } from '@nestjs/common';
 
-import { OPEN_TICKET } from '../../../common/constants/open-ticket';
 import {
   IUsage,
   USAGE_TICKET_SELECT,
   toUsageTickets
-} from '../../../common/types/usage';
-import { PrismaService } from '../../../database/prisma.service';
+} from '#common/types/usage';
+import { OPEN_TICKET } from '#constants/open-ticket';
+import { PrismaService } from '#database/prisma.service';
+
 import { SaveSkillDto } from '../dtos/save-skill.dto';
 import { UpdateSkillDto } from '../dtos/update-skill.dto';
 

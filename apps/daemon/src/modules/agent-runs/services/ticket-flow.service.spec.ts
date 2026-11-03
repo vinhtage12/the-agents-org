@@ -13,7 +13,7 @@ import {
 import { AgentRunsService } from './agent-runs.service';
 import { TicketFlowService } from './ticket-flow.service';
 
-import type { PrismaService } from '../../../database/prisma.service';
+import type { PrismaService } from '#database/prisma.service';
 
 describe('TicketFlowService', () => {
   const ticket = { id: 10, projectId: 3, status: 'IN_PROGRESS', fixRound: 0 };

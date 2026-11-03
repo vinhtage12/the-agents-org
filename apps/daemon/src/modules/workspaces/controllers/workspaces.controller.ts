@@ -11,13 +11,14 @@ import {
 } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
+import { ProjectsService } from '#modules/projects/services/projects.service';
+
 import { CreateProjectDto } from '../dtos/create-project.dto';
 import { CreateWorkspaceDto } from '../dtos/create-workspace.dto';
 import { UpdateProjectDto } from '../dtos/update-project.dto';
 import { UpdateWorkspaceDto } from '../dtos/update-workspace.dto';
 import { ProjectEntity } from '../entities/project.entity';
 import { WorkspaceEntity } from '../entities/workspace.entity';
-import { ProjectsService } from '../../projects/services/projects.service';
 import { WorkspacesService } from '../services/workspaces.service';
 
 @Controller('workspaces')

@@ -1,6 +1,6 @@
 import { IsDate, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
-import type { SpecVersion as SpecVersionModel } from '../../../generated/prisma/client';
+import type { SpecVersion as SpecVersionModel } from '#/generated/prisma/client';
 
 export class SpecVersionEntity implements SpecVersionModel {
   @IsInt()

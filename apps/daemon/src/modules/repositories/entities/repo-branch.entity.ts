@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsInt, IsString, Max, MaxLength, Min } from 'class-validator';
 
-import { BranchKind } from '../../../generated/prisma/client';
+import { BranchKind } from '#/generated/prisma/client';
 
-import type { RepoBranch as RepoBranchModel } from '../../../generated/prisma/client';
+import type { RepoBranch as RepoBranchModel } from '#/generated/prisma/client';
 import type { RepoEnvironmentEntity } from './repo-environment.entity';
 
 export { BranchKind };

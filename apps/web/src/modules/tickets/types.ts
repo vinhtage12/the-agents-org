@@ -1,12 +1,29 @@
 import type { RequestMethods } from '@truyenmoinhu/query';
 import type { IAgentRef, IOption } from '#modules/warehouse';
 import type { TSpecSource } from '#modules/workspaces';
-import type { ISSUE_TYPES, TICKET_STATUSES } from './constants';
+import type { ISSUE_TYPES } from './constants';
+import type {
+  AgentRunStatus,
+  AgentStep,
+  BoardLabel,
+  SprintState,
+  TestMode,
+  TicketSource,
+  TicketSpecMode,
+  TicketStatus
+} from './enum';
 
-export type TicketStatus = (typeof TICKET_STATUSES)[number];
-export type TicketSource = 'JIRA' | 'LOCAL';
+export type {
+  AgentRunStatus,
+  AgentStep,
+  BoardLabel,
+  SprintState,
+  TestMode,
+  TicketSource,
+  TicketSpecMode,
+  TicketStatus
+};
 export type IssueType = (typeof ISSUE_TYPES)[number];
-export type TicketSpecMode = 'file' | 'text';
 export type TicketPlacement = Record<number, number | null>;
 export interface ITicketBase {
   id: number;
@@ -39,7 +56,6 @@ export interface ISyncResult {
   reopened: number;
   sprints: number;
 }
-export type BoardLabel = 'running' | 'approved' | 'needs_you';
 export interface IBoardTicket extends ITicketBase {
   status: TicketStatus;
   label: BoardLabel | null;
@@ -69,8 +85,6 @@ export interface IGitBranches {
   data: { label: string }[];
   base: string | null;
 }
-export type AgentStep = 'SPEC' | 'DEV' | 'TEST';
-export type AgentRunStatus = 'RUNNING' | 'COMPLETED' | 'FAILED' | 'STOPPED';
 export interface ISpecVersion {
   version: number;
   content: string;
@@ -84,7 +98,7 @@ export interface IAgentRun {
   status: AgentRunStatus;
   paneId: string | null;
   error: string | null;
-  testMode: 'WRITE_CASES' | 'RUN_CASES' | null;
+  testMode: TestMode | null;
   startedAt: string;
   finishedAt: string | null;
 }
@@ -169,7 +183,6 @@ export interface IBranchValues {
   type: string;
   name: string;
 }
-export type SprintState = 'FUTURE' | 'ACTIVE' | 'CLOSED';
 export interface ISprint {
   id: number;
   source: TicketSource;

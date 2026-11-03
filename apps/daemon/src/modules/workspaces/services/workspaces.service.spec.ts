@@ -1,6 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
-import { PrismaService } from '../../../database/prisma.service';
+import { PrismaService } from '#database/prisma.service';
+
 import { WorkspacesService } from './workspaces.service';
 
 describe('WorkspacesService', () => {

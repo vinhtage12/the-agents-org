@@ -1,6 +1,9 @@
 import type { IAgent } from 'dto/types';
+import type { AgentKind, AgentStreamEventType, SplitDirection } from './enum';
+
+export type { AgentKind, AgentStreamEventType, SplitDirection };
 export interface IAgentStreamEvent {
-  type: 'agent' | 'status' | 'output' | 'closed' | 'error';
+  type: AgentStreamEventType;
   agent?: IAgent;
   event?: Record<string, unknown>;
   data?: string;
@@ -9,9 +12,9 @@ export interface IAgentStreamEvent {
 }
 export type AgentStreamEvent = IAgentStreamEvent;
 export interface ICreateAgentInput {
-  agent: 'claude' | 'codex' | 'copilot' | 'antigravity';
+  agent: AgentKind;
   parentPaneId?: string;
-  direction?: 'right' | 'down';
+  direction?: SplitDirection;
 }
 export interface ICreatedAgent extends IAgent {
   name: string;

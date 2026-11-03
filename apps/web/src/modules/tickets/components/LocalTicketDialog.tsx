@@ -17,6 +17,7 @@ import {
 import { trans } from '#i18n';
 
 import { ISSUE_TYPES, SPRINT_BACKLOG } from '../constants';
+import { TicketSource, TicketSpecMode } from '../enum';
 import {
   useCreateLocalTicket,
   useSpecFiles,
@@ -60,7 +61,10 @@ const LocalTicketDialog = ({
       defaultValues: {
         summary: ticket?.summary ?? '',
         issueType: ticket?.issueType ?? 'Task',
-        mode: ticket && !ticket.specFile ? 'text' : 'file',
+        mode:
+          ticket && !ticket.specFile
+            ? TicketSpecMode.TEXT
+            : TicketSpecMode.FILE,
         specFile: ticket?.specFile ?? '',
         description: ticket?.description ?? '',
         sprint: SPRINT_BACKLOG
@@ -72,10 +76,10 @@ const LocalTicketDialog = ({
   const submit = form.handleSubmit(async values => {
     setMessage('');
     const text = values.description.trim();
-    if (values.mode === 'file' ? !values.specFile : !text) {
+    if (values.mode === TicketSpecMode.FILE ? !values.specFile : !text) {
       setMessage(
         trans(
-          values.mode === 'file'
+          values.mode === TicketSpecMode.FILE
             ? 'ticket.local.spec_file_required'
             : 'ticket.local.description_required'
         )
@@ -85,7 +89,7 @@ const LocalTicketDialog = ({
     const content: ILocalTicketContent = {
       summary: values.summary.trim(),
       issueType: values.issueType,
-      ...(values.mode === 'file'
+      ...(values.mode === TicketSpecMode.FILE
         ? { specFile: values.specFile }
         : { description: values.description })
     };
@@ -155,13 +159,19 @@ const LocalTicketDialog = ({
             value={field.value}
             onChange={field.onChange}
             options={[
-              { value: 'file', label: trans('ticket.local.mode_file') },
-              { value: 'text', label: trans('ticket.local.mode_text') }
+              {
+                value: TicketSpecMode.FILE,
+                label: trans('ticket.local.mode_file')
+              },
+              {
+                value: TicketSpecMode.TEXT,
+                label: trans('ticket.local.mode_text')
+              }
             ]}
           />
         )}
       />
-      {mode === 'file' ? (
+      {mode === TicketSpecMode.FILE ? (
         <TmnController
           control={form.control}
           name="specFile"
@@ -211,10 +221,12 @@ const LocalTicketDialog = ({
               onChange={field.onChange}
               options={[
                 { value: SPRINT_BACKLOG, label: trans('sprint.backlog') },
-                ...selectableSprints(sprints, 'LOCAL', hybrid).map(s => ({
-                  value: String(s.id),
-                  label: s.name
-                }))
+                ...selectableSprints(sprints, TicketSource.LOCAL, hybrid).map(
+                  s => ({
+                    value: String(s.id),
+                    label: s.name
+                  })
+                )
               ]}
             />
           )}

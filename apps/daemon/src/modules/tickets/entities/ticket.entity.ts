@@ -11,10 +11,10 @@ import {
   Min
 } from 'class-validator';
 
-import { TicketSource, TicketStatus } from '../../../generated/prisma/client';
+import { TicketSource, TicketStatus } from '#/generated/prisma/client';
 
-import type { Ticket as TicketModel } from '../../../generated/prisma/client';
-import type { ProjectEntity } from '../../workspaces/entities/project.entity';
+import type { Ticket as TicketModel } from '#/generated/prisma/client';
+import type { ProjectEntity } from '#modules/workspaces/entities/project.entity';
 
 export { TicketStatus };
 

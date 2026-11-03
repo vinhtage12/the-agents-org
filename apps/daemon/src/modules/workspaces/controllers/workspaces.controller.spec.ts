@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { ProjectsService } from '../../projects/services/projects.service';
+import { ProjectsService } from '#modules/projects/services/projects.service';
 import { WorkspacesService } from '../services/workspaces.service';
 import { WorkspacesController } from './workspaces.controller';
 
