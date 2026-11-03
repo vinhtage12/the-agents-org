@@ -15,11 +15,13 @@ import {
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { PrismaService } from '../../../database/prisma.service';
+import { CreateProjectDto } from '../dtos/create-project.dto';
 import { CreateWorkspaceDto } from '../dtos/create-workspace.dto';
 import { UpdateProjectDto } from '../dtos/update-project.dto';
 import { UpdateWorkspaceDto } from '../dtos/update-workspace.dto';
 import { ProjectEntity } from '../entities/project.entity';
 import { WorkspaceEntity } from '../entities/workspace.entity';
+import { normalizeSpecSettings } from '../utils/spec-settings';
 
 @Controller('workspaces')
 @ApiTags('workspaces')
@@ -63,12 +65,13 @@ export class WorkspacesController {
   @ApiCreatedResponse({ type: ProjectEntity })
   async createProject(
     @Param('id', ParseIntPipe) workspaceId: number,
-    @Body() data: CreateWorkspaceDto
+    @Body() data: CreateProjectDto
   ): Promise<ProjectEntity> {
     await this.detail(workspaceId);
+    const spec = await normalizeSpecSettings(data);
     try {
       return await this.prisma.project.create({
-        data: { ...data, workspaceId }
+        data: { ...data, ...spec, workspaceId }
       });
     } catch (error) {
       this.rethrow(error);
@@ -123,12 +126,13 @@ export class WorkspacesController {
     @Param('projectId', ParseIntPipe) id: number,
     @Body() data: UpdateProjectDto
   ): Promise<ProjectEntity> {
-    await this.project(workspaceId, id);
+    const project = await this.project(workspaceId, id);
+    const spec = await normalizeSpecSettings(data, project);
     if (data.workspaceId !== undefined) await this.detail(data.workspaceId);
     try {
       return await this.prisma.project.update({
         where: { id, workspaceId },
-        data
+        data: { ...data, ...spec }
       });
     } catch (error) {
       this.rethrow(error);

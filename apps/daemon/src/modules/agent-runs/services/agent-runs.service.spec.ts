@@ -115,6 +115,38 @@ describe('AgentRunsService', () => {
     prisma.$transaction.mockImplementation(async callback => callback(tx));
   });
 
+  it('blocks SPEC when the local spec file is gone, but not DEV', async () => {
+    const specDir = await mkdtemp(join(tmpdir(), 'spec-'));
+    prisma.ticket.findUnique.mockResolvedValue({
+      id: 10,
+      projectId: 3,
+      jiraKey: 'L-1',
+      summary: 'S',
+      description: 'D',
+      jiraUrl: '',
+      extraInstructions: '',
+      skills: [],
+      rules: [],
+      branch: null,
+      specAgentId: 1,
+      devAgentId: 1,
+      repo: { id: 5, path: repoDir },
+      specFile: 'gone.md',
+      project: { specDir }
+    });
+    await expect(service.startSpec(10)).rejects.toThrow(
+      new BadRequestException(
+        `Spec file not found: ${join(specDir, 'gone.md')}`
+      )
+    );
+    expect(prisma.agentRun.create).not.toHaveBeenCalled();
+    await service.start(10, 'DEV', base => {
+      expect(base.ticket.specPath).toBeNull();
+      return 'p';
+    });
+    expect(prisma.agentRun.create).toHaveBeenCalled();
+  });
+
   it('creates a pane in the ticket repo with profile args', async () => {
     await service.startSpec(10);
     expect(herdr.createAgent).toHaveBeenCalledWith({

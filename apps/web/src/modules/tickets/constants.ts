@@ -16,9 +16,11 @@ export const TICKET_STATUSES = [
 export const TICKET_QUERY_KEYS = {
   store: generateQueryKey('ticket-store'),
   board: generateQueryKey('project-board'),
+  sprints: generateQueryKey('project-sprints'),
   detail: generateQueryKey('ticket-detail'),
   output: generateQueryKey('agent-output'),
-  gitBranches: generateQueryKey('git-branches')
+  gitBranches: generateQueryKey('git-branches'),
+  specFiles: generateQueryKey('spec-files')
 };
 // Drag moves the daemon accepts (its assertTransition table).
 export const MOVABLE: Partial<Record<TicketStatus, TicketStatus[]>> = {
@@ -40,7 +42,9 @@ export const TICKET_ENDPOINTS = {
   tickets: withGenerateEndpoint('tickets'),
   projects: withGenerateEndpoint('projects'),
   repositories: withGenerateEndpoint('repositories'),
-  agents: withGenerateEndpoint('agents')
+  agents: withGenerateEndpoint('agents'),
+  sprints: withGenerateEndpoint('sprints'),
+  workspaces: withGenerateEndpoint('workspaces')
 };
 export const MAX_FIX_ROUNDS = 2;
 export const OUTPUT_REFETCH_MS = 2000;
@@ -66,3 +70,12 @@ export const TICKET_DIALOG = 'ticket-dialog';
 // No typography plugin: style rendered markdown from the wrapper.
 export const MARKDOWN_CLASS =
   'text-sm leading-6 [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-bold [&_h3]:mt-3 [&_h3]:mb-1 [&_h3]:font-bold [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-muted [&_pre]:p-2 [&_a]:text-primary [&_a]:underline [&_table]:my-2 [&_td]:border [&_td]:border-border [&_td]:px-2 [&_th]:border [&_th]:border-border [&_th]:px-2';
+export const SPRINT_ALL = 'all';
+// Select item values cannot be empty, so the default filter has its own value.
+export const SPRINT_RUNNING = 'running';
+export const SPRINT_DIALOG = 'sprint-dialog';
+export const COMPLETE_SPRINT_DIALOG = 'complete-sprint-dialog';
+export const SPRINT_NEW = 'new';
+export const SPRINT_BACKLOG = 'backlog';
+export const LOCAL_TICKET_DIALOG = 'local-ticket-dialog';
+export const ISSUE_TYPES = ['Task', 'Bug', 'Story'] as const;

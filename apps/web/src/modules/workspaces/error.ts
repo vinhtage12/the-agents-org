@@ -1,5 +1,8 @@
 export class WorkspaceError extends Error {
-  constructor(readonly status?: number) {
-    super('Workspace request failed');
+  constructor(
+    readonly status?: number,
+    message?: string
+  ) {
+    super(message || 'Workspace request failed');
   }
 }

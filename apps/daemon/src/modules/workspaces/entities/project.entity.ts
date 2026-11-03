@@ -1,4 +1,6 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -6,6 +8,8 @@ import {
   MaxLength,
   Min
 } from 'class-validator';
+
+import { SpecSource } from '../../../generated/prisma/client';
 
 import type { Project as ProjectModel } from '../../../generated/prisma/client';
 import type { TicketEntity } from '../../tickets/entities/ticket.entity';
@@ -30,6 +34,24 @@ export class ProjectEntity implements ProjectModel {
   @IsString()
   @MaxLength(32)
   code!: string;
+
+  @ApiProperty({
+    enum: SpecSource,
+    enumName: 'SpecSource',
+    default: SpecSource.JIRA
+  })
+  @IsEnum(SpecSource)
+  specSource!: SpecSource;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1024)
+  specDir!: string | null;
+
+  @IsInt()
+  @Min(0)
+  @Max(2147483647)
+  localTicketSeq!: number;
 
   @IsOptional()
   @IsInt()

@@ -19,6 +19,7 @@ const base: PromptBase = {
     summary: 'Login',
     description: 'Users log in',
     jiraUrl: 'https://j/browse/FMS-1',
+    specPath: null,
     extraInstructions: 'Use SSO.',
     skills: [
       { command: '/brainstorming', description: 'Plan', provider: 'claude' },
@@ -55,5 +56,15 @@ it('uses the shared completion contract', () => {
       "2. Run: curl -fsS -X POST -H 'x-run-token: tok' http://127.0.0.1:3005/api/v1/agent-runs/7/complete",
       'Do not run the command before output.md is complete. If it fails, fix the problem and run it again.'
     ].join('\n')
+  );
+});
+it('drops the empty URL line and points at the spec file', () => {
+  const header = promptHeader({
+    ...base,
+    ticket: { ...base.ticket, jiraUrl: '', specPath: '/s/a.md' }
+  });
+  expect(header).toContain('Ticket FMS-1: Login\n\nUsers log in');
+  expect(header).toContain(
+    'Spec source file (read it before anything else): /s/a.md'
   );
 });

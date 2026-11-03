@@ -31,7 +31,10 @@ import ProjectSettings from './ProjectSettings';
 const ProjectPage = () => {
   const { data, isLoading, error, refetch } = useWorkspaces();
   const navigate = useNavigate();
-  const { ticket } = useSearch({ strict: false }) as { ticket?: number };
+  const { ticket, sprint } = useSearch({ strict: false }) as {
+    ticket?: number;
+    sprint?: string;
+  };
   const pathname = useLocation({ select: l => l.pathname });
   const { workspaceId, _splat = '' } = useParams({ strict: false });
   const parts = _splat.split('/').filter(Boolean);
@@ -122,7 +125,19 @@ const ProjectPage = () => {
           <EntityActions workspace={workspace} project={project} />
         </TmnFlex>
       </TmnFlex>
-      <ProjectBoard projectId={project.id} />
+      <ProjectBoard
+        workspaceId={workspace.id}
+        projectId={project.id}
+        specSource={project.specSource}
+        sprintFilter={sprint}
+        onSprintFilterChange={value =>
+          void navigate({
+            to: '.',
+            search: prev => ({ ...prev, sprint: value }),
+            replace: true
+          })
+        }
+      />
     </TmnFlex>
   );
 };

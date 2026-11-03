@@ -13,9 +13,15 @@ import { AgentRunsService } from '../../agent-runs/services/agent-runs.service';
 import { TicketFlowService } from '../../agent-runs/services/ticket-flow.service';
 import { GitService } from '../../git/services/git.service';
 import { type BoardLabel, boardLabel } from '../utils/board-label';
+import { resolveSpecFile } from '../utils/spec-file';
+import { assertSprintAssignable } from '../utils/sprint-assign';
 import { assertTransition } from '../utils/transitions';
 
-import type { Prisma } from '../../../generated/prisma/client';
+import type {
+  Prisma,
+  SpecSource,
+  SprintSource
+} from '../../../generated/prisma/client';
 import type { AgentRunEntity } from '../../agent-runs/entities/agent-run.entity';
 import type { RepoEntity } from '../../repositories/entities/repo.entity';
 import type { ProjectEntity } from '../../workspaces/entities/project.entity';
@@ -28,7 +34,15 @@ type TicketStoreItem = Pick<
 >;
 type TicketBoardItem = Pick<
   TicketEntity,
-  'id' | 'jiraKey' | 'summary' | 'status' | 'jiraUrl' | 'branch' | 'repoId'
+  | 'id'
+  | 'jiraKey'
+  | 'summary'
+  | 'status'
+  | 'jiraUrl'
+  | 'branch'
+  | 'repoId'
+  | 'source'
+  | 'sprintId'
 > & {
   label: BoardLabel;
   specVersion: number | null;
@@ -48,7 +62,13 @@ export type TicketDetail = Pick<
   | 'extraInstructions'
   | 'fixRound'
   | 'specApprovedAt'
+  | 'source'
+  | 'issueType'
+  | 'specFile'
+  | 'sprintId'
 > & {
+  sprintSource: SprintSource | null;
+  projectSpecSource: SpecSource | null;
   specAgent: AgentRef | null;
   devAgent: AgentRef | null;
   testAgent: AgentRef | null;
@@ -82,6 +102,17 @@ export type AgentRef = {
   provider: string;
   model: string | null;
 };
+export type CreateLocalTicketInput = {
+  summary: string;
+  issueType: string;
+  specFile?: string;
+  description?: string;
+  sprintId?: number | null;
+};
+export type UpdateLocalTicketInput = Partial<
+  Omit<CreateLocalTicketInput, 'sprintId' | 'specFile'>
+> & { specFile?: string | null };
+
 export interface UpdateTicketInput {
   projectId?: number;
   repoId?: number | null;
@@ -90,6 +121,7 @@ export interface UpdateTicketInput {
   testAgentId?: number | null;
   skillIds?: number[];
   ruleIds?: number[];
+  sprintId?: number | null;
   extraInstructions?: string;
 }
 const AGENT_REF = {
@@ -156,8 +188,105 @@ export class TicketsService {
       projects
     };
   }
-  link(links: { ticketId: number; projectId: number }[]) {
-    return this.prisma.$transaction(async tx => {
+  async createLocal(
+    projectId: number,
+    input: CreateLocalTicketInput
+  ): Promise<TicketDetail> {
+    const ticket = await this.prisma.$transaction(async tx => {
+      const project = await tx.project.findUnique({ where: { id: projectId } });
+      if (!project) throw new NotFoundException('Project not found');
+      if (project.specSource === 'JIRA')
+        throw new ConflictException('Project does not accept local tickets');
+      const specFile = input.specFile?.trim() || null;
+      const description = input.description?.trim() ?? '';
+      if (Boolean(specFile) === Boolean(description))
+        throw new BadRequestException('Provide either a spec file or a spec');
+      if (specFile) await resolveSpecFile(project.specDir ?? '', specFile);
+      if (input.sprintId != null)
+        await this.assertSprint(
+          { source: 'LOCAL', sprintSource: null },
+          projectId,
+          input.sprintId,
+          project.specSource
+        );
+      // A project that reused this code earlier may already own the next key.
+      let jiraKey = '';
+      for (let attempt = 0; attempt < 100 && !jiraKey; attempt++) {
+        const numbered = await tx.project.update({
+          where: { id: projectId },
+          data: { localTicketSeq: { increment: 1 } }
+        });
+        const key = `${numbered.code}-L${numbered.localTicketSeq}`;
+        if (!(await tx.ticket.findUnique({ where: { jiraKey: key } })))
+          jiraKey = key;
+      }
+      if (!jiraKey) throw new ConflictException('No free local ticket number');
+      return tx.ticket.create({
+        data: {
+          jiraKey,
+          summary: input.summary.trim(),
+          issueType: input.issueType,
+          specFile,
+          description,
+          source: 'LOCAL',
+          status: 'TODO',
+          jiraUrl: '',
+          jiraStatus: '',
+          projectId,
+          sprintId: input.sprintId ?? null,
+          linkedAt: new Date(),
+          repoId: project.defaultRepoId,
+          specAgentId: project.specAgentId,
+          devAgentId: project.devAgentId,
+          testAgentId: project.testAgentId
+        }
+      });
+    });
+    this.emit(projectId);
+    return this.detail(ticket.id);
+  }
+
+  async updateLocal(
+    id: number,
+    input: UpdateLocalTicketInput
+  ): Promise<TicketDetail> {
+    const ticket = await this.find(id);
+    if (ticket.source !== 'LOCAL' || ticket.status !== 'TODO')
+      throw new ConflictException('Only local tickets in TODO can be edited');
+    if (input.specFile?.trim() && input.description?.trim())
+      throw new BadRequestException('Provide either a spec file or a spec');
+    let specFile = ticket.specFile;
+    let description = ticket.description;
+    if (input.specFile !== undefined) {
+      specFile = input.specFile?.trim() || null;
+      if (specFile) {
+        await resolveSpecFile(ticket.project?.specDir ?? '', specFile);
+        description = '';
+      }
+    }
+    if (input.description !== undefined) {
+      description = input.description.trim();
+      specFile = null;
+    }
+    if (Boolean(specFile) === Boolean(description.trim()))
+      throw new BadRequestException('Provide either a spec file or a spec');
+    const updated = await this.prisma.ticket.updateMany({
+      where: { id, source: 'LOCAL', status: 'TODO' },
+      data: {
+        ...(input.summary !== undefined && { summary: input.summary.trim() }),
+        ...(input.issueType !== undefined && { issueType: input.issueType }),
+        specFile,
+        description
+      }
+    });
+    if (updated.count !== 1)
+      throw new ConflictException('Ticket changed while editing');
+    this.emit(ticket.projectId);
+    return this.detail(id);
+  }
+
+  async link(links: { ticketId: number; projectId: number }[]) {
+    const result = await this.prisma.$transaction(async tx => {
       for (const { ticketId, projectId } of links) {
         const ticket = await tx.ticket.findUnique({ where: { id: ticketId } });
         if (!ticket) throw new NotFoundException('Ticket not found');
@@ -171,6 +300,10 @@ export class TicketsService {
           where: { id: projectId }
         });
         if (!project) throw new NotFoundException('Project not found');
+        if (project.specSource === 'LOCAL')
+          throw new ConflictException(
+            `Project ${project.code} only accepts local tickets`
+          );
         const updated = await tx.ticket.updateMany({
           where: { id: ticketId, projectId: null, status: { not: 'CANCELED' } },
           data: {
@@ -190,6 +323,9 @@ export class TicketsService {
       }
       return { linked: links.length };
     });
+    for (const projectId of new Set(links.map(link => link.projectId)))
+      this.emit(projectId);
+    return result;
   }
   async board(projectId: number): Promise<TicketBoardItem[]> {
     if (!(await this.prisma.project.findUnique({ where: { id: projectId } })))
@@ -206,6 +342,8 @@ export class TicketsService {
           branch: true,
           repoId: true,
           specApprovedAt: true,
+          source: true,
+          sprintId: true,
           runs: {
             select: {
               status: true,
@@ -305,6 +443,12 @@ export class TicketsService {
       jiraKey: ticket.jiraKey,
       summary: ticket.summary,
       description: ticket.description,
+      source: ticket.source,
+      issueType: ticket.issueType,
+      specFile: ticket.specFile,
+      sprintId: ticket.sprintId,
+      sprintSource: ticket.sprint?.source ?? null,
+      projectSpecSource: ticket.project?.specSource ?? null,
       jiraUrl: ticket.jiraUrl,
       status: ticket.status,
       projectId: ticket.projectId,
@@ -523,6 +667,7 @@ export class TicketsService {
     const ticket = await this.find(id);
     const data: Prisma.TicketUncheckedUpdateInput = {};
     let projectId = ticket.projectId;
+    let specSource = ticket.project?.specSource ?? 'JIRA';
     if (input.projectId !== undefined && input.projectId !== ticket.projectId) {
       if (ticket.status !== 'TODO')
         throw new ConflictException('Project can only change while in To Do');
@@ -531,13 +676,18 @@ export class TicketsService {
       });
       if (!project) throw new NotFoundException('Project not found');
       projectId = project.id;
+      specSource = project.specSource;
       Object.assign(data, {
         projectId: project.id,
         repoId: project.defaultRepoId,
         branch: null,
         specAgentId: project.specAgentId,
         devAgentId: project.devAgentId,
-        testAgentId: project.testAgentId
+        testAgentId: project.testAgentId,
+        // A LOCAL sprint belongs to the old project.
+        ...(ticket.sprint?.source === 'LOCAL' && input.sprintId === undefined
+          ? { sprintId: null }
+          : {})
       });
     }
     if (input.repoId !== undefined && input.repoId !== ticket.repoId) {
@@ -570,6 +720,15 @@ export class TicketsService {
       await this.profiles.assertRole(input[key], role);
       data[key] = input[key];
     }
+    if (input.sprintId !== undefined && input.sprintId !== ticket.sprintId) {
+      await this.assertSprint(
+        { source: ticket.source, sprintSource: ticket.sprint?.source ?? null },
+        projectId,
+        input.sprintId,
+        specSource
+      );
+      data.sprintId = input.sprintId;
+    }
     if (input.extraInstructions !== undefined)
       data.extraInstructions = input.extraInstructions;
     if (input.skillIds !== undefined)
@@ -582,11 +741,46 @@ export class TicketsService {
     return this.detail(id);
   }
 
+  private async assertSprint(
+    ticket: Parameters<typeof assertSprintAssignable>[0],
+    projectId: number | null,
+    sprintId: number | null,
+    specSource: SpecSource
+  ) {
+    let sprint: Parameters<typeof assertSprintAssignable>[1] = null;
+    if (sprintId !== null) {
+      const found = await this.prisma.sprint.findUnique({
+        where: { id: sprintId }
+      });
+      if (!found) throw new NotFoundException('Sprint not found');
+      sprint = {
+        source: found.source,
+        state: found.state,
+        visibleInProject:
+          projectId !== null &&
+          (found.source === 'LOCAL'
+            ? found.projectId === projectId
+            : (await this.prisma.ticket.count({
+                where: { projectId, sprintId }
+              })) > 0)
+      };
+    }
+    assertSprintAssignable(ticket, sprint, specSource);
+  }
+
   private async find(id: number) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id },
       include: {
-        project: { select: { id: true, workspaceId: true } },
+        project: {
+          select: {
+            id: true,
+            workspaceId: true,
+            specDir: true,
+            specSource: true
+          }
+        },
+        sprint: { select: { source: true } },
         specAgentRef: AGENT_REF,
         devAgentRef: AGENT_REF,
         testAgentRef: AGENT_REF,

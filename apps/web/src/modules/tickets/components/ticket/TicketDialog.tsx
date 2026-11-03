@@ -1,7 +1,9 @@
 import { memo, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
+import Markdown from 'react-markdown';
 
 import {
+  TmnBox,
   TmnButton,
   TmnCallout,
   TmnChip,
@@ -9,14 +11,21 @@ import {
   TmnLink,
   TmnLoading,
   TmnTab,
-  TmnText
+  TmnText,
+  UIUtils
 } from '@truyenmoinhu/uikit';
 
 import { trans } from '#i18n';
+import { useWorkspaces } from '#modules/workspaces';
 
-import { LABEL_COLORS } from '../../constants';
+import {
+  LABEL_COLORS,
+  LOCAL_TICKET_DIALOG,
+  MARKDOWN_CLASS
+} from '../../constants';
 import { useTicketDetail } from '../../hooks';
 import AgentTerminal from '../AgentTerminal';
+import LocalTicketDialogRenderer from '../LocalTicketDialogRenderer';
 import RunList from '../RunList';
 import SpecEditForm from '../SpecEditForm';
 import SpecPanel from '../SpecPanel';
@@ -31,6 +40,7 @@ const TicketDialog = ({ ticketId }: ITicketDialogProps) => {
   const { data, isLoading, error, refetch } = useTicketDetail(ticketId);
   const [editDirty, setEditDirty] = useState(false);
   const [tab, setTab] = useState('spec');
+  const workspaces = useWorkspaces();
 
   if (isLoading) {
     return <TmnLoading />;
@@ -44,6 +54,28 @@ const TicketDialog = ({ ticketId }: ITicketDialogProps) => {
     );
   }
 
+  const workspaceId = workspaces.data?.find(w =>
+    w.projects.some(p => p.id === data.projectId)
+  )?.id;
+
+  const openEdit = () => {
+    if (workspaceId === undefined || data.projectId === null) {
+      return;
+    }
+    UIUtils.popup.open({
+      name: LOCAL_TICKET_DIALOG,
+      size: 'lg',
+      title: trans('ticket.local.edit_title'),
+      renderer: LocalTicketDialogRenderer,
+      params: {
+        workspaceId,
+        projectId: data.projectId,
+        hybrid: data.projectSpecSource === 'HYBRID',
+        ticket: data
+      }
+    });
+  };
+
   return (
     <TmnFlex direction="column" gap={3} className="min-w-0">
       <TmnFlex direction="row" gap={2} align="center" wrap="wrap">
@@ -54,17 +86,40 @@ const TicketDialog = ({ ticketId }: ITicketDialogProps) => {
             {trans(`ticket.label.${data.label}`)}
           </TmnChip>
         )}
-        <TmnLink
-          href={data.jiraUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1 text-sm"
-        >
-          {trans('ticket.open_jira')}
-          <ExternalLink size={14} aria-hidden />
-        </TmnLink>
+        {data.jiraUrl && (
+          <TmnLink
+            href={data.jiraUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-sm"
+          >
+            {trans('ticket.open_jira')}
+            <ExternalLink size={14} aria-hidden />
+          </TmnLink>
+        )}
+        {data.source === 'LOCAL' &&
+          data.status === 'TODO' &&
+          workspaceId !== undefined && (
+            <TmnButton onClick={openEdit}>
+              {trans('ticket.local.edit')}
+            </TmnButton>
+          )}
       </TmnFlex>
       <TmnText className="text-sm">{data.summary}</TmnText>
+      {data.source === 'LOCAL' && (
+        <TmnFlex direction="column" gap={1}>
+          <TmnText className="text-xs text-muted-foreground">
+            {data.specFile
+              ? trans('ticket.local.spec_file_value', { file: data.specFile })
+              : trans('ticket.local.description')}
+          </TmnText>
+          {!data.specFile && (
+            <TmnBox className={MARKDOWN_CLASS}>
+              <Markdown>{data.description}</Markdown>
+            </TmnBox>
+          )}
+        </TmnFlex>
+      )}
       {(data.status === 'IN_SPEC' ||
         data.runs.some(run => run.status === 'RUNNING')) && (
         <StopAgentsButton ticketId={data.id} />

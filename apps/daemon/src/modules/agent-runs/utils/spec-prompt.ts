@@ -20,6 +20,7 @@ export interface SpecPromptInput {
     summary: string;
     description: string;
     jiraUrl: string;
+    specPath: string | null;
     extraInstructions: string;
     skills: { command: string; description: string; provider: string }[];
     rules: { path: string }[];

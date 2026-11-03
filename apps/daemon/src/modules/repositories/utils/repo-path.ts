@@ -3,7 +3,10 @@ import { isAbsolute } from 'node:path';
 
 import { BadRequestException } from '@nestjs/common';
 
-export async function assertRepoPath(path: string): Promise<void> {
+export async function assertRepoPath(
+  path: string,
+  what = 'Repo path'
+): Promise<void> {
   if (isAbsolute(path)) {
     try {
       if ((await stat(path)).isDirectory()) return;
@@ -12,6 +15,6 @@ export async function assertRepoPath(path: string): Promise<void> {
     }
   }
   throw new BadRequestException(
-    'Repo path must be an absolute existing directory'
+    `${what} must be an absolute existing directory`
   );
 }

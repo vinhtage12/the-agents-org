@@ -24,20 +24,36 @@ import { TicketError } from '../error';
 import {
   useBoardEvents,
   useMoveTicket,
+  useProjectSprints,
   useProjectTickets,
   useRepoConflicts
 } from '../hooks';
+import { filterBoard } from '../utils';
+import BacklogSection from './BacklogSection';
 import BoardColumn from './BoardColumn';
 import BranchDialogRenderer from './BranchDialogRenderer';
+import SprintBar from './SprintBar';
 import { openTicketDialog } from './ticket/TicketDialogRenderer';
 
+import type { TSpecSource } from '#modules/workspaces';
 import type { IBoardTicket, IRepoConflict, TicketStatus } from '../types';
 
 export interface IProjectBoardProps {
+  workspaceId: number;
   projectId: number;
+  specSource: TSpecSource;
+  sprintFilter: string | undefined;
+  onSprintFilterChange: (filter: string | undefined) => void;
 }
-const ProjectBoard = ({ projectId }: IProjectBoardProps) => {
+const ProjectBoard = ({
+  workspaceId,
+  projectId,
+  specSource,
+  sprintFilter,
+  onSprintFilterChange
+}: IProjectBoardProps) => {
   const { data, isLoading, error, refetch } = useProjectTickets(projectId);
+  const sprints = useProjectSprints(projectId);
   const move = useMoveTicket();
   const conflicts = useRepoConflicts();
   const [pendingId, setPendingId] = useState<number | null>(null);
@@ -125,10 +141,10 @@ const ProjectBoard = ({ projectId }: IProjectBoardProps) => {
     await doMove(ticketId, to);
   };
 
-  if (isLoading) {
+  if (isLoading || sprints.isLoading) {
     return <TmnLoading />;
   }
-  if (error || !data) {
+  if (error || !data || sprints.error || !sprints.data) {
     return (
       <TmnCallout color="red">
         <TmnText>{trans('ticket.load_failed')}</TmnText>
@@ -137,22 +153,35 @@ const ProjectBoard = ({ projectId }: IProjectBoardProps) => {
     );
   }
 
+  const { columns, backlog } = filterBoard(data, sprints.data, sprintFilter);
+
   return (
-    <TmnDnD.Root onDragEnd={onDragEnd}>
-      <TmnScrollArea scrollbars="both">
-        <TmnFlex direction="row" gap={3} className="min-w-0 pb-2">
-          {TICKET_STATUSES.map(status => (
-            <BoardColumn
-              key={status}
-              status={status}
-              tickets={data.filter(t => t.status === status)}
-              pendingId={pendingId}
-              onOpen={openTicketDialog}
-            />
-          ))}
-        </TmnFlex>
-      </TmnScrollArea>
-    </TmnDnD.Root>
+    <TmnFlex direction="column" gap={3}>
+      <SprintBar
+        workspaceId={workspaceId}
+        projectId={projectId}
+        specSource={specSource}
+        sprints={sprints.data}
+        filter={sprintFilter}
+        onFilterChange={onSprintFilterChange}
+      />
+      <TmnDnD.Root onDragEnd={onDragEnd}>
+        <TmnScrollArea scrollbars="both">
+          <TmnFlex direction="row" gap={3} className="min-w-0 pb-2">
+            {TICKET_STATUSES.map(status => (
+              <BoardColumn
+                key={status}
+                status={status}
+                tickets={columns.filter(t => t.status === status)}
+                pendingId={pendingId}
+                onOpen={openTicketDialog}
+              />
+            ))}
+          </TmnFlex>
+        </TmnScrollArea>
+      </TmnDnD.Root>
+      <BacklogSection tickets={backlog} onOpen={openTicketDialog} />
+    </TmnFlex>
   );
 };
 export default memo(ProjectBoard);

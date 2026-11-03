@@ -28,5 +28,6 @@ export class UpdateTicketDto {
   @Type(() => Number)
   @IsInt({ each: true })
   ruleIds?: number[];
+  @ValidateIf((_, v) => v != null) @IsInt() @Min(1) sprintId?: number | null;
   @IsOptional() @IsString() @MaxLength(20000) extraInstructions?: string;
 }

@@ -39,9 +39,55 @@ model Project {
   testAgentRef Agent? @relation("ProjectTestAgent", fields: [testAgentId], references: [id], onDelete: SetNull)
   repos Repo[] @relation("ProjectRepos")
   tickets Ticket[]
+  specSource SpecSource @default(JIRA) @map("spec_source")
+  specDir String? @map("spec_dir") @db.VarChar(1024)
+  localTicketSeq Int @default(0) @map("local_ticket_seq")
+  sprints Sprint[]
 
   @@index([workspaceId])
   @@map("projects")
+}
+
+enum SpecSource {
+  LOCAL
+  JIRA
+  HYBRID
+}
+
+enum TicketSource {
+  JIRA
+  LOCAL
+}
+
+enum SprintSource {
+  JIRA
+  LOCAL
+}
+
+enum SprintState {
+  FUTURE
+  ACTIVE
+  CLOSED
+}
+
+// One ACTIVE LOCAL sprint per project: partial unique index in migration SQL.
+model Sprint {
+  id Int @id @default(autoincrement())
+  source SprintSource
+  jiraSprintId Int? @unique @map("jira_sprint_id")
+  jiraBoardId Int? @map("jira_board_id")
+  projectId Int? @map("project_id")
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name String @db.VarChar(255)
+  state SprintState @default(FUTURE)
+  startDate DateTime? @map("start_date")
+  endDate DateTime? @map("end_date")
+  completedAt DateTime? @map("completed_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  tickets Ticket[]
+
+  @@index([projectId])
+  @@map("sprints")
 }
 
 enum TicketStatus {
@@ -151,7 +197,12 @@ model Rule {
 
 model Ticket {
   id Int @id @default(autoincrement())
+  // Ticket key for any source (Jira key or <CODE>-L<n>).
   jiraKey String @unique @map("jira_key") @db.VarChar(64)
+  source TicketSource @default(JIRA)
+  specFile String? @map("spec_file") @db.VarChar(1024)
+  sprintId Int? @map("sprint_id")
+  sprint Sprint? @relation(fields: [sprintId], references: [id], onDelete: SetNull)
   summary String @db.VarChar(1024)
   description String @db.Text
   issueType String @map("issue_type") @db.VarChar(64)
@@ -185,6 +236,7 @@ model Ticket {
   specs SpecVersion[]
   fixRound Int @default(0) @map("fix_round")
   testCases TestCase[]
+  @@index([sprintId])
   @@index([projectId])
   @@map("tickets")
 }

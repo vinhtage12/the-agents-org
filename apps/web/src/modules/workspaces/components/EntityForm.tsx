@@ -34,11 +34,13 @@ import type {
   IEntityFormValues,
   IEntityWriteValues,
   IProject,
-  IWorkspace
+  IWorkspace,
+  TSpecSource
 } from '../types';
 export interface IEntityFormProps extends IEntityFormContext {
   workspaces?: IWorkspace[];
 }
+const SPEC_SOURCES: TSpecSource[] = ['JIRA', 'LOCAL', 'HYBRID'];
 const EntityForm = ({
   workspace,
   entity,
@@ -54,10 +56,13 @@ const EntityForm = ({
       defaultValues: {
         name: entity?.name ?? '',
         code: entity?.code ?? '',
-        workspaceId: String(workspace?.id ?? '')
+        workspaceId: String(workspace?.id ?? ''),
+        specSource: (entity as IProject | undefined)?.specSource ?? 'JIRA',
+        specDir: (entity as IProject | undefined)?.specDir ?? ''
       }
     }
   });
+  const specSource = form.watch('specSource');
   const context = { entity, projectMode, workspace };
   const title = trans(getEntityFormTitle(context));
 
@@ -73,6 +78,13 @@ const EntityForm = ({
           code: values.code,
           ...(projectMode && entity
             ? { workspaceId: Number(values.workspaceId) }
+            : {}),
+          ...(projectMode
+            ? {
+                specSource: values.specSource,
+                specDir:
+                  values.specSource === 'JIRA' ? null : values.specDir.trim()
+              }
             : {})
         }
       });
@@ -91,7 +103,9 @@ const EntityForm = ({
       const text =
         error instanceof WorkspaceError && error.status === 409
           ? trans('workspace.duplicate')
-          : trans('workspace.save_failed');
+          : error instanceof WorkspaceError && error.status === 400
+            ? error.message
+            : trans('workspace.save_failed');
       setMessage(text);
     }
   });
@@ -148,6 +162,38 @@ const EntityForm = ({
             )}
           />
         )}
+        {projectMode && (
+          <TmnController
+            control={form.control}
+            name="specSource"
+            render={({ field }) => (
+              <TmnInput.Select
+                label={trans('workspace.spec_source')}
+                value={field.value}
+                onChange={field.onChange}
+                options={SPEC_SOURCES.map(value => ({
+                  value,
+                  label: trans(`workspace.spec_source_${value.toLowerCase()}`)
+                }))}
+              />
+            )}
+          />
+        )}
+        {projectMode && specSource !== 'JIRA' && (
+          <TmnController
+            control={form.control}
+            name="specDir"
+            render={({ field, fieldState: { error } }) => (
+              <TmnInput.TextField
+                {...field}
+                label={trans('workspace.spec_dir')}
+                required
+                message={error?.message}
+                helperText={trans('workspace.spec_dir_hint')}
+              />
+            )}
+          />
+        )}
         {message && (
           <TmnCallout role="alert" color="red">
             {message}
@@ -189,5 +235,14 @@ const createSchema = () =>
       .required(trans('workspace.required'))
       .max(32, trans('workspace.code_limit'))
       .matches(/^[A-Za-z0-9_-]+$/, trans('workspace.code_format')),
-    workspaceId: validation.string().defined()
+    workspaceId: validation.string().defined(),
+    specSource: validation.string<TSpecSource>().defined(),
+    specDir: validation
+      .string()
+      .trim()
+      .test(
+        'required',
+        trans('workspace.required'),
+        (value, ctx) => ctx.parent.specSource === 'JIRA' || !!value
+      )
   });

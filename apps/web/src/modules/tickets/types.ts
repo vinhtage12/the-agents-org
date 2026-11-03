@@ -1,7 +1,12 @@
+import type { RequestMethods } from '@truyenmoinhu/query';
 import type { IAgentRef, IOption } from '#modules/warehouse';
-import type { TICKET_STATUSES } from './constants';
+import type { TSpecSource } from '#modules/workspaces';
+import type { ISSUE_TYPES, TICKET_STATUSES } from './constants';
 
 export type TicketStatus = (typeof TICKET_STATUSES)[number];
+export type TicketSource = 'JIRA' | 'LOCAL';
+export type IssueType = (typeof ISSUE_TYPES)[number];
+export type TicketSpecMode = 'file' | 'text';
 export type TicketPlacement = Record<number, number | null>;
 export interface ITicketBase {
   id: number;
@@ -32,6 +37,7 @@ export interface ISyncResult {
   updated: number;
   canceled: number;
   reopened: number;
+  sprints: number;
 }
 export type BoardLabel = 'running' | 'approved' | 'needs_you';
 export interface IBoardTicket extends ITicketBase {
@@ -41,6 +47,8 @@ export interface IBoardTicket extends ITicketBase {
   branch: string | null;
   repoId: number | null;
   agent: { id: number; name: string } | null;
+  source: TicketSource;
+  sprintId: number | null;
 }
 export interface IRepoConflict {
   id: number;
@@ -122,6 +130,12 @@ export interface ITicketDetail
   fixRound: number;
   testCases: ITestCase[];
   testResults: ITestResults | null;
+  source: TicketSource;
+  issueType: IssueType;
+  specFile: string | null;
+  sprintId: number | null;
+  sprintSource: TicketSource | null;
+  projectSpecSource: TSpecSource | null;
 }
 export interface IUpdateTicket {
   projectId?: number;
@@ -132,6 +146,7 @@ export interface IUpdateTicket {
   skillIds?: number[];
   ruleIds?: number[];
   extraInstructions?: string;
+  sprintId?: number | null;
 }
 export interface ITicketSettingsValues extends ITicketAgents<IOption | null> {
   projectId: string;
@@ -139,6 +154,7 @@ export interface ITicketSettingsValues extends ITicketAgents<IOption | null> {
   skills: IOption[];
   rules: IOption[];
   extraInstructions: string;
+  sprint: string;
 }
 export interface ITicketRequest<TData = unknown> {
   ticketId: number;
@@ -152,4 +168,52 @@ export interface IBranchValues {
   base: { label: string } | null;
   type: string;
   name: string;
+}
+export type SprintState = 'FUTURE' | 'ACTIVE' | 'CLOSED';
+export interface ISprint {
+  id: number;
+  source: TicketSource;
+  name: string;
+  state: SprintState;
+  startDate: string | null;
+  endDate: string | null;
+}
+export interface ISprintRequest {
+  url: string;
+  method: RequestMethods;
+  data?: unknown;
+}
+export type SprintTarget = number | 'new' | 'backlog';
+export interface ISprintValues {
+  name: string;
+  startDate: string;
+  endDate: string;
+}
+export interface IBoardSplit {
+  columns: IBoardTicket[];
+  backlog: IBoardTicket[];
+}
+export interface ISpecFiles {
+  data: { label: string }[];
+}
+export interface ILocalTicketContent {
+  summary: string;
+  issueType: IssueType;
+  specFile?: string | null;
+  description?: string;
+}
+export interface ICreateLocalTicket extends ILocalTicketContent {
+  sprintId?: number | null;
+}
+export interface ICreateLocalTicketRequest {
+  projectId: number;
+  data: ICreateLocalTicket;
+}
+export interface ILocalTicketValues {
+  summary: string;
+  issueType: IssueType;
+  mode: TicketSpecMode;
+  specFile: string;
+  description: string;
+  sprint: string;
 }

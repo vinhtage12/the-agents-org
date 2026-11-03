@@ -6,8 +6,11 @@ export interface IEntityValues {
 export interface IEntity<TId = number> extends IEntityValues {
   id: TId;
 }
+export type TSpecSource = 'LOCAL' | 'JIRA' | 'HYBRID';
 export interface IProject extends IEntity {
   workspaceId: number;
+  specSource: TSpecSource;
+  specDir: string | null;
 }
 export interface IWorkspace<TProject extends IProject = IProject>
   extends IEntity {
@@ -15,6 +18,8 @@ export interface IWorkspace<TProject extends IProject = IProject>
 }
 export interface IEntityFormValues extends IEntityValues {
   workspaceId: string;
+  specSource: TSpecSource;
+  specDir: string;
 }
 export interface IWorkspaceMutationVariables<TData = unknown>
   extends Pick<ISendRequestParams, 'url' | 'method'> {
@@ -28,4 +33,6 @@ export interface IEntityFormContext {
 }
 export interface IEntityWriteValues extends IEntityValues {
   workspaceId?: number;
+  specSource?: TSpecSource;
+  specDir?: string | null;
 }

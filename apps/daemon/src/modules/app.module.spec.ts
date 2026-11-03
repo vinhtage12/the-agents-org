@@ -11,6 +11,7 @@ import { AppModule } from './app.module';
 import { HerdrController } from './herdr/controllers/herdr.controller';
 import { HerdrGateway } from './herdr/gateways/herdr.gateway';
 import { ProjectSettingsController } from './projects/controllers/project-settings.controller';
+import { SprintsController } from './sprints/controllers/sprints.controller';
 import { SystemController } from './system/controllers/system.controller';
 import { TicketsController } from './tickets/controllers/tickets.controller';
 import { WorkspacesController } from './workspaces/controllers/workspaces.controller';
@@ -32,6 +33,7 @@ describe('AppModule domain wiring', () => {
         HerdrController,
         HerdrGateway,
         ProjectSettingsController,
+        SprintsController,
         SystemController,
         TicketsController,
         WorkspacesController

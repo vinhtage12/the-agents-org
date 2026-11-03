@@ -19,6 +19,7 @@ import { AgentProfilesService } from '../../agent-profiles/services/agent-profil
 import { GitService } from '../../git/services/git.service';
 import { HerdrService } from '../../herdr/services/herdr.service';
 import { assertRepoPath } from '../../repositories/utils/repo-path';
+import { resolveSpecFile } from '../../tickets/utils/spec-file';
 import { BoardGateway } from '../gateways/board.gateway';
 import { buildAgentArgs } from '../utils/agent-args';
 import { STARTUP_GRACE_MS } from '../utils/constants';
@@ -113,7 +114,7 @@ export class AgentRunsService implements OnModuleInit {
   ): Promise<AgentRunEntity> {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
-      include: { repo: true, skills: true, rules: true }
+      include: { repo: true, skills: true, rules: true, project: true }
     });
     if (!ticket) throw new NotFoundException('Ticket not found');
     if (ticket.status === 'DONE' || ticket.status === 'CANCELED')
@@ -145,6 +146,17 @@ export class AgentRunsService implements OnModuleInit {
         throw new ConflictException(
           `Repo ${ticket.repo.path} is on ${current}, expected ${ticket.branch}`
         );
+    }
+    let specPath: string | null = null;
+    if (step === 'SPEC' && ticket.specFile) {
+      const specDir = ticket.project?.specDir ?? '';
+      try {
+        specPath = await resolveSpecFile(specDir, ticket.specFile);
+      } catch {
+        throw new BadRequestException(
+          `Spec file not found: ${join(specDir, ticket.specFile)}`
+        );
+      }
     }
     const running = await this.prisma.agentRun.count({
       where: { ticketId, step, status: 'RUNNING' }
@@ -185,7 +197,7 @@ export class AgentRunsService implements OnModuleInit {
       await mkdir(dir, { recursive: true });
       const prompt = build({
         profile,
-        ticket,
+        ticket: { ...ticket, specPath },
         repoPath: ticket.repo.path,
         run: {
           id: run.id,

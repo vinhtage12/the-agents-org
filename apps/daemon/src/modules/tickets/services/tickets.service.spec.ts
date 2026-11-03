@@ -1,3 +1,7 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import {
   BadGatewayException,
   BadRequestException,
@@ -15,13 +19,14 @@ describe('TicketsService', () => {
       update: jest.fn(),
       findMany: jest.fn()
     },
-    project: { findUnique: jest.fn(), findMany: jest.fn() }
+    project: { findUnique: jest.fn(), findMany: jest.fn(), update: jest.fn() }
   };
   const prisma = { ...tx, $transaction: jest.fn() };
+  const events = { emitChanged: jest.fn() };
   const service = new TicketsService(
     prisma as unknown as PrismaService,
     {} as never,
-    {} as never,
+    events as never,
     {} as never,
     {} as never,
     {} as never
@@ -46,6 +51,20 @@ describe('TicketsService', () => {
     tx.ticket.findMany.mockResolvedValue([]);
     tx.project.findMany.mockResolvedValue([]);
   });
+  it('rejects linking into a LOCAL project', async () => {
+    tx.project.findUnique.mockResolvedValue({
+      id: 3,
+      code: 'FMS',
+      specSource: 'LOCAL'
+    });
+    await expect(
+      service.link([{ ticketId: 10, projectId: 3 }])
+    ).rejects.toMatchObject({
+      status: 409,
+      message: 'Project FMS only accepts local tickets'
+    });
+    expect(tx.ticket.updateMany).not.toHaveBeenCalled();
+  });
   it('suggests by key prefix, case-insensitive', () => {
     const projects = [
       { id: 1, code: 'FMS' },
@@ -59,6 +78,7 @@ describe('TicketsService', () => {
     await expect(
       service.link([{ ticketId: 10, projectId: 3 }])
     ).resolves.toEqual({ linked: 1 });
+    expect(events.emitChanged).toHaveBeenCalledWith(3);
     expect(tx.ticket.updateMany).toHaveBeenCalledWith({
       where: { id: 10, projectId: null, status: { not: 'CANCELED' } },
       data: expect.objectContaining({
@@ -114,11 +134,14 @@ describe('TicketsService flow', () => {
   const prisma = {
     ticket: {
       findUnique: jest.fn(),
+      create: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
-      updateMany: jest.fn()
+      updateMany: jest.fn(),
+      count: jest.fn()
     },
-    project: { findUnique: jest.fn(), findMany: jest.fn() },
+    sprint: { findUnique: jest.fn() },
+    project: { findUnique: jest.fn(), findMany: jest.fn(), update: jest.fn() },
     repo: { findFirst: jest.fn(), findMany: jest.fn(), findUnique: jest.fn() },
     specVersion: { findFirst: jest.fn(), update: jest.fn() },
     agentRun: { count: jest.fn(), findMany: jest.fn(), findFirst: jest.fn() },
@@ -389,6 +412,26 @@ describe('TicketsService flow', () => {
     await expect(service.update(10, { projectId: 4 })).rejects.toBeInstanceOf(
       ConflictException
     );
+  });
+
+  it('drops the LOCAL sprint when the ticket moves to another project', async () => {
+    prisma.ticket.findUnique.mockResolvedValue({
+      ...ticket,
+      sprintId: 5,
+      sprint: { source: 'LOCAL' }
+    });
+    prisma.project.findUnique.mockResolvedValue({
+      id: 4,
+      defaultRepoId: 8,
+      specAgentId: 21,
+      devAgentId: 22,
+      testAgentId: 23
+    });
+    await service.update(10, { projectId: 4 });
+    expect(prisma.ticket.update).toHaveBeenCalledWith({
+      where: { id: 10 },
+      data: expect.objectContaining({ projectId: 4, sprintId: null })
+    });
   });
 
   it('resets repo and agents to the new project defaults', async () => {
@@ -728,6 +771,325 @@ describe('TicketsService flow', () => {
       }
     ]);
     expect(agentRuns.liveStatuses).toHaveBeenCalledTimes(1);
+  });
+
+  describe('local tickets', () => {
+    let dir: string;
+    const project = {
+      id: 3,
+      code: 'FMS',
+      specSource: 'HYBRID',
+      defaultRepoId: 5,
+      specAgentId: 11,
+      devAgentId: 12,
+      testAgentId: 13,
+      localTicketSeq: 3
+    };
+    beforeEach(async () => {
+      dir = await mkdtemp(join(tmpdir(), 'local-ticket-'));
+      await writeFile(join(dir, 'a.md'), 'spec');
+      prisma.project.findUnique.mockResolvedValue({ ...project, specDir: dir });
+      prisma.project.update.mockResolvedValue({ ...project, specDir: dir });
+      prisma.ticket.create.mockResolvedValue({ id: 10 });
+      prisma.$transaction.mockImplementation(async callback =>
+        callback(prisma)
+      );
+      const detail = {
+        ...ticket,
+        source: 'LOCAL',
+        issueType: 'Task',
+        specFile: null,
+        description: 'old',
+        sprintId: null,
+        sprint: null,
+        project: { ...project, specDir: dir }
+      };
+      // Key-existence lookups (by jiraKey) find nothing; detail lookups find the ticket.
+      prisma.ticket.findUnique.mockImplementation(
+        async ({ where }: { where: { jiraKey?: string } }) =>
+          where.jiraKey ? null : detail
+      );
+    });
+    afterEach(async () => {
+      await rm(dir, { recursive: true, force: true });
+    });
+    it('rejects Jira projects', async () => {
+      prisma.project.findUnique.mockResolvedValue({
+        ...project,
+        specSource: 'JIRA'
+      });
+      await expect(
+        service.createLocal(3, {
+          summary: 'S',
+          issueType: 'Task',
+          description: 'D'
+        })
+      ).rejects.toMatchObject({
+        status: 409,
+        message: 'Project does not accept local tickets'
+      });
+      expect(prisma.ticket.create).not.toHaveBeenCalled();
+    });
+    it.each([
+      {},
+      { description: '  ' },
+      { specFile: 'a.md', description: 'D' }
+    ])('requires exactly one spec %j', async content => {
+      await expect(
+        service.createLocal(3, { summary: 'S', issueType: 'Task', ...content })
+      ).rejects.toMatchObject({
+        status: 400,
+        message: 'Provide either a spec file or a spec'
+      });
+      expect(prisma.ticket.create).not.toHaveBeenCalled();
+    });
+    it('skips a sequence number whose key already exists', async () => {
+      prisma.project.update
+        .mockResolvedValueOnce({ code: 'FMS', localTicketSeq: 1 })
+        .mockResolvedValueOnce({ code: 'FMS', localTicketSeq: 2 });
+      prisma.ticket.findUnique
+        .mockResolvedValueOnce({ id: 99 })
+        .mockResolvedValueOnce(null);
+      await service.createLocal(3, {
+        summary: 'S',
+        issueType: 'Task',
+        description: 'D'
+      });
+      expect(prisma.ticket.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ jiraKey: 'FMS-L2' })
+      });
+    });
+    it('409 when no free sequence number is found', async () => {
+      prisma.project.update.mockResolvedValue({
+        code: 'FMS',
+        localTicketSeq: 1
+      });
+      prisma.ticket.findUnique.mockResolvedValue({ id: 99 });
+      await expect(
+        service.createLocal(3, {
+          summary: 'S',
+          issueType: 'Task',
+          description: 'D'
+        })
+      ).rejects.toMatchObject({ status: 409 });
+      expect(prisma.ticket.create).not.toHaveBeenCalled();
+    });
+    it('rejects an unknown, closed or foreign sprint and does not create', async () => {
+      const input = {
+        summary: 'S',
+        issueType: 'Task',
+        description: 'D',
+        sprintId: 7
+      };
+      prisma.sprint.findUnique.mockResolvedValueOnce(null);
+      await expect(service.createLocal(3, input)).rejects.toMatchObject({
+        status: 404
+      });
+      prisma.sprint.findUnique.mockResolvedValueOnce({
+        source: 'LOCAL',
+        state: 'CLOSED',
+        projectId: 3
+      });
+      await expect(service.createLocal(3, input)).rejects.toMatchObject({
+        status: 409
+      });
+      prisma.sprint.findUnique.mockResolvedValueOnce({
+        source: 'LOCAL',
+        state: 'FUTURE',
+        projectId: 99
+      });
+      await expect(service.createLocal(3, input)).rejects.toMatchObject({
+        status: 409
+      });
+      expect(prisma.ticket.create).not.toHaveBeenCalled();
+    });
+    it('creates inside a visible open sprint', async () => {
+      prisma.sprint.findUnique.mockResolvedValue({
+        source: 'LOCAL',
+        state: 'FUTURE',
+        projectId: 3
+      });
+      await service.createLocal(3, {
+        summary: 'S',
+        issueType: 'Task',
+        description: 'D',
+        sprintId: 7
+      });
+      expect(prisma.ticket.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ sprintId: 7 })
+      });
+    });
+    it('update assigns a sprint through the assignment rules', async () => {
+      prisma.sprint.findUnique.mockResolvedValue({
+        source: 'LOCAL',
+        state: 'ACTIVE',
+        projectId: 3
+      });
+      await service.update(10, { sprintId: 7 });
+      expect(prisma.ticket.update).toHaveBeenCalledWith({
+        where: { id: 10 },
+        data: { sprintId: 7 }
+      });
+      expect(board.emitChanged).toHaveBeenCalledWith(3);
+    });
+    it('update blocks a JIRA ticket that follows a Jira sprint', async () => {
+      prisma.ticket.findUnique.mockResolvedValue({
+        ...ticket,
+        source: 'JIRA',
+        sprintId: 4,
+        sprint: { source: 'JIRA' },
+        project: { ...project, specSource: 'HYBRID' }
+      });
+      await expect(
+        service.update(10, { sprintId: null })
+      ).rejects.toMatchObject({ status: 409, message: 'Sprint follows Jira' });
+      expect(prisma.ticket.update).not.toHaveBeenCalled();
+    });
+    it('update allows a Jira sprint for LOCAL tickets only when it has project tickets', async () => {
+      prisma.sprint.findUnique.mockResolvedValue({
+        source: 'JIRA',
+        state: 'ACTIVE',
+        projectId: null
+      });
+      prisma.ticket.count.mockResolvedValue(0);
+      await expect(service.update(10, { sprintId: 8 })).rejects.toMatchObject({
+        status: 409
+      });
+      prisma.ticket.count.mockResolvedValue(2);
+      await service.update(10, { sprintId: 8 });
+      expect(prisma.ticket.update).toHaveBeenCalledWith({
+        where: { id: 10 },
+        data: { sprintId: 8 }
+      });
+    });
+    it('creates with an atomic sequence and project defaults', async () => {
+      await service.createLocal(3, {
+        summary: ' S ',
+        issueType: 'Task',
+        description: ' D ',
+        sprintId: null
+      });
+      expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function));
+      expect(prisma.project.update).toHaveBeenCalledWith({
+        where: { id: 3 },
+        data: { localTicketSeq: { increment: 1 } }
+      });
+      expect(prisma.ticket.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          jiraKey: 'FMS-L3',
+          summary: 'S',
+          description: 'D',
+          source: 'LOCAL',
+          status: 'TODO',
+          jiraUrl: '',
+          jiraStatus: '',
+          projectId: 3,
+          repoId: 5,
+          specAgentId: 11,
+          devAgentId: 12,
+          testAgentId: 13,
+          linkedAt: expect.any(Date)
+        })
+      });
+      expect(board.emitChanged).toHaveBeenCalledWith(3);
+    });
+    it('creates from an existing file and rejects missing files before allocating a key', async () => {
+      await service.createLocal(3, {
+        summary: 'S',
+        issueType: 'Bug',
+        specFile: 'a.md'
+      });
+      expect(prisma.ticket.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ specFile: 'a.md', description: '' })
+      });
+      prisma.project.update.mockClear();
+      await expect(
+        service.createLocal(3, {
+          summary: 'S',
+          issueType: 'Task',
+          specFile: 'missing.md'
+        })
+      ).rejects.toMatchObject({ status: 400 });
+      expect(prisma.project.update).not.toHaveBeenCalled();
+    });
+    it.each([
+      { source: 'JIRA' },
+      { status: 'IN_SPEC' }
+    ])('rejects edits to %j', async changes => {
+      prisma.ticket.findUnique.mockResolvedValue({
+        ...ticket,
+        source: 'LOCAL',
+        ...changes
+      });
+      await expect(
+        service.updateLocal(10, { summary: 'S' })
+      ).rejects.toMatchObject({ status: 409 });
+      expect(prisma.ticket.updateMany).not.toHaveBeenCalled();
+    });
+    it('switches to a file and clears text', async () => {
+      await service.updateLocal(10, { specFile: 'a.md' });
+      expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
+        where: { id: 10, source: 'LOCAL', status: 'TODO' },
+        data: expect.objectContaining({ specFile: 'a.md', description: '' })
+      });
+      expect(board.emitChanged).toHaveBeenCalledWith(3);
+    });
+    it('switches to text and clears the file', async () => {
+      await service.updateLocal(10, { description: 'new' });
+      expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
+        where: { id: 10, source: 'LOCAL', status: 'TODO' },
+        data: expect.objectContaining({ specFile: null, description: 'new' })
+      });
+    });
+    it('rejects invalid replacement files and empty or ambiguous content', async () => {
+      for (const input of [
+        { specFile: '../x.md' },
+        { description: '' },
+        { specFile: 'a.md', description: 'D' }
+      ]) {
+        await expect(service.updateLocal(10, input)).rejects.toMatchObject({
+          status: 400
+        });
+      }
+      expect(prisma.ticket.updateMany).not.toHaveBeenCalled();
+    });
+    it('rejects clearing text when it would leave a file ticket without a spec', async () => {
+      prisma.ticket.findUnique.mockResolvedValue({
+        ...ticket,
+        source: 'LOCAL',
+        specFile: 'a.md',
+        description: '',
+        project: { ...project, specDir: dir }
+      });
+      await expect(
+        service.updateLocal(10, { description: ' ' })
+      ).rejects.toMatchObject({ status: 400 });
+      expect(prisma.ticket.updateMany).not.toHaveBeenCalled();
+    });
+    it('rejects a concurrent status change', async () => {
+      prisma.ticket.updateMany.mockResolvedValue({ count: 0 });
+      await expect(
+        service.updateLocal(10, { summary: 'S' })
+      ).rejects.toMatchObject({ status: 409 });
+      expect(board.emitChanged).not.toHaveBeenCalled();
+    });
+    it('returns source context in detail and selects it on the board', async () => {
+      await expect(service.detail(10)).resolves.toMatchObject({
+        source: 'LOCAL',
+        issueType: 'Task',
+        specFile: null,
+        sprintId: null,
+        sprintSource: null,
+        projectSpecSource: 'HYBRID'
+      });
+      prisma.ticket.findMany.mockResolvedValue([]);
+      await service.board(3);
+      expect(prisma.ticket.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.objectContaining({ source: true, sprintId: true })
+        })
+      );
+    });
   });
 
   describe('first move to In Progress', () => {

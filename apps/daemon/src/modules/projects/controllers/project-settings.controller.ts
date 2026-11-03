@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Get,
   NotFoundException,
@@ -12,7 +13,9 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { PrismaService } from '../../../database/prisma.service';
 import { AgentProfilesService } from '../../agent-profiles/services/agent-profiles.service';
+import { assertRepoPath } from '../../repositories/utils/repo-path';
 import { UpdateProjectSettingsDto } from '../dtos/update-project-settings.dto';
+import { listSpecFiles } from '../utils/spec-files';
 
 export { assertRepoPath } from '../../repositories/utils/repo-path';
 
@@ -42,6 +45,21 @@ export class ProjectSettingsController {
     });
     if (!project) throw new NotFoundException('Project not found');
     return project;
+  }
+
+  @Get('spec-files')
+  async specFiles(
+    @Param('id', ParseIntPipe) workspaceId: number,
+    @Param('projectId', ParseIntPipe) projectId: number
+  ): Promise<{ data: { label: string }[] }> {
+    const project = await this.project(workspaceId, projectId);
+    if (project.specSource === 'JIRA') {
+      throw new ConflictException('Project does not use local specs');
+    }
+    const dir = project.specDir ?? '';
+    await assertRepoPath(dir, 'Spec directory');
+    const files = await listSpecFiles(dir);
+    return { data: files.map(label => ({ label })) };
   }
 
   @Get('settings')

@@ -11,7 +11,7 @@ import {
   Min
 } from 'class-validator';
 
-import { TicketStatus } from '../../../generated/prisma/client';
+import { TicketSource, TicketStatus } from '../../../generated/prisma/client';
 
 import type { Ticket as TicketModel } from '../../../generated/prisma/client';
 import type { ProjectEntity } from '../../workspaces/entities/project.entity';
@@ -28,6 +28,25 @@ export class TicketEntity implements TicketModel {
   @IsString()
   @MaxLength(64)
   jiraKey!: string;
+
+  @ApiProperty({
+    enum: TicketSource,
+    enumName: 'TicketSource',
+    default: TicketSource.JIRA
+  })
+  @IsEnum(TicketSource)
+  source!: TicketSource;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1024)
+  specFile!: string | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(2147483647)
+  sprintId!: number | null;
 
   @IsString()
   @MaxLength(1024)

@@ -18,11 +18,16 @@ import { openBoardEvents } from './socket';
 
 import type {
   IBoardTicket,
+  ICreateLocalTicketRequest,
   IGitBranches,
   ILinkTicket,
+  ILocalTicketContent,
   IMoveTicket,
   IReplyAgent,
   IRepoConflict,
+  ISpecFiles,
+  ISprint,
+  ISprintRequest,
   ISyncResult,
   ITicketDetail,
   ITicketRequest,
@@ -77,6 +82,9 @@ export const useSyncTickets = () => {
       });
       await queryClient.invalidateQueries({
         queryKey: [TICKET_QUERY_KEYS.board]
+      });
+      await queryClient.invalidateQueries({
+        queryKey: [TICKET_QUERY_KEYS.sprints]
       });
       return result.payload;
     }
@@ -166,6 +174,9 @@ export const useBoardEvents = (projectId: number) => {
       }
       void queryClient.invalidateQueries({
         queryKey: [TICKET_QUERY_KEYS.board, projectId]
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [TICKET_QUERY_KEYS.sprints, projectId]
       });
       void queryClient.invalidateQueries({
         queryKey: [TICKET_QUERY_KEYS.detail]
@@ -280,3 +291,87 @@ export const useGitBranches = (repoId: number | null) =>
       return result.payload;
     }
   });
+export const useProjectSprints = (projectId: number) =>
+  useQueryEnhancer<ISprint[]>({
+    queryKey: [TICKET_QUERY_KEYS.sprints, projectId],
+    enabled: projectId > 0,
+    queryFn: async ({ apiManager }) => {
+      const result = await apiManager?.sendRequest<ISprint[]>({
+        url: TICKET_ENDPOINTS.projects(`${projectId}/sprints`),
+        suppressNotifyOnError: true
+      });
+      if (!result?.success || !result.payload) {
+        throw new TicketError(result?.code, result?.message);
+      }
+      return result.payload;
+    }
+  });
+export const useSprintMutation = <TResponse = unknown>() => {
+  const queryClient = useQueryClient();
+  return useMutationEnhancer<TResponse, ISprintRequest>({
+    mutationFn: async ({ apiManager, variables }) => {
+      if (!apiManager || !variables) {
+        throw new TicketError();
+      }
+      const result = await apiManager.sendRequest<TResponse>({
+        ...variables,
+        suppressNotifyOnError: true
+      });
+      // Even a failed write may have changed the board, so refetch either way.
+      await queryClient.invalidateQueries({
+        queryKey: [TICKET_QUERY_KEYS.sprints]
+      });
+      await queryClient.invalidateQueries({
+        queryKey: [TICKET_QUERY_KEYS.board]
+      });
+      if (!result.success) {
+        throw new TicketError(result.code, result.message);
+      }
+      return result.payload;
+    }
+  });
+};
+export const useSpecFiles = (workspaceId: number, projectId: number) =>
+  useQueryEnhancer<ISpecFiles>({
+    queryKey: [TICKET_QUERY_KEYS.specFiles, workspaceId, projectId],
+    queryFn: async ({ apiManager }) => {
+      const result = await apiManager?.sendRequest<ISpecFiles>({
+        url: TICKET_ENDPOINTS.workspaces(
+          `${workspaceId}/projects/${projectId}/spec-files`
+        ),
+        suppressNotifyOnError: true
+      });
+      if (!result?.success || !result.payload) {
+        throw new TicketError(result?.code, result?.message);
+      }
+      return result.payload;
+    }
+  });
+export const useCreateLocalTicket = () => {
+  const queryClient = useQueryClient();
+  return useMutationEnhancer<ITicketDetail, ICreateLocalTicketRequest>({
+    mutationFn: async ({ apiManager, variables }) => {
+      if (!apiManager || !variables) {
+        throw new TicketError();
+      }
+      const result = await apiManager.sendRequest<ITicketDetail>({
+        url: TICKET_ENDPOINTS.projects(`${variables.projectId}/tickets`),
+        method: RequestMethods.POST,
+        data: variables.data,
+        suppressNotifyOnError: true
+      });
+      if (!result.success || !result.payload) {
+        throw new TicketError(result.code, result.message);
+      }
+      await queryClient.invalidateQueries({
+        queryKey: [TICKET_QUERY_KEYS.board]
+      });
+      await queryClient.invalidateQueries({
+        queryKey: [TICKET_QUERY_KEYS.sprints]
+      });
+      return result.payload;
+    }
+  });
+};
+export const useUpdateLocalTicket = () =>
+  useTicketRequest<ILocalTicketContent>('/local', RequestMethods.PATCH);

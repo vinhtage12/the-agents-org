@@ -21,6 +21,7 @@ const base: PromptBase = {
     summary: 'Login',
     description: 'Users log in',
     jiraUrl: 'https://j/browse/FMS-1',
+    specPath: null,
     extraInstructions: 'Use SSO.',
     skills: [
       { command: '/brainstorming', description: 'Plan', provider: 'claude' },

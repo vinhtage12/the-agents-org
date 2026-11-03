@@ -35,10 +35,13 @@ export function promptHeader({
       : '',
     [
       `Ticket ${ticket.jiraKey}: ${ticket.summary}`,
-      ticket.jiraUrl,
+      ...(ticket.jiraUrl ? [ticket.jiraUrl] : []),
       '',
       ticket.description
     ].join('\n'),
+    ticket.specPath
+      ? `Spec source file (read it before anything else): ${ticket.specPath}`
+      : '',
     `Repository: ${repoPath}`
   ].filter(Boolean);
 }

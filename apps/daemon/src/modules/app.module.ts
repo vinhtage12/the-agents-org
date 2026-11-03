@@ -15,12 +15,14 @@ import { ProjectsModule } from './projects/projects.module';
 import { RepositoriesModule } from './repositories/repositories.module';
 import { RulesModule } from './rules/rules.module';
 import { SkillsModule } from './skills/skills.module';
+import { SprintsModule } from './sprints/sprints.module';
 import { SystemModule } from './system/system.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
   imports: [
+    SprintsModule,
     RulesModule,
     SkillsModule,
     RepositoriesModule,

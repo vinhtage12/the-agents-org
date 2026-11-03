@@ -1,4 +1,9 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '../../../database/prisma.service';
 import { WorkspacesController } from './workspaces.controller';
@@ -82,5 +87,69 @@ describe('WorkspacesController', () => {
       where: { id: 2, workspaceId: 1 },
       data: { workspaceId: 3 }
     });
+  });
+});
+
+describe('project spec settings writes', () => {
+  let module: TestingModule;
+  let controller: WorkspacesController;
+  let dir: string;
+  const prisma = {
+    workspace: { findUnique: jest.fn() },
+    project: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() }
+  };
+  beforeEach(async () => {
+    jest.resetAllMocks();
+    dir = await mkdtemp(join(tmpdir(), 'project-spec-'));
+    prisma.workspace.findUnique.mockResolvedValue({ id: 1 });
+    prisma.project.findFirst.mockResolvedValue({
+      id: 2,
+      workspaceId: 1,
+      specSource: 'LOCAL',
+      specDir: dir
+    });
+    module = await Test.createTestingModule({
+      controllers: [WorkspacesController],
+      providers: [{ provide: PrismaService, useValue: prisma }]
+    }).compile();
+    controller = module.get(WorkspacesController);
+  });
+  afterEach(async () => {
+    await module.close();
+    await rm(dir, { recursive: true, force: true });
+  });
+  it('normalizes a local project before creating it', async () => {
+    const data = {
+      name: 'Test',
+      code: 'T',
+      specSource: 'LOCAL' as const,
+      specDir: ` ${dir} `
+    };
+    await controller.createProject(1, data);
+    expect(prisma.project.create).toHaveBeenCalledWith({
+      data: { ...data, specDir: dir, workspaceId: 1 }
+    });
+  });
+  it('rejects a missing local spec directory before writing', async () => {
+    const data = { name: 'Test', code: 'T', specSource: 'LOCAL' as const };
+    await expect(controller.createProject(1, data)).rejects.toMatchObject({
+      status: 400
+    });
+    expect(prisma.project.create).not.toHaveBeenCalled();
+  });
+  it('keeps the directory when switching to Jira', async () => {
+    const data = { specSource: 'JIRA' as const };
+    await controller.updateProject(1, 2, data);
+    expect(prisma.project.update).toHaveBeenCalledWith({
+      where: { id: 2, workspaceId: 1 },
+      data: { specSource: 'JIRA' }
+    });
+  });
+  it('rejects clearing the current local directory before writing', async () => {
+    const data = { specDir: null };
+    await expect(controller.updateProject(1, 2, data)).rejects.toMatchObject({
+      status: 400
+    });
+    expect(prisma.project.update).not.toHaveBeenCalled();
   });
 });

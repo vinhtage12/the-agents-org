@@ -15,7 +15,7 @@ export const write = async <TResponse, TData = unknown>(
     suppressNotifyOnError: true
   });
   if (!result.success) {
-    throw new WorkspaceError(result.code);
+    throw new WorkspaceError(result.code, result.message);
   }
   return result.payload;
 };

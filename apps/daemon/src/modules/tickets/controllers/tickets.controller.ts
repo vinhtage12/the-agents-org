@@ -11,9 +11,11 @@ import {
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { JiraSyncService } from '../../jira/services/jira-sync.service';
+import { CreateLocalTicketDto } from '../dtos/create-local-ticket.dto';
 import { FeedbackDto } from '../dtos/feedback.dto';
 import { LinkTicketsDto } from '../dtos/link-tickets.dto';
 import { MoveTicketDto } from '../dtos/move-ticket.dto';
+import { UpdateLocalTicketDto } from '../dtos/update-local-ticket.dto';
 import { UpdateSpecDto } from '../dtos/update-spec.dto';
 import { UpdateTicketDto } from '../dtos/update-ticket.dto';
 import { TicketStatus } from '../entities/ticket.entity';
@@ -71,6 +73,20 @@ export class TicketsController {
   link(@Body() body: LinkTicketsDto) {
     return this.tickets.link(body.links);
   }
+  @Post('projects/:projectId/tickets')
+  createLocal(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Body() body: CreateLocalTicketDto
+  ) {
+    return this.tickets.createLocal(projectId, body);
+  }
+  @Patch('tickets/:id/local')
+  updateLocal(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: UpdateLocalTicketDto
+  ) {
+    return this.tickets.updateLocal(id, body);
+  }
   @Get('projects/:projectId/tickets')
   @ApiOkResponse({
     schema: {
@@ -82,6 +98,8 @@ export class TicketsController {
           jiraKey: { type: 'string' },
           summary: { type: 'string' },
           status: { type: 'string', enum: Object.values(TicketStatus) },
+          source: { type: 'string', enum: ['JIRA', 'LOCAL'] },
+          sprintId: { type: 'number', nullable: true },
           jiraUrl: { type: 'string' },
           label: {
             type: 'string',

@@ -26,9 +26,9 @@ import {
   skillLabel
 } from '#modules/warehouse';
 
-import { AGENT_STEPS } from '../../constants';
-import { useUpdateTicket } from '../../hooks';
-import { toTicketUpdate } from '../../utils';
+import { AGENT_STEPS, SPRINT_BACKLOG } from '../../constants';
+import { useProjectSprints, useUpdateTicket } from '../../hooks';
+import { selectableSprints, toTicketUpdate } from '../../utils';
 
 import type { ITicketDetail, ITicketSettingsValues } from '../../types';
 export interface ITicketSettingsFormProps {
@@ -37,6 +37,7 @@ export interface ITicketSettingsFormProps {
 const TicketSettingsForm = ({ ticket }: ITicketSettingsFormProps) => {
   const [message, setMessage] = useState('');
   const mutation = useUpdateTicket();
+  const sprints = useProjectSprints(ticket.projectId ?? 0);
   const form = useFormResolver<ITicketSettingsValues>({
     schema: createSchema(),
     configs: {
@@ -48,11 +49,15 @@ const TicketSettingsForm = ({ ticket }: ITicketSettingsFormProps) => {
         testAgent: ticket.testAgent,
         skills: ticket.skills,
         rules: ticket.rules,
-        extraInstructions: ticket.extraInstructions
+        extraInstructions: ticket.extraInstructions,
+        sprint:
+          ticket.sprintId === null ? SPRINT_BACKLOG : String(ticket.sprintId)
       }
     }
   });
   const running = ticket.runs.some(run => run.status === 'RUNNING');
+  const followsJira =
+    ticket.source === 'JIRA' && ticket.sprintSource === 'JIRA';
 
   const submit = form.handleSubmit(async values => {
     setMessage('');
@@ -111,6 +116,32 @@ const TicketSettingsForm = ({ ticket }: ITicketSettingsFormProps) => {
         <TmnText className="text-sm">
           {trans('ticket.branch')}: {ticket.branch}
         </TmnText>
+      )}
+      {sprints.data && (
+        <TmnController
+          control={form.control}
+          name="sprint"
+          render={({ field }) => (
+            <TmnInput.Select
+              label={trans('sprint.filter')}
+              helperText={
+                followsJira ? trans('ticket.sprint_follows_jira') : undefined
+              }
+              value={field.value}
+              onChange={field.onChange}
+              disabled={followsJira}
+              options={[
+                { value: SPRINT_BACKLOG, label: trans('sprint.backlog') },
+                ...selectableSprints(
+                  sprints.data ?? [],
+                  ticket.source,
+                  ticket.projectSpecSource === 'HYBRID',
+                  ticket.sprintId
+                ).map(s => ({ value: String(s.id), label: s.name }))
+              ]}
+            />
+          )}
+        />
       )}
       {AGENT_STEPS.map(({ step, role }) => (
         <TmnFlex key={step} direction="row" gap={2} align="end">
@@ -209,5 +240,6 @@ const createSchema = () =>
     testAgent: validation.mixed<IOption>().nullable().defined(),
     skills: validation.array().defined(),
     rules: validation.array().defined(),
-    extraInstructions: validation.string().defined()
+    extraInstructions: validation.string().defined(),
+    sprint: validation.string().defined()
   });

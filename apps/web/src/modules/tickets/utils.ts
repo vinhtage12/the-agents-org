@@ -1,13 +1,21 @@
-import { MOVABLE, UNASSIGNED_COLUMN } from './constants';
+import {
+  MOVABLE,
+  SPRINT_ALL,
+  SPRINT_BACKLOG,
+  UNASSIGNED_COLUMN
+} from './constants';
 
 import type {
+  IBoardSplit,
   IBoardTicket,
   ILinkTicket,
+  ISprint,
   IStoreTicket,
   ITicketDetail,
   ITicketSettingsValues,
   IUpdateTicket,
-  TicketPlacement
+  TicketPlacement,
+  TicketSource
 } from './types';
 
 export const buildInitialPlacement = (
@@ -49,7 +57,11 @@ export const toTicketUpdate = (
   if (projectId && projectId !== ticket.projectId) {
     return { projectId, ...extras };
   }
+  const sprintId =
+    values.sprint === SPRINT_BACKLOG ? null : Number(values.sprint);
   return {
+    // Unchanged is omitted: Jira-owned sprints reject writes.
+    ...(sprintId !== ticket.sprintId ? { sprintId } : {}),
     repoId: values.repoId ? Number(values.repoId) : null,
     specAgentId: values.specAgent?.id ?? null,
     devAgentId: values.devAgent?.id ?? null,
@@ -70,3 +82,46 @@ export const canDrag = (ticket: IBoardTicket) => {
   }
   return true;
 };
+
+// undefined = the running sprints; no running sprint behaves like 'all'.
+export const filterBoard = (
+  tickets: IBoardTicket[],
+  sprints: ISprint[],
+  filter: string | undefined
+): IBoardSplit => {
+  const ids = new Set(
+    filter === undefined
+      ? sprints.filter(s => s.state === 'ACTIVE').map(s => s.id)
+      : [Number(filter)]
+  );
+  if (filter === SPRINT_ALL || (filter === undefined && !ids.size)) {
+    return { columns: tickets, backlog: [] };
+  }
+  return {
+    columns: tickets.filter(t => t.sprintId !== null && ids.has(t.sprintId)),
+    backlog: tickets.filter(t => t.sprintId === null)
+  };
+};
+
+// Earliest start first (no date last), then oldest.
+export const defaultCompleteTarget = (futures: ISprint[]): string => {
+  const first = [...futures].sort(
+    (a, b) =>
+      (a.startDate ?? '9').localeCompare(b.startDate ?? '9') || a.id - b.id
+  )[0];
+  return first ? String(first.id) : 'new';
+};
+
+// Spec 5.8: Jira tickets take LOCAL sprints; LOCAL tickets also take Jira sprints in Hybrid projects.
+export const selectableSprints = (
+  sprints: ISprint[],
+  ticketSource: TicketSource,
+  hybrid: boolean,
+  currentId: number | null = null
+): ISprint[] =>
+  sprints.filter(
+    s =>
+      s.id === currentId ||
+      (s.state !== 'CLOSED' &&
+        (s.source === 'LOCAL' || (ticketSource === 'LOCAL' && hybrid)))
+  );
