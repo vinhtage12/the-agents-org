@@ -1,14 +1,11 @@
 import { memo, useState } from 'react';
-import { ExternalLink } from 'lucide-react';
 import Markdown from 'react-markdown';
 
 import {
   TmnBox,
   TmnButton,
   TmnCallout,
-  TmnChip,
   TmnFlex,
-  TmnLink,
   TmnLoading,
   TmnTab,
   TmnText,
@@ -18,11 +15,7 @@ import {
 import { trans } from '#i18n';
 import { useWorkspaces } from '#modules/workspaces';
 
-import {
-  LABEL_COLORS,
-  LOCAL_TICKET_DIALOG,
-  MARKDOWN_CLASS
-} from '../../constants';
+import { LOCAL_TICKET_DIALOG, MARKDOWN_CLASS } from '../../constants';
 import { useTicketDetail } from '../../hooks';
 import AgentTerminal from '../AgentTerminal';
 import LocalTicketDialogRenderer from '../LocalTicketDialogRenderer';
@@ -78,25 +71,8 @@ const TicketDialog = ({ ticketId }: ITicketDialogProps) => {
 
   return (
     <TmnFlex direction="column" gap={3} className="min-w-0">
-      <TmnFlex direction="row" gap={2} align="center" wrap="wrap">
-        <TmnText weight="bold">{data.jiraKey}</TmnText>
-        <TmnChip color="gray">{trans(`ticket.status.${data.status}`)}</TmnChip>
-        {data.label && (
-          <TmnChip color={LABEL_COLORS[data.label]}>
-            {trans(`ticket.label.${data.label}`)}
-          </TmnChip>
-        )}
-        {data.jiraUrl && (
-          <TmnLink
-            href={data.jiraUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 text-sm"
-          >
-            {trans('ticket.open_jira')}
-            <ExternalLink size={14} aria-hidden />
-          </TmnLink>
-        )}
+      <TmnFlex direction="row" gap={2} align="center" justify="between">
+        <TmnText className="text-sm">{data.summary}</TmnText>
         {data.source === 'LOCAL' &&
           data.status === 'TODO' &&
           workspaceId !== undefined && (
@@ -105,7 +81,6 @@ const TicketDialog = ({ ticketId }: ITicketDialogProps) => {
             </TmnButton>
           )}
       </TmnFlex>
-      <TmnText className="text-sm">{data.summary}</TmnText>
       {data.source === 'LOCAL' && (
         <TmnFlex direction="column" gap={1}>
           <TmnText className="text-xs text-muted-foreground">

@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { Save } from 'lucide-react';
 
 import {
   TmnController,
@@ -7,7 +8,14 @@ import {
   validation
 } from '@truyenmoinhu/form';
 import { RequestMethods } from '@truyenmoinhu/query';
-import { TmnButton, TmnFlex, TmnInput, UIUtils } from '@truyenmoinhu/uikit';
+import {
+  TmnButton,
+  TmnGrid,
+  TmnInput,
+  TmnPicker,
+  UIUtils
+} from '@truyenmoinhu/uikit';
+import { DateFormat, DateUtils } from '@truyenmoinhu/utils';
 
 import { trans } from '#i18n';
 
@@ -64,55 +72,85 @@ const SprintDialog = ({ projectId, sprint, onDone }: ISprintDialogProps) => {
 
   return (
     <TmnForm onSubmit={submit} className="flex flex-col gap-4">
-      <TmnController
-        control={form.control}
-        name="name"
-        render={({ field, fieldState }) => (
-          <TmnInput.TextField
-            label={trans('sprint.name')}
-            helperText={sprint ? undefined : trans('sprint.name_hint')}
-            value={field.value}
-            onChange={field.onChange}
-            message={fieldState.error?.message}
+      <TmnGrid.Container>
+        <TmnGrid.Item colSpan={12}>
+          <TmnController
+            control={form.control}
+            name="name"
+            render={({ field, fieldState }) => (
+              <TmnInput.TextField
+                label={trans('sprint.name')}
+                helperText={sprint ? undefined : trans('sprint.name_hint')}
+                value={field.value}
+                onChange={field.onChange}
+                message={fieldState.error?.message}
+              />
+            )}
           />
-        )}
-      />
-      <TmnFlex direction="row" gap={2} wrap="wrap">
-        <TmnController
-          control={form.control}
-          name="startDate"
-          render={({ field }) => (
-            <TmnInput.TextField
-              type="date"
-              label={trans('sprint.start_date')}
-              value={field.value}
-              onChange={field.onChange}
-            />
-          )}
-        />
-        <TmnController
-          control={form.control}
-          name="endDate"
-          render={({ field }) => (
-            <TmnInput.TextField
-              type="date"
-              label={trans('sprint.end_date')}
-              value={field.value}
-              onChange={field.onChange}
-            />
-          )}
-        />
-      </TmnFlex>
-      <TmnFlex direction="row" gap={2}>
-        <TmnButton
-          kind="primary"
-          type="submit"
-          disabled={save.isPending || form.formState.isSubmitting}
-        >
-          {trans('sprint.save')}
-        </TmnButton>
-        <TmnButton onClick={onDone}>{trans('ticket.cancel')}</TmnButton>
-      </TmnFlex>
+        </TmnGrid.Item>
+
+        <TmnGrid.Item colSpan={6}>
+          <TmnController
+            control={form.control}
+            name="startDate"
+            render={({ field }) => (
+              <TmnPicker.Date
+                label={trans('sprint.start_date')}
+                format={DateFormat.DDMMYYYY}
+                value={
+                  field.value
+                    ? DateUtils.toPickerDate(field.value, DateFormat.YYYYMMDD)
+                    : null
+                }
+                onChange={value =>
+                  field.onChange(
+                    value
+                      ? DateUtils.fromPickerDate(value, DateFormat.YYYYMMDD)
+                      : ''
+                  )
+                }
+              />
+            )}
+          />
+        </TmnGrid.Item>
+
+        <TmnGrid.Item colSpan={6}>
+          <TmnController
+            control={form.control}
+            name="endDate"
+            render={({ field }) => (
+              <TmnPicker.Date
+                label={trans('sprint.end_date')}
+                format={DateFormat.DDMMYYYY}
+                value={
+                  field.value
+                    ? DateUtils.toPickerDate(field.value, DateFormat.YYYYMMDD)
+                    : null
+                }
+                onChange={value =>
+                  field.onChange(
+                    value
+                      ? DateUtils.fromPickerDate(value, DateFormat.YYYYMMDD)
+                      : ''
+                  )
+                }
+              />
+            )}
+          />
+        </TmnGrid.Item>
+
+        <TmnGrid.Item colSpan={12} className="flex flex-row justify-end gap-2">
+          <TmnButton onClick={onDone}>{trans('ticket.cancel')}</TmnButton>
+          <TmnButton
+            startIcon={Save}
+            kind="primary"
+            type="submit"
+            disabled={save.isPending || form.formState.isSubmitting}
+          >
+            {trans('sprint.save')}
+          </TmnButton>
+        </TmnGrid.Item>
+      </TmnGrid.Container>
     </TmnForm>
   );
 };

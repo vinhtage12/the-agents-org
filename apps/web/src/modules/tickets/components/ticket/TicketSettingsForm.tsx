@@ -1,4 +1,5 @@
 import { memo, useState } from 'react';
+import { SaveIcon } from 'lucide-react';
 
 import {
   TmnController,
@@ -10,7 +11,7 @@ import {
   TmnAutocomplete,
   TmnButton,
   TmnCallout,
-  TmnFlex,
+  TmnGrid,
   TmnInput,
   TmnText,
   UIUtils
@@ -76,157 +77,191 @@ const TicketSettingsForm = ({ ticket }: ITicketSettingsFormProps) => {
 
   return (
     <TmnForm onSubmit={submit} className="flex flex-col gap-4">
-      {ticket.status === 'TODO' && ticket.projects.length > 0 && (
-        <TmnController
-          control={form.control}
-          name="projectId"
-          render={({ field }) => (
-            <TmnInput.Select
-              label={trans('ticket.project')}
-              value={field.value}
-              onChange={field.onChange}
-              options={ticket.projects.map(p => ({
-                value: String(p.id),
-                label: `${p.code} - ${p.name}`
-              }))}
+      <TmnGrid.Container>
+        {ticket.status === 'TODO' && ticket.projects.length > 0 && (
+          <TmnGrid.Item colSpan={6}>
+            <TmnController
+              control={form.control}
+              name="projectId"
+              render={({ field }) => (
+                <TmnInput.Select
+                  label={trans('ticket.project')}
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={ticket.projects.map(p => ({
+                    value: String(p.id),
+                    label: `${p.code} - ${p.name}`
+                  }))}
+                />
+              )}
             />
-          )}
-        />
-      )}
-      <TmnController
-        control={form.control}
-        name="repoId"
-        render={({ field }) => (
-          <TmnInput.Select
-            label={trans('ticket.repo')}
-            value={field.value}
-            onChange={field.onChange}
-            disabled={running}
-            options={[
-              { value: '', label: trans('ticket.none') },
-              ...ticket.repos.map(r => ({
-                value: String(r.id),
-                label: `${r.name} (${r.path})`
-              }))
-            ]}
-          />
+          </TmnGrid.Item>
         )}
-      />
-      {ticket.branch && (
-        <TmnText className="text-sm">
-          {trans('ticket.branch')}: {ticket.branch}
-        </TmnText>
-      )}
-      {sprints.data && (
-        <TmnController
-          control={form.control}
-          name="sprint"
-          render={({ field }) => (
-            <TmnInput.Select
-              label={trans('sprint.filter')}
-              helperText={
-                followsJira ? trans('ticket.sprint_follows_jira') : undefined
-              }
-              value={field.value}
-              onChange={field.onChange}
-              disabled={followsJira}
-              options={[
-                { value: SPRINT_BACKLOG, label: trans('sprint.backlog') },
-                ...selectableSprints(
-                  sprints.data ?? [],
-                  ticket.source,
-                  ticket.projectSpecSource === 'HYBRID',
-                  ticket.sprintId
-                ).map(s => ({ value: String(s.id), label: s.name }))
-              ]}
+
+        {sprints.data && (
+          <TmnGrid.Item colSpan={6}>
+            <TmnController
+              control={form.control}
+              name="sprint"
+              render={({ field }) => (
+                <TmnInput.Select
+                  label={trans('sprint.filter')}
+                  helperText={
+                    followsJira
+                      ? trans('ticket.sprint_follows_jira')
+                      : undefined
+                  }
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={followsJira}
+                  options={[
+                    { value: SPRINT_BACKLOG, label: trans('sprint.backlog') },
+                    ...selectableSprints(
+                      sprints.data ?? [],
+                      ticket.source,
+                      ticket.projectSpecSource === 'HYBRID',
+                      ticket.sprintId
+                    ).map(s => ({ value: String(s.id), label: s.name }))
+                  ]}
+                />
+              )}
             />
-          )}
-        />
-      )}
-      {AGENT_STEPS.map(({ step, role }) => (
-        <TmnFlex key={step} direction="row" gap={2} align="end">
-          <AgentAvatar agent={ticket[step]} />
+          </TmnGrid.Item>
+        )}
+
+        <TmnGrid.Item colSpan={ticket.branch ? 6 : 12}>
           <TmnController
             control={form.control}
-            name={step}
+            name="repoId"
             render={({ field }) => (
-              <TmnAutocomplete
-                label={trans(`ticket.${step}`)}
-                apiUrl={WAREHOUSE_ENDPOINTS.agents()}
-                apiParams={{ role }}
-                initFetch
-                disabled={running}
+              <TmnInput.Select
+                label={trans('ticket.repo')}
                 value={field.value}
-                onChange={value =>
-                  field.onChange((value as IOption | null) ?? null)
-                }
-                getOptionLabel={agentLabel}
-                className="min-w-0 flex-1"
+                onChange={field.onChange}
+                disabled={running}
+                options={[
+                  { value: '', label: trans('ticket.none') },
+                  ...ticket.repos.map(r => ({
+                    value: String(r.id),
+                    label: `${r.name} (${r.path})`
+                  }))
+                ]}
               />
             )}
           />
-        </TmnFlex>
-      ))}
-      {running && (
-        <TmnCallout color="gray">{trans('ticket.locked_running')}</TmnCallout>
-      )}
-      <TmnController
-        control={form.control}
-        name="skills"
-        render={({ field }) => (
-          <TmnAutocomplete
-            multiple
-            label={trans('ticket.skills')}
-            helperText={trans('ticket.skills_hint')}
-            apiUrl={WAREHOUSE_ENDPOINTS.skills()}
-            initFetch
-            value={field.value}
-            onChange={value => field.onChange((value as IOption[]) ?? [])}
-            getOptionLabel={skillLabel}
-          />
+        </TmnGrid.Item>
+
+        {ticket.branch && (
+          <TmnGrid.Item colSpan={6}>
+            <TmnText className="text-sm">
+              {trans('ticket.branch')}: {ticket.branch}
+            </TmnText>
+          </TmnGrid.Item>
         )}
-      />
-      <TmnController
-        control={form.control}
-        name="rules"
-        render={({ field }) => (
-          <TmnAutocomplete
-            multiple
-            label={trans('ticket.rules')}
-            apiUrl={WAREHOUSE_ENDPOINTS.rules()}
-            initFetch
-            value={field.value}
-            onChange={value => field.onChange((value as IOption[]) ?? [])}
-            getOptionLabel={optionLabel}
-          />
+
+        {AGENT_STEPS.map(({ step, role }) => (
+          <TmnGrid.Item key={step} colSpan={4}>
+            <span>
+              <AgentAvatar agent={ticket[step]} />
+              <TmnController
+                control={form.control}
+                name={step}
+                render={({ field }) => (
+                  <TmnAutocomplete
+                    label={trans(`ticket.${step}`)}
+                    apiUrl={WAREHOUSE_ENDPOINTS.agents()}
+                    apiParams={{ role }}
+                    initFetch
+                    disabled={running}
+                    value={field.value}
+                    onChange={value =>
+                      field.onChange((value as IOption | null) ?? null)
+                    }
+                    getOptionLabel={agentLabel}
+                    className="min-w-0 flex-1"
+                  />
+                )}
+              />
+            </span>
+          </TmnGrid.Item>
+        ))}
+        {running && (
+          <TmnGrid.Item colSpan={12}>
+            <TmnCallout color="gray">
+              {trans('ticket.locked_running')}
+            </TmnCallout>
+          </TmnGrid.Item>
         )}
-      />
-      <TmnController
-        control={form.control}
-        name="extraInstructions"
-        render={({ field }) => (
-          <TmnInput.TextArea
-            label={trans('ticket.extra_instructions')}
-            value={field.value}
-            onChange={field.onChange}
-            rows={5}
+        <TmnGrid.Item colSpan={12}>
+          <TmnController
+            control={form.control}
+            name="skills"
+            render={({ field }) => (
+              <TmnAutocomplete
+                multiple
+                label={trans('ticket.skills')}
+                helperText={trans('ticket.skills_hint')}
+                apiUrl={WAREHOUSE_ENDPOINTS.skills()}
+                initFetch
+                value={field.value}
+                onChange={value => field.onChange((value as IOption[]) ?? [])}
+                getOptionLabel={skillLabel}
+              />
+            )}
           />
+        </TmnGrid.Item>
+
+        <TmnGrid.Item colSpan={12}>
+          <TmnController
+            control={form.control}
+            name="rules"
+            render={({ field }) => (
+              <TmnAutocomplete
+                multiple
+                label={trans('ticket.rules')}
+                apiUrl={WAREHOUSE_ENDPOINTS.rules()}
+                initFetch
+                value={field.value}
+                onChange={value => field.onChange((value as IOption[]) ?? [])}
+                getOptionLabel={optionLabel}
+              />
+            )}
+          />
+        </TmnGrid.Item>
+
+        <TmnGrid.Item colSpan={12}>
+          <TmnController
+            control={form.control}
+            name="extraInstructions"
+            render={({ field }) => (
+              <TmnInput.TextArea
+                label={trans('ticket.extra_instructions')}
+                value={field.value}
+                onChange={field.onChange}
+                rows={5}
+              />
+            )}
+          />
+        </TmnGrid.Item>
+
+        {message && (
+          <TmnGrid.Item colSpan={12}>
+            <TmnCallout role="alert" color="red">
+              {message}
+            </TmnCallout>
+          </TmnGrid.Item>
         )}
-      />
-      {message && (
-        <TmnCallout role="alert" color="red">
-          {message}
-        </TmnCallout>
-      )}
-      <TmnFlex direction="row">
-        <TmnButton
-          kind="primary"
-          type="submit"
-          disabled={form.formState.isSubmitting}
-        >
-          {trans('ticket.save_settings')}
-        </TmnButton>
-      </TmnFlex>
+        <TmnGrid.Item colSpan={12}>
+          <TmnButton
+            kind="primary"
+            type="submit"
+            disabled={form.formState.isSubmitting}
+            startIcon={SaveIcon}
+          >
+            {trans('ticket.save_settings')}
+          </TmnButton>
+        </TmnGrid.Item>
+      </TmnGrid.Container>
     </TmnForm>
   );
 };

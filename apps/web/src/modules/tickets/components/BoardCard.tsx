@@ -7,6 +7,7 @@ import { AgentAvatar } from '#modules/warehouse';
 
 import { LABEL_COLORS } from '../constants';
 import { canDrag } from '../utils';
+import TicketLink from './ticket/TicketLink';
 
 import type { IBoardTicket } from '../types';
 export interface IBoardCardProps {
@@ -26,7 +27,7 @@ const BoardCard = ({ ticket, pending, onOpen }: IBoardCardProps) => {
       {({ isDragging }) => (
         <TmnFlex
           direction="column"
-          gap={1}
+          gap={2}
           role="button"
           tabIndex={0}
           aria-label={trans('ticket.open_ticket', { key: ticket.jiraKey })}
@@ -37,29 +38,33 @@ const BoardCard = ({ ticket, pending, onOpen }: IBoardCardProps) => {
               onOpen(ticket.id);
             }
           }}
-          className={`rounded-md border border-border bg-card p-2 ${draggable ? 'cursor-grab' : ''} ${isDragging || pending ? 'opacity-40' : ''}`}
+          className={`rounded-md border border-border bg-card p-3 shadow-sm hover:bg-muted/50 ${draggable ? 'cursor-grab' : ''} ${isDragging || pending ? 'opacity-40' : ''}`}
         >
-          <TmnFlex direction="row" align="center" gap={2} className="min-w-0">
-            <TmnText weight="bold" className="truncate text-xs">
-              {ticket.jiraKey}
-            </TmnText>
-            {ticket.specVersion !== null && (
-              <TmnText className="shrink-0 text-xs text-muted-foreground">
-                v{ticket.specVersion}
-              </TmnText>
-            )}
-          </TmnFlex>
-          <TmnText className="truncate text-sm" title={ticket.summary}>
+          <TmnText className="line-clamp-3 text-sm" title={ticket.summary}>
             {ticket.summary}
           </TmnText>
-          <TmnFlex direction="row" align="center" justify="between" gap={2}>
-            {ticket.label ? (
+          {ticket.label && (
+            <TmnFlex direction="row">
               <TmnChip color={LABEL_COLORS[ticket.label]}>
                 {trans(`ticket.label.${ticket.label}`)}
               </TmnChip>
-            ) : (
-              <span />
-            )}
+            </TmnFlex>
+          )}
+          <TmnFlex direction="row" align="center" justify="between" gap={2}>
+            <TmnFlex direction="row" align="center" gap={2} className="min-w-0">
+              <TicketLink
+                href={ticket.jiraUrl}
+                jiraKey={ticket.jiraKey}
+                size={'1'}
+                iconSize={12}
+                className="font-bold"
+              />
+              {ticket.specVersion !== null && (
+                <TmnText className="shrink-0 text-xs text-muted-foreground">
+                  v{ticket.specVersion}
+                </TmnText>
+              )}
+            </TmnFlex>
             <AgentAvatar agent={ticket.agent} size="sm" />
           </TmnFlex>
         </TmnFlex>
