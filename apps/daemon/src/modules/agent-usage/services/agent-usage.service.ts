@@ -4,6 +4,9 @@ import { join } from 'node:path';
 
 import { Injectable } from '@nestjs/common';
 
+import { fetchClaudeUsage } from '../utils/claude-usage';
+import { fetchCopilotUsage } from '../utils/copilot-usage';
+
 export interface UsageWindow {
   label: string;
   usedPercent: number;
@@ -79,6 +82,10 @@ async function tail(path: string, max = 1024 * 1024) {
     await file.close();
   }
 }
+const FETCHERS: Record<string, () => Promise<UsageWindow[] | null>> = {
+  claude: fetchClaudeUsage,
+  copilot: fetchCopilotUsage
+};
 @Injectable()
 export class AgentUsageService {
   private pending?: Promise<{ providers: Usage[] }>;
@@ -148,7 +155,25 @@ export class AgentUsageService {
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT')
         return empty('error');
-      if (configured || provider !== 'codex') return empty('unavailable');
+      if (configured) return empty('unavailable');
+      const fetcher = FETCHERS[provider];
+      if (fetcher) {
+        try {
+          const windows = await fetcher();
+          if (!windows) return empty('unavailable');
+          return windows.length
+            ? {
+                provider,
+                status: 'available',
+                windows,
+                sampledAt: new Date().toISOString()
+              }
+            : empty('unsupported');
+        } catch {
+          return empty('error');
+        }
+      }
+      if (provider !== 'codex') return empty('unavailable');
     }
     try {
       const root = join(
