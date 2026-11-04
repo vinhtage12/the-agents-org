@@ -1,3 +1,5 @@
+import { DateFormat, DateUtils } from '@truyenmoinhu/utils';
+
 import { trans } from '#i18n';
 
 import { DEFAULT_TASK_TIME } from './constants';
@@ -19,6 +21,12 @@ export const fromTimeString = (value: string): number => {
   return hours * MINUTES_PER_HOUR + minutes;
 };
 
+export const timeStringToDate = (value: string): Date =>
+  DateUtils.toPickerDate(value, DateFormat.HHmm);
+
+export const dateToTimeString = (date: Date): string =>
+  DateUtils.fromPickerDate(date, DateFormat.HHmm);
+
 export const formatSchedule = (time: number, days: number[]): string => {
   const label =
     days.length === 7
@@ -38,7 +46,7 @@ export const toFormValues = (
   task?: IScheduledTask
 ): IScheduledTaskFormValues => ({
   name: task?.name ?? '',
-  time: task ? toTimeString(task.time) : DEFAULT_TASK_TIME,
+  time: timeStringToDate(task ? toTimeString(task.time) : DEFAULT_TASK_TIME),
   days: task?.days ?? [],
   agentId: task ? String(task.agentId) : '',
   repos: (task?.repos ?? []).map(repo => ({
@@ -56,7 +64,9 @@ export const toSaveTask = (
 ): ISaveScheduledTask => ({
   id,
   name: values.name.trim(),
-  time: fromTimeString(values.time),
+  time: fromTimeString(
+    values.time ? dateToTimeString(values.time) : DEFAULT_TASK_TIME
+  ),
   days: values.days,
   agentId: Number(values.agentId),
   repoIds: values.repos.map(repo => repo.id),

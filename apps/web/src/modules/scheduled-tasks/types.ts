@@ -76,7 +76,7 @@ export interface IScheduledTaskRequest {
 
 export interface IScheduledTaskFormValues {
   name: string;
-  time: string;
+  time: Date | null;
   days: number[];
   agentId: string;
   repos: IRepo[];

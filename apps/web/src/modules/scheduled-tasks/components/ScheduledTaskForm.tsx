@@ -14,6 +14,7 @@ import {
   TmnFlex,
   TmnGrid,
   TmnInput,
+  TmnPicker,
   TmnText
 } from '@truyenmoinhu/uikit';
 
@@ -83,8 +84,7 @@ const ScheduledTaskForm = ({ task, onDone }: IScheduledTaskFormProps) => {
             control={form.control}
             name="time"
             render={({ field, fieldState }) => (
-              <TmnInput.TextField
-                type="time"
+              <TmnPicker.Time
                 label={trans('scheduled.time')}
                 value={field.value}
                 onChange={field.onChange}
@@ -110,7 +110,8 @@ const ScheduledTaskForm = ({ task, onDone }: IScheduledTaskFormProps) => {
                       <TmnButton
                         key={day}
                         type="button"
-                        kind={selected ? 'primary' : 'default'}
+                        variant={selected ? 'solid' : 'outline'}
+                        kind={'primary'}
                         aria-pressed={selected}
                         onClick={() =>
                           field.onChange(
@@ -238,8 +239,8 @@ const createSchema = () =>
       .trim()
       .required(() => trans('scheduled.required')),
     time: validation
-      .string()
-      .defined()
+      .date()
+      .nullable()
       .required(() => trans('scheduled.required')),
     days: validation
       .array()

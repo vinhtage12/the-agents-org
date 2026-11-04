@@ -3,6 +3,7 @@ import { memo } from 'react';
 import {
   TmnButton,
   TmnCallout,
+  TmnCard,
   TmnFlex,
   TmnLoading,
   TmnText
@@ -40,12 +41,14 @@ const ScheduledTasksPage = () => {
         {trans('scheduled.title')}
       </TmnText>
       <AttentionPanel items={attention ?? []} />
-      <ScheduledTaskTable
-        tasks={data}
-        onCreate={() => openScheduledTaskDialog()}
-        onEdit={openScheduledTaskDialog}
-        onHistory={openRunHistoryDialog}
-      />
+      <TmnCard>
+        <ScheduledTaskTable
+          tasks={data}
+          onCreate={() => openScheduledTaskDialog()}
+          onEdit={openScheduledTaskDialog}
+          onHistory={openRunHistoryDialog}
+        />
+      </TmnCard>
     </TmnFlex>
   );
 };

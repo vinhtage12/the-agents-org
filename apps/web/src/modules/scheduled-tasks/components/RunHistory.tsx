@@ -99,7 +99,7 @@ const RunHistory = ({ taskId }: IRunHistoryProps) => {
                     {trans(`scheduled.status.${run.status}`)}
                   </TmnChip>
                 </td>
-                <td className="max-w-64 break-words">{run.error ?? ''}</td>
+                <td className="max-w-64 wrap-break-word">{run.error ?? ''}</td>
                 <td>
                   <TmnFlex gap={1} justify="end">
                     {run.status === ScheduledRunStatus.COMPLETED && (
