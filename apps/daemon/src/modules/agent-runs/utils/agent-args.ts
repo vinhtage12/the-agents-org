@@ -19,13 +19,7 @@ const FLAGS: Record<
   codex: {
     model: '-m',
     effort: e => ['-c', `model_reasoning_effort=${e}`],
-    // Network is needed for the curl completion callback.
-    dir: d => [
-      '--add-dir',
-      d,
-      '-c',
-      'sandbox_workspace_write.network_access=true'
-    ]
+    dir: d => ['--add-dir', d]
   },
   copilot: {
     model: '--model',
@@ -36,7 +30,7 @@ const FLAGS: Record<
   agy: { model: '--model', effort: e => ['--effort', e], dir: () => [] }
 };
 
-export function buildAgentArgs(agent: RunAgent, runsDir: string): string[] {
+export function buildAgentArgs(agent: RunAgent, ...dirs: string[]): string[] {
   const flags = FLAGS[agent.provider];
   return [
     ...(agent.model ? [flags.model, agent.model] : []),
@@ -45,6 +39,10 @@ export function buildAgentArgs(agent: RunAgent, runsDir: string): string[] {
     ...(agent.allowedTools.length
       ? (flags.tools?.(agent.allowedTools) ?? [])
       : []),
-    ...flags.dir(runsDir)
+    ...dirs.flatMap(flags.dir),
+    // Network is needed for the curl completion callback.
+    ...(agent.provider === 'codex' && dirs.length
+      ? ['-c', 'sandbox_workspace_write.network_access=true']
+      : [])
   ];
 }

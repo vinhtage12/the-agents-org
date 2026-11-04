@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
+import { Route as AppScheduledTasksRouteImport } from './routes/_app/scheduled-tasks'
 import { Route as AppTicketsRouteImport } from './routes/_app/tickets'
 import { Route as AppWarehouseRouteRouteImport } from './routes/_app/warehouse/route'
 import { Route as AppWarehouseHomeRouteImport } from './routes/_app/warehouse/home'
@@ -29,6 +30,11 @@ const AppRouteRoute = AppRouteRouteImport.update({
 const AppHomeRoute = AppHomeRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppScheduledTasksRoute = AppScheduledTasksRouteImport.update({
+  id: '/scheduled-tasks',
+  path: '/scheduled-tasks',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppTicketsRoute = AppTicketsRouteImport.update({
@@ -87,6 +93,7 @@ const AppWorkspacesWorkspaceIdProjectsSplatRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AppHomeRoute
   '/warehouse': typeof AppWarehouseRouteRouteWithChildren
+  '/scheduled-tasks': typeof AppScheduledTasksRoute
   '/tickets': typeof AppTicketsRoute
   '/warehouse/agents': typeof AppWarehouseAgentsRoute
   '/warehouse/repositories': typeof AppWarehouseRepositoriesRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/workspaces/$workspaceId/projects/$': typeof AppWorkspacesWorkspaceIdProjectsSplatRoute
 }
 export interface FileRoutesByTo {
+  '/scheduled-tasks': typeof AppScheduledTasksRoute
   '/tickets': typeof AppTicketsRoute
   '/': typeof AppHomeRoute
   '/warehouse/agents': typeof AppWarehouseAgentsRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
   '/_app/warehouse': typeof AppWarehouseRouteRouteWithChildren
+  '/_app/scheduled-tasks': typeof AppScheduledTasksRoute
   '/_app/tickets': typeof AppTicketsRoute
   '/_app/': typeof AppHomeRoute
   '/_app/warehouse/agents': typeof AppWarehouseAgentsRoute
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/warehouse'
+    | '/scheduled-tasks'
     | '/tickets'
     | '/warehouse/agents'
     | '/warehouse/repositories'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId/projects/$'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/scheduled-tasks'
     | '/tickets'
     | '/'
     | '/warehouse/agents'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/_app/warehouse'
+    | '/_app/scheduled-tasks'
     | '/_app/tickets'
     | '/_app/'
     | '/_app/warehouse/agents'
@@ -184,6 +196,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppHomeRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/scheduled-tasks': {
+      id: '/_app/scheduled-tasks'
+      path: '/scheduled-tasks'
+      fullPath: '/scheduled-tasks'
+      preLoaderRoute: typeof AppScheduledTasksRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/tickets': {
@@ -282,6 +301,7 @@ const AppWarehouseRouteRouteWithChildren =
 
 interface AppRouteRouteChildren {
   AppWarehouseRouteRoute: typeof AppWarehouseRouteRouteWithChildren
+  AppScheduledTasksRoute: typeof AppScheduledTasksRoute
   AppTicketsRoute: typeof AppTicketsRoute
   AppHomeRoute: typeof AppHomeRoute
   AppWorkspacesSplatRoute: typeof AppWorkspacesSplatRoute
@@ -290,6 +310,7 @@ interface AppRouteRouteChildren {
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppWarehouseRouteRoute: AppWarehouseRouteRouteWithChildren,
+  AppScheduledTasksRoute: AppScheduledTasksRoute,
   AppTicketsRoute: AppTicketsRoute,
   AppHomeRoute: AppHomeRoute,
   AppWorkspacesSplatRoute: AppWorkspacesSplatRoute,

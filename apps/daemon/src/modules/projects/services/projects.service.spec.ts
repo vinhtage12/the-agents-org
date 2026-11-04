@@ -10,6 +10,7 @@ import {
 
 import { PrismaService } from '#database/prisma.service';
 import { AgentProfilesService } from '#modules/agent-profiles/services/agent-profiles.service';
+
 import { ProjectsService } from './projects.service';
 
 describe('ProjectsService', () => {

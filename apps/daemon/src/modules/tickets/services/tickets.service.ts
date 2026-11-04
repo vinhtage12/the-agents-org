@@ -68,6 +68,12 @@ export type TicketDetail = Pick<
   | 'specFile'
   | 'sprintId'
 > & {
+  parent: {
+    key: string;
+    summary: string | null;
+    description: string | null;
+    jiraUrl: string;
+  } | null;
   sprintSource: SprintSource | null;
   projectSpecSource: SpecSource | null;
   specAgent: AgentRef | null;
@@ -448,6 +454,15 @@ export class TicketsService {
       issueType: ticket.issueType,
       specFile: ticket.specFile,
       sprintId: ticket.sprintId,
+      parent: ticket.parentKey
+        ? {
+            key: ticket.parentKey,
+            summary: ticket.parentSummary,
+            description: ticket.parentDescription,
+            // jiraUrl is <site>/browse/<key>; swap in the parent key.
+            jiraUrl: ticket.jiraUrl.replace(/[^/]+$/, ticket.parentKey)
+          }
+        : null,
       sprintSource: ticket.sprint?.source ?? null,
       projectSpecSource: ticket.project?.specSource ?? null,
       jiraUrl: ticket.jiraUrl,

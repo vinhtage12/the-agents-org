@@ -59,7 +59,8 @@ describe('JiraClient', () => {
                 },
                 issuetype: { name: 'Task' },
                 status: { name: 'Open' },
-                assignee: { accountId: 'me' }
+                assignee: { accountId: 'me' },
+                parent: { key: 'FMS-0' }
               }
             }
           ],
@@ -75,6 +76,7 @@ describe('JiraClient', () => {
         issueType: 'Task',
         status: 'Open',
         assigneeAccountId: 'me',
+        parentKey: 'FMS-0',
         sprints: []
       }
     ]);
@@ -92,7 +94,8 @@ describe('JiraClient', () => {
       'description',
       'issuetype',
       'status',
-      'assignee'
+      'assignee',
+      'parent'
     ]);
     expect(client.browseUrl('FMS-1')).toBe('https://jira/browse/FMS-1');
   });
@@ -143,7 +146,7 @@ describe('JiraClient', () => {
     });
     await expect(client.getIssue('FMS-3')).resolves.toBeNull();
     expect(fetchMock.mock.calls[1][0]).toBe(
-      'https://jira/rest/api/3/issue/FMS-2?fields=summary,description,issuetype,status,assignee'
+      'https://jira/rest/api/3/issue/FMS-2?fields=summary,description,issuetype,status,assignee,parent'
     );
   });
   it('finds the sprint field once and reads sprints from issues', async () => {

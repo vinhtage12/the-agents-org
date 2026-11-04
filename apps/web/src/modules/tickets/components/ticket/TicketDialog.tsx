@@ -24,6 +24,7 @@ import SpecEditForm from '../SpecEditForm';
 import SpecPanel from '../SpecPanel';
 import StopAgentsButton from '../StopAgentsButton';
 import TestPanel from '../TestPanel';
+import TicketLink from './TicketLink';
 import TicketSettingsForm from './TicketSettingsForm';
 
 export interface ITicketDialogProps {
@@ -91,6 +92,30 @@ const TicketDialog = ({ ticketId }: ITicketDialogProps) => {
           {!data.specFile && (
             <TmnBox className={MARKDOWN_CLASS}>
               <Markdown>{data.description}</Markdown>
+            </TmnBox>
+          )}
+        </TmnFlex>
+      )}
+      {data.parent && (
+        <TmnFlex direction="column" gap={1} className="min-w-0">
+          <TmnText className="text-xs text-muted-foreground">
+            {trans('ticket.parent')}
+          </TmnText>
+          <TmnFlex direction="row" gap={2} align="center" className="min-w-0">
+            <TicketLink
+              href={data.parent.jiraUrl}
+              jiraKey={data.parent.key}
+              className="shrink-0 text-sm"
+            />
+            {data.parent.summary && (
+              <TmnText className="truncate text-sm">
+                {data.parent.summary}
+              </TmnText>
+            )}
+          </TmnFlex>
+          {data.parent.description && (
+            <TmnBox className={MARKDOWN_CLASS}>
+              <Markdown>{data.parent.description}</Markdown>
             </TmnBox>
           )}
         </TmnFlex>

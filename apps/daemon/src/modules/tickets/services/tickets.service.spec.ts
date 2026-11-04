@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '#database/prisma.service';
+
 import { TicketsService, suggestProjectId } from './tickets.service';
 
 describe('TicketsService', () => {

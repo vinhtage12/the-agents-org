@@ -2,9 +2,10 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 
 import { PrismaService } from '#database/prisma.service';
+
 import {
   AgentProfilesService,
   parseAgentProfile
@@ -47,7 +48,15 @@ describe('parseAgentProfile', () => {
 
 describe('AgentProfilesService', () => {
   const prisma = {
-    agent: { findUnique: jest.fn(), create: jest.fn() },
+    agent: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      delete: jest.fn()
+    },
+    project: { count: jest.fn() },
+    ticket: { count: jest.fn() },
+    scheduledTask: { count: jest.fn() },
     skill: { findMany: jest.fn() },
     rule: { findMany: jest.fn() }
   };
@@ -92,5 +101,40 @@ describe('AgentProfilesService', () => {
       BadRequestException
     );
     await expect(service.assertRole(null, 'BA')).resolves.toBeUndefined();
+  });
+
+  it('remove rejects an agent used by a scheduled task', async () => {
+    prisma.agent.findUnique.mockResolvedValue({ id: 1, role: 'DEV' });
+    prisma.project.count.mockResolvedValue(0);
+    prisma.ticket.count.mockResolvedValue(0);
+    prisma.scheduledTask.count.mockResolvedValue(1);
+
+    await expect(service.remove(1)).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.agent.delete).not.toHaveBeenCalled();
+  });
+
+  it('includes scheduled tasks in the agent in-use count', async () => {
+    prisma.agent.findMany.mockResolvedValue([
+      {
+        id: 1,
+        _count: {
+          projectsAsSpec: 0,
+          projectsAsDev: 0,
+          projectsAsTest: 0,
+          ticketsAsSpec: 0,
+          ticketsAsDev: 0,
+          ticketsAsTest: 0,
+          scheduledTasks: 2
+        }
+      }
+    ]);
+    expect(await service.list({})).toMatchObject({ data: [{ inUse: 2 }] });
+    expect(prisma.agent.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          _count: { select: expect.objectContaining({ scheduledTasks: true }) }
+        })
+      })
+    );
   });
 });

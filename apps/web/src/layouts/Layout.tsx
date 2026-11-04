@@ -1,4 +1,4 @@
-import { Activity } from 'react';
+import { Activity, useMemo } from 'react';
 import { Outlet } from '@tanstack/react-router';
 
 import { TmnFlex, TmnScrollArea } from '@truyenmoinhu/uikit';
@@ -8,11 +8,22 @@ import Sidebar from '#components/Sidebar';
 import { MENU_ITEMS } from '#constants/menu';
 import { useSidebar } from '#hooks/sidebar';
 import { trans } from '#i18n';
+import { AttentionBadge } from '#modules/scheduled-tasks';
 import { MachineStatus } from '#modules/system';
 import { WorkspaceTree } from '#modules/workspaces';
 
 const Layout = () => {
   const { isOpen, close } = useSidebar();
+  // Memoized so Sidebar's memoized Menu keeps a stable items reference.
+  const items = useMemo(
+    () =>
+      MENU_ITEMS.map(item =>
+        item.key === 'scheduled-tasks'
+          ? { ...item, badge: <AttentionBadge /> }
+          : item
+      ),
+    []
+  );
   return (
     <TmnFlex
       direction="row"
@@ -29,7 +40,7 @@ const Layout = () => {
         }
       />
       <Activity name="root-sidebar" mode={isOpen ? 'visible' : 'hidden'}>
-        <Sidebar items={MENU_ITEMS}>
+        <Sidebar items={items}>
           <WorkspaceTree />
         </Sidebar>
       </Activity>

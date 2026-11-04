@@ -4,12 +4,14 @@ import { TmnCard, TmnFlex } from '@truyenmoinhu/uikit';
 
 import { useHealth } from '#hooks/health';
 import { trans } from '#i18n';
+import { useAttentionToast } from '#modules/scheduled-tasks';
 import { SystemOverview } from '#modules/system';
 import { WorkspacePage } from '#modules/workspaces';
 
 import StatusRow from './StatusRow';
 
 const Dashboard = () => {
+  useAttentionToast();
   const { data, isLoading } = useHealth();
   const daemon = isLoading
     ? trans('dashboard.checking')

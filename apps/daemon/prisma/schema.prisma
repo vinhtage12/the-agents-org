@@ -124,6 +124,7 @@ model Repo {
   projects Project[] @relation("ProjectRepos")
   defaultFor Project[] @relation("DefaultRepo")
   tickets Ticket[]
+  scheduledTasks ScheduledTaskRepo[]
   @@map("repos")
 }
 
@@ -169,6 +170,8 @@ model Agent {
   ticketsAsDev Ticket[] @relation("TicketDevAgent")
   ticketsAsTest Ticket[] @relation("TicketTestAgent")
   runs AgentRun[]
+  scheduledTasks ScheduledTask[]
+  scheduledRuns ScheduledRun[] @relation("ScheduledRunAgent")
   @@map("agents")
 }
 
@@ -208,6 +211,10 @@ model Ticket {
   issueType String @map("issue_type") @db.VarChar(64)
   jiraStatus String @map("jira_status") @db.VarChar(128)
   jiraUrl String @map("jira_url") @db.VarChar(1024)
+  // Direct Jira parent (one level), refreshed on every sync.
+  parentKey String? @map("parent_key") @db.VarChar(64)
+  parentSummary String? @map("parent_summary") @db.VarChar(1024)
+  parentDescription String? @map("parent_description") @db.Text
   status TicketStatus @default(TODO)
   projectId Int? @map("project_id")
   repoId Int? @map("repo_id")
@@ -276,6 +283,78 @@ model AgentRun {
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   @@index([ticketId, step])
   @@map("agent_runs")
+}
+
+enum ScheduledRunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  STOPPED
+  MISSED
+  SKIPPED
+}
+
+enum ScheduledRunTrigger {
+  SCHEDULE
+  MANUAL
+  RERUN
+}
+
+model ScheduledTask {
+  id Int @id @default(autoincrement())
+  name String @unique @db.VarChar(128)
+  slug String @unique @db.VarChar(128)
+  prompt String @db.Text
+  enabled Boolean @default(true)
+  time Int
+  days Int[]
+  agentId Int @map("agent_id")
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Restrict)
+  repos ScheduledTaskRepo[]
+  outputDir String @map("output_dir") @db.VarChar(1024)
+  checkedUntil DateTime @default(now()) @map("checked_until")
+  runs ScheduledRun[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  @@map("scheduled_tasks")
+}
+
+model ScheduledTaskRepo {
+  taskId Int @map("task_id")
+  repoId Int @map("repo_id")
+  position Int
+  task ScheduledTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  repo Repo @relation(fields: [repoId], references: [id], onDelete: Restrict)
+  @@id([taskId, repoId])
+  @@unique([taskId, position])
+  @@map("scheduled_task_repos")
+}
+
+// Partial unique indexes are defined in migration 20261104004250_scheduled_tasks.
+model ScheduledRun {
+  id Int @id @default(autoincrement())
+  taskId Int @map("task_id")
+  task ScheduledTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  scheduledFor DateTime @map("scheduled_for")
+  trigger ScheduledRunTrigger
+  status ScheduledRunStatus
+  rerunOfId Int? @unique @map("rerun_of_id")
+  rerunOf ScheduledRun? @relation("ScheduledRerun", fields: [rerunOfId], references: [id], onDelete: SetNull)
+  rerun ScheduledRun? @relation("ScheduledRerun")
+  dismissedAt DateTime? @map("dismissed_at")
+  agentId Int? @map("agent_id")
+  agent Agent? @relation("ScheduledRunAgent", fields: [agentId], references: [id], onDelete: SetNull)
+  agentName String @map("agent_name") @db.VarChar(128)
+  paneId String? @map("pane_id") @db.VarChar(128)
+  token String @db.VarChar(64)
+  outputPath String? @map("output_path") @db.VarChar(1024)
+  output String? @db.Text
+  error String? @db.Text
+  startedAt DateTime? @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  @@index([taskId, scheduledFor])
+  @@map("scheduled_runs")
 }
 
 model SpecVersion {

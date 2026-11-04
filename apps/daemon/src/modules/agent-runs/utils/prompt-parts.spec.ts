@@ -1,4 +1,9 @@
-import { type PromptBase, outputContract, promptHeader } from './prompt-parts';
+import {
+  type PromptBase,
+  outputContract,
+  profileHeader,
+  promptHeader
+} from './prompt-parts';
 
 const base: PromptBase = {
   profile: {
@@ -44,6 +49,28 @@ it('points the prompt at AGENT.md, rule paths and same-provider skills', () => {
     'Skills you can use:\n- /brainstorming: Plan\n- /jira: Jira',
     'Ticket FMS-1: Login\nhttps://j/browse/FMS-1\n\nUsers log in',
     'Repository: /repos/ff-web'
+  ]);
+});
+it('builds a profile-only header', () => {
+  expect(profileHeader(base.profile)).toEqual([
+    'Read and follow your role description: /x/members/analyst/AGENT.md',
+    'Rules (read each before starting):\n- /rules/a.md',
+    'Skills you can use:\n- /brainstorming: Plan'
+  ]);
+});
+it('puts the parent ticket right before the ticket', () => {
+  const header = promptHeader({
+    ...base,
+    ticket: {
+      ...base.ticket,
+      parentKey: 'FMS-0',
+      parentSummary: 'Auth',
+      parentDescription: 'All auth work'
+    }
+  });
+  expect(header.slice(4, 6)).toEqual([
+    'Parent ticket FMS-0: Auth\n\nAll auth work',
+    'Ticket FMS-1: Login\nhttps://j/browse/FMS-1\n\nUsers log in'
   ]);
 });
 it('uses the shared completion contract', () => {

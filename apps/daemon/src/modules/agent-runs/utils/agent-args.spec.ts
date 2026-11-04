@@ -63,4 +63,27 @@ describe('buildAgentArgs', () => {
       buildAgentArgs({ ...tools, provider: 'codex' }, '/runs').join(' ')
     ).not.toMatch(/Bash/);
   });
+
+  it('adds every requested directory and enables codex network access once', () => {
+    expect(buildAgentArgs(profile, '/runs', '/r2', '/out')).toEqual(
+      expect.arrayContaining([
+        '--add-dir',
+        '/runs',
+        '--add-dir',
+        '/r2',
+        '--add-dir',
+        '/out'
+      ])
+    );
+    const codex = buildAgentArgs(
+      { ...profile, provider: 'codex' },
+      '/runs',
+      '/r2',
+      '/out'
+    );
+    expect(codex.filter(arg => arg === '--add-dir')).toHaveLength(3);
+    expect(
+      codex.filter(arg => arg === 'sandbox_workspace_write.network_access=true')
+    ).toHaveLength(1);
+  });
 });

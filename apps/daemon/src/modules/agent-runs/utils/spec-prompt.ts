@@ -20,6 +20,9 @@ export interface SpecPromptInput {
     summary: string;
     description: string;
     jiraUrl: string;
+    parentKey?: string | null;
+    parentSummary?: string | null;
+    parentDescription?: string | null;
     specPath: string | null;
     extraInstructions: string;
     skills: { command: string; description: string; provider: string }[];

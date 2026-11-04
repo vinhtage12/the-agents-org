@@ -88,7 +88,8 @@ export class AgentProfilesService {
             projectsAsTest: true,
             ticketsAsSpec: { where: OPEN_TICKET },
             ticketsAsDev: { where: OPEN_TICKET },
-            ticketsAsTest: { where: OPEN_TICKET }
+            ticketsAsTest: { where: OPEN_TICKET },
+            scheduledTasks: true
           }
         }
       }
@@ -146,15 +147,16 @@ export class AgentProfilesService {
 
   async remove(id: number) {
     await this.get(id);
-    const [projects, tickets] = await Promise.all([
+    const [projects, tickets, scheduledTasks] = await Promise.all([
       this.prisma.project.count({ where: anyAgentRef(id) }),
       this.prisma.ticket.count({
         where: { ...anyAgentRef(id), ...OPEN_TICKET }
-      })
+      }),
+      this.prisma.scheduledTask.count({ where: { agentId: id } })
     ]);
-    if (projects + tickets > 0)
+    if (projects + tickets + scheduledTasks > 0)
       throw new ConflictException(
-        'Agent is in use by projects or open tickets'
+        'Agent is in use by projects, open tickets or scheduled tasks'
       );
     await this.prisma.agent.delete({ where: { id } });
   }

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Warehouse } from 'lucide-react';
+import { CalendarClock, LayoutDashboard, Warehouse } from 'lucide-react';
 
 import { ROUTE_PATHS } from './routes';
 
@@ -15,5 +15,11 @@ export const MENU_ITEMS: IMenuItem[] = [
     titleKey: 'menu.warehouse',
     icon: Warehouse,
     to: ROUTE_PATHS.warehouse
+  },
+  {
+    key: 'scheduled-tasks',
+    titleKey: 'menu.scheduled_tasks',
+    icon: CalendarClock,
+    to: ROUTE_PATHS.scheduledTasks
   }
 ];

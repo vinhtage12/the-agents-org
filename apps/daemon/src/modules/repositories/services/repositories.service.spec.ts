@@ -3,6 +3,7 @@ import { ConflictException } from '@nestjs/common';
 import { OPEN_TICKET } from '#constants/open-ticket';
 import { PrismaService } from '#database/prisma.service';
 import { GitService } from '#modules/git/services/git.service';
+
 import { RepositoriesService } from './repositories.service';
 
 describe('RepositoriesService', () => {
@@ -11,10 +12,11 @@ describe('RepositoriesService', () => {
     repoBranch: { deleteMany: jest.fn(), createMany: jest.fn() }
   };
   const prisma = {
-    repo: { findUnique: jest.fn(), delete: jest.fn() },
+    repo: { findUnique: jest.fn(), findMany: jest.fn(), delete: jest.fn() },
     repoEnvironment: { findFirst: jest.fn() },
     project: { count: jest.fn() },
     ticket: { count: jest.fn() },
+    scheduledTaskRepo: { count: jest.fn() },
     $transaction: jest.fn()
   };
   const git = { branches: jest.fn() };
@@ -27,6 +29,7 @@ describe('RepositoriesService', () => {
     jest.resetAllMocks();
     prisma.$transaction.mockImplementation(fn => fn(tx));
     prisma.repo.findUnique.mockResolvedValue({ id: 1, path: '/r' });
+    prisma.scheduledTaskRepo.count.mockResolvedValue(0);
   });
 
   it('blocks delete when an open ticket or project uses the repo', async () => {
@@ -34,6 +37,33 @@ describe('RepositoriesService', () => {
     prisma.ticket.count.mockResolvedValue(1);
     await expect(service.remove(1)).rejects.toBeInstanceOf(ConflictException);
     expect(prisma.repo.delete).not.toHaveBeenCalled();
+  });
+
+  it('remove rejects a repo used by a scheduled task', async () => {
+    prisma.project.count.mockResolvedValue(0);
+    prisma.ticket.count.mockResolvedValue(0);
+    prisma.scheduledTaskRepo.count.mockResolvedValue(1);
+
+    await expect(service.remove(1)).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.repo.delete).not.toHaveBeenCalled();
+  });
+
+  it('includes scheduled tasks in the repo in-use count', async () => {
+    prisma.repo.findMany.mockResolvedValue([
+      {
+        id: 1,
+        environments: [],
+        _count: { projects: 0, tickets: 0, scheduledTasks: 3 }
+      }
+    ]);
+    expect(await service.list()).toMatchObject({ data: [{ inUse: 3 }] });
+    expect(prisma.repo.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          _count: { select: expect.objectContaining({ scheduledTasks: true }) }
+        })
+      })
+    );
   });
 
   it('ignores closed tickets when counting usage', async () => {

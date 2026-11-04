@@ -67,6 +67,20 @@ export class TicketEntity implements TicketModel {
   @MaxLength(1024)
   jiraUrl!: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  parentKey!: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1024)
+  parentSummary!: string | null;
+
+  @IsOptional()
+  @IsString()
+  parentDescription!: string | null;
+
   @ApiProperty({
     enum: TicketStatus,
     enumName: 'TicketStatus',

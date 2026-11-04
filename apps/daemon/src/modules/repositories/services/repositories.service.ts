@@ -34,14 +34,20 @@ export class RepositoriesService {
       orderBy: { id: 'asc' },
       include: {
         environments: { select: { name: true }, orderBy: { id: 'asc' } },
-        _count: { select: { projects: true, tickets: { where: OPEN_TICKET } } }
+        _count: {
+          select: {
+            projects: true,
+            tickets: { where: OPEN_TICKET },
+            scheduledTasks: true
+          }
+        }
       }
     });
     return {
       data: rows.map(({ environments, _count, ...repo }) => ({
         ...repo,
         environments: environments.map(e => e.name),
-        inUse: _count.projects + _count.tickets
+        inUse: _count.projects + _count.tickets + _count.scheduledTasks
       }))
     };
   }
@@ -81,12 +87,15 @@ export class RepositoriesService {
 
   async remove(id: number) {
     await this.get(id);
-    const [projects, tickets] = await Promise.all([
+    const [projects, tickets, scheduledTasks] = await Promise.all([
       this.prisma.project.count({ where: { repos: { some: { id } } } }),
-      this.prisma.ticket.count({ where: { repoId: id, ...OPEN_TICKET } })
+      this.prisma.ticket.count({ where: { repoId: id, ...OPEN_TICKET } }),
+      this.prisma.scheduledTaskRepo.count({ where: { repoId: id } })
     ]);
-    if (projects + tickets > 0)
-      throw new ConflictException('Repo is in use by projects or open tickets');
+    if (projects + tickets + scheduledTasks > 0)
+      throw new ConflictException(
+        'Repo is in use by projects, open tickets or scheduled tasks'
+      );
     await this.prisma.repo.delete({ where: { id } });
   }
 

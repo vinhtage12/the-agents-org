@@ -150,6 +150,12 @@ export interface ITicketDetail
   sprintId: number | null;
   sprintSource: TicketSource | null;
   projectSpecSource: TSpecSource | null;
+  parent: {
+    key: string;
+    summary: string | null;
+    description: string | null;
+    jiraUrl: string;
+  } | null;
 }
 export interface IUpdateTicket {
   projectId?: number;

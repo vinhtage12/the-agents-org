@@ -3,7 +3,8 @@
   "menu": {
     "navigation": "Navigation",
     "dashboard": "Dashboard",
-    "warehouse": "Warehouse"
+    "warehouse": "Warehouse",
+    "scheduled_tasks": "Scheduled tasks"
   },
   "common": {
     "toggle_sidebar": "Toggle sidebar",
@@ -154,6 +155,7 @@
     "suggested": "suggested",
     "store_empty": "No new tickets. Press Sync to fetch tickets assigned to you.",
     "load_failed": "Could not load tickets",
+    "parent": "Parent ticket",
     "retry": "Retry",
     "status": {
       "TODO": "To Do",
@@ -370,5 +372,88 @@
       "rules": "Rules",
       "add": "Add agent"
     }
+  },
+  "scheduled": {
+    "title": "Scheduled tasks",
+    "every_day": "every day",
+    "day": {
+      "0": "Sun",
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat"
+    },
+    "attention_title": "{{count}} runs need attention",
+    "attention_toast": "{{count}} scheduled runs were missed or failed",
+    "attention_toast_action": "View",
+    "attention_badge": "{{count}} runs need attention",
+    "missed": "Missed",
+    "failed_with": "Failed: {{error}}",
+    "rerun": "Run again",
+    "dismiss": "Dismiss",
+    "name": "Name",
+    "schedule": "Schedule",
+    "agent": "Agent",
+    "last_run": "Last run",
+    "next_run": "Next run",
+    "enabled": "Enabled",
+    "actions": "Actions",
+    "run_now": "Run now",
+    "history": "History",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create task",
+    "cancel": "Cancel",
+    "empty": "No tasks yet",
+    "error": "Could not load tasks",
+    "retry": "Retry",
+    "delete_title": "Delete task",
+    "delete_message": "Delete task \"{{name}}\" and its run history?",
+    "deleted": "Task deleted",
+    "action_failed": "Action failed",
+    "status": {
+      "RUNNING": "Running",
+      "COMPLETED": "Done",
+      "FAILED": "Failed",
+      "STOPPED": "Stopped",
+      "MISSED": "Missed",
+      "SKIPPED": "Skipped"
+    },
+    "time": "Time",
+    "repeat": "Repeat on",
+    "repos": "Repositories",
+    "repos_hint": "The first repository is the primary one",
+    "repos_required": "Select at least one repository",
+    "days_required": "Select at least one day",
+    "required": "Required",
+    "output_dir": "Output folder",
+    "prompt": "Prompt",
+    "save": "Save",
+    "create_title": "Create scheduled task",
+    "edit_title": "Edit scheduled task",
+    "history_title": "{{name}} - History",
+    "output_title": "Output of {{date}}",
+    "copied": "Copied to clipboard",
+    "view": "View",
+    "copy": "Copy",
+    "stop": "Stop",
+    "prev": "Previous",
+    "next": "Next",
+    "runs_error": "Could not load run history",
+    "runs_empty": "No runs yet",
+    "col": {
+      "scheduled_for": "Scheduled",
+      "source": "Source",
+      "status": "Status",
+      "error": "Error"
+    },
+    "trigger": {
+      "SCHEDULE": "Schedule",
+      "MANUAL": "Manual",
+      "RERUN": "Re-run"
+    },
+    "copy_failed": "Could not copy to clipboard"
   }
 }

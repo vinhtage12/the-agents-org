@@ -3,6 +3,26 @@ import type { SpecPromptInput } from './spec-prompt';
 export type RunContext = SpecPromptInput['run'];
 export type PromptBase = Omit<SpecPromptInput, 'previous'>;
 
+export function profileHeader(profile: PromptBase['profile']): string[] {
+  return [
+    `Read and follow your role description: ${profile.path}/AGENT.md`,
+    profile.rules.length
+      ? [
+          'Rules (read each before starting):',
+          ...profile.rules.map(rule => `- ${rule.path}`)
+        ].join('\n')
+      : '',
+    profile.skills.length
+      ? [
+          'Skills you can use:',
+          ...profile.skills.map(
+            skill => `- ${skill.command}: ${skill.description}`
+          )
+        ].join('\n')
+      : ''
+  ].filter(Boolean);
+}
+
 export function promptHeader({
   profile,
   ticket,
@@ -19,7 +39,7 @@ export function promptHeader({
     ].map(skill => [skill.command, skill])
   );
   return [
-    `Read and follow your role description: ${profile.path}/AGENT.md`,
+    profileHeader(profile)[0],
     ticket.extraInstructions,
     rules.length
       ? [
@@ -31,6 +51,13 @@ export function promptHeader({
       ? [
           'Skills you can use:',
           ...[...skills.values()].map(s => `- ${s.command}: ${s.description}`)
+        ].join('\n')
+      : '',
+    ticket.parentKey
+      ? [
+          `Parent ticket ${ticket.parentKey}: ${ticket.parentSummary ?? ''}`,
+          '',
+          ticket.parentDescription ?? ''
         ].join('\n')
       : '',
     [

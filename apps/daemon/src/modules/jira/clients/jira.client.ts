@@ -25,6 +25,7 @@ export interface JiraIssue {
   issueType: string;
   status: string;
   assigneeAccountId: string | null;
+  parentKey: string | null;
   sprints: JiraSprint[];
 }
 interface RawIssue {
@@ -35,6 +36,7 @@ interface RawIssue {
     issuetype: { name: string };
     status: { name: string };
     assignee: { accountId: string } | null;
+    parent?: { key: string };
     [customField: string]: unknown;
   };
 }
@@ -42,7 +44,14 @@ interface SearchResponse {
   issues: RawIssue[];
   nextPageToken?: string;
 }
-const FIELDS = ['summary', 'description', 'issuetype', 'status', 'assignee'];
+const FIELDS = [
+  'summary',
+  'description',
+  'issuetype',
+  'status',
+  'assignee',
+  'parent'
+];
 export class JiraHttpError extends BadGatewayException {
   constructor(readonly jiraStatus: number) {
     super(`Jira returned HTTP ${jiraStatus}`);
@@ -66,6 +75,7 @@ const toIssue = (
   issueType: fields.issuetype.name,
   status: fields.status.name,
   assigneeAccountId: fields.assignee?.accountId ?? null,
+  parentKey: fields.parent?.key ?? null,
   sprints:
     (
       (sprintField ? fields[sprintField] : null) as

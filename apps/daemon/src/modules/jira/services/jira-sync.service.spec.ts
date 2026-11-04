@@ -1,6 +1,7 @@
 import { Logger, ServiceUnavailableException } from '@nestjs/common';
 
 import { PrismaService } from '#database/prisma.service';
+
 import { JiraClient, JiraHttpError } from '../clients/jira.client';
 import { JiraSyncService } from './jira-sync.service';
 
@@ -12,6 +13,7 @@ describe('JiraSyncService', () => {
     issueType: 'Task',
     status: 'Open',
     assigneeAccountId: 'me',
+    parentKey: null as string | null,
     sprints: []
   };
   const active = {
@@ -74,6 +76,20 @@ describe('JiraSyncService', () => {
     expect(
       prisma.ticket.create.mock.calls[0][0].data.projectId
     ).toBeUndefined();
+  });
+  it('stores the direct parent key, summary and description', async () => {
+    jira.search
+      .mockResolvedValueOnce([{ ...issue, parentKey: 'FMS-9' }])
+      .mockResolvedValueOnce([
+        { ...issue, key: 'FMS-9', summary: 'Epic-ish', description: 'Why' }
+      ]);
+    await service.sync();
+    expect(jira.search).toHaveBeenNthCalledWith(2, 'key in (FMS-9)');
+    expect(prisma.ticket.create.mock.calls[0][0].data).toMatchObject({
+      parentKey: 'FMS-9',
+      parentSummary: 'Epic-ish',
+      parentDescription: 'Why'
+    });
   });
   it('is idempotent on repeated sync', async () => {
     await service.sync();

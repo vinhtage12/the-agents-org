@@ -14,6 +14,7 @@ import { JiraModule } from './jira/jira.module';
 import { ProjectsModule } from './projects/projects.module';
 import { RepositoriesModule } from './repositories/repositories.module';
 import { RulesModule } from './rules/rules.module';
+import { ScheduledTasksModule } from './scheduled-tasks/scheduled-tasks.module';
 import { SkillsModule } from './skills/skills.module';
 import { SprintsModule } from './sprints/sprints.module';
 import { SystemModule } from './system/system.module';
@@ -22,6 +23,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
   imports: [
+    ScheduledTasksModule,
     SprintsModule,
     RulesModule,
     SkillsModule,

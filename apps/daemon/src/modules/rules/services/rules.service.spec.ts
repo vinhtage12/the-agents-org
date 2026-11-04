@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { BadRequestException, ConflictException } from '@nestjs/common';
 
 import { PrismaService } from '#database/prisma.service';
+
 import { RulesService } from './rules.service';
 
 describe('RulesService', () => {

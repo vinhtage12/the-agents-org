@@ -3,7 +3,8 @@
   "menu": {
     "navigation": "Điều hướng",
     "dashboard": "Tổng quan",
-    "warehouse": "Kho"
+    "warehouse": "Kho",
+    "scheduled_tasks": "Tác vụ theo lịch"
   },
   "common": {
     "toggle_sidebar": "Ẩn/hiện thanh bên",
@@ -154,6 +155,7 @@
     "suggested": "gợi ý",
     "store_empty": "Không có ticket mới. Bấm Sync để kéo các ticket đang assign cho bạn.",
     "load_failed": "Không tải được ticket",
+    "parent": "Ticket cha",
     "retry": "Thử lại",
     "status": {
       "TODO": "To Do",
@@ -370,5 +372,88 @@
       "rules": "Rule",
       "add": "Thêm agent"
     }
+  },
+  "scheduled": {
+    "title": "Tác vụ theo lịch",
+    "every_day": "mỗi ngày",
+    "day": {
+      "0": "CN",
+      "1": "T2",
+      "2": "T3",
+      "3": "T4",
+      "4": "T5",
+      "5": "T6",
+      "6": "T7"
+    },
+    "attention_title": "{{count}} lần chạy cần xử lý",
+    "attention_toast": "Có {{count}} lần chạy bị bỏ lỡ hoặc lỗi",
+    "attention_toast_action": "Xem",
+    "attention_badge": "{{count}} lần chạy cần xử lý",
+    "missed": "Bỏ lỡ",
+    "failed_with": "Lỗi: {{error}}",
+    "rerun": "Chạy lại",
+    "dismiss": "Bỏ qua",
+    "name": "Tên",
+    "schedule": "Lịch",
+    "agent": "Agent",
+    "last_run": "Lần chạy gần nhất",
+    "next_run": "Lần tới",
+    "enabled": "Bật",
+    "actions": "Thao tác",
+    "run_now": "Chạy ngay",
+    "history": "Lịch sử",
+    "edit": "Sửa",
+    "delete": "Xoá",
+    "create": "Tạo task",
+    "cancel": "Huỷ",
+    "empty": "Chưa có task nào",
+    "error": "Không tải được danh sách task",
+    "retry": "Thử lại",
+    "delete_title": "Xoá task",
+    "delete_message": "Xoá task \"{{name}}\" cùng lịch sử chạy?",
+    "deleted": "Đã xoá task",
+    "action_failed": "Thao tác thất bại",
+    "status": {
+      "RUNNING": "Đang chạy",
+      "COMPLETED": "Xong",
+      "FAILED": "Lỗi",
+      "STOPPED": "Đã dừng",
+      "MISSED": "Bỏ lỡ",
+      "SKIPPED": "Đã bỏ qua"
+    },
+    "time": "Giờ",
+    "repeat": "Lặp lại",
+    "repos": "Repo",
+    "repos_hint": "Repo đầu tiên là repo chính",
+    "repos_required": "Chọn ít nhất một repo",
+    "days_required": "Chọn ít nhất một ngày",
+    "required": "Bắt buộc",
+    "output_dir": "Thư mục lưu output",
+    "prompt": "Prompt",
+    "save": "Lưu",
+    "create_title": "Tạo scheduled task",
+    "edit_title": "Sửa scheduled task",
+    "history_title": "{{name}} - Lịch sử",
+    "output_title": "Kết quả ngày {{date}}",
+    "copied": "Đã copy vào clipboard",
+    "view": "Xem",
+    "copy": "Copy",
+    "stop": "Dừng",
+    "prev": "Trước",
+    "next": "Sau",
+    "runs_error": "Không tải được lịch sử chạy",
+    "runs_empty": "Chưa có lần chạy nào",
+    "col": {
+      "scheduled_for": "Dự kiến",
+      "source": "Nguồn",
+      "status": "Trạng thái",
+      "error": "Lỗi"
+    },
+    "trigger": {
+      "SCHEDULE": "Lịch",
+      "MANUAL": "Thủ công",
+      "RERUN": "Chạy lại"
+    },
+    "copy_failed": "Không copy được vào clipboard"
   }
 }

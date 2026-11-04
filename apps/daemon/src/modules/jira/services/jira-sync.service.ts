@@ -39,14 +39,34 @@ export class JiraSyncService {
     private readonly agentRuns: AgentRunsService,
     private readonly board: BoardGateway
   ) {}
-  private content(issue: JiraIssue) {
+  private content(issue: JiraIssue, parents: Map<string, JiraIssue>) {
+    const parent = issue.parentKey ? parents.get(issue.parentKey) : undefined;
     return {
       summary: issue.summary,
       description: issue.description,
       issueType: issue.issueType,
       jiraStatus: issue.status,
-      jiraUrl: this.jira.browseUrl(issue.key)
+      jiraUrl: this.jira.browseUrl(issue.key),
+      parentKey: issue.parentKey,
+      parentSummary: parent?.summary ?? null,
+      parentDescription: parent?.description ?? null
     };
+  }
+  // Search results only carry the parent key; its summary and description need their own lookup.
+  private async loadParents(
+    issues: JiraIssue[],
+    parents: Map<string, JiraIssue>
+  ) {
+    const keys = [
+      ...new Set(
+        issues
+          .map(issue => issue.parentKey)
+          .filter((key): key is string => !!key && !parents.has(key))
+      )
+    ];
+    for (let i = 0; i < keys.length; i += 50)
+      for (const parent of await this.recheck(keys.slice(i, i + 50)))
+        parents.set(parent.key, parent);
   }
   async sync() {
     if (!this.jira.isConfigured())
@@ -55,6 +75,8 @@ export class JiraSyncService {
     const issues = await this.jira.search(
       'assignee = currentUser() AND statusCategory != Done'
     );
+    const parents = new Map<string, JiraIssue>();
+    await this.loadParents(issues, parents);
     const result = {
       created: 0,
       updated: 0,
@@ -92,7 +114,7 @@ export class JiraSyncService {
       });
       if (existing?.source === 'LOCAL') continue;
       const data = {
-        ...this.content(issue),
+        ...this.content(issue, parents),
         ...(await this.sprintPatch(ctx, issue, existing?.sprint ?? null))
       };
       sprintMoved(existing, data);
@@ -140,6 +162,7 @@ export class JiraSyncService {
     for (let i = 0; i < missing.length; i += 50) {
       const batch = missing.slice(i, i + 50);
       const checked = await this.recheck(batch.map(t => t.jiraKey));
+      await this.loadParents(checked, parents);
       for (const ticket of batch) {
         const issue = checked.find(value => value.key === ticket.jiraKey);
         if (!issue || issue.assigneeAccountId !== me.accountId) {
@@ -153,7 +176,7 @@ export class JiraSyncService {
           result.canceled++;
         } else {
           const data = {
-            ...this.content(issue),
+            ...this.content(issue, parents),
             ...(await this.sprintPatch(ctx, issue, ticket.sprint ?? null))
           };
           sprintMoved(ticket, data);

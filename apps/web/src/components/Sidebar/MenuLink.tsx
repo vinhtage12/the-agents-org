@@ -12,18 +12,25 @@ interface MenuLinkProps {
   isActive: boolean;
 }
 const MenuLink = ({ item, isActive }: MenuLinkProps) => (
-  <TmnButton
-    asChild
-    variant={isActive ? 'soft' : 'transparent'}
-    kind="default"
-    startIcon={item.icon}
-    title={trans(item.titleKey)}
-    className={cn(
-      'w-full! h-8! justify-start! gap-2! px-2! font-normal [&>svg]:size-4',
-      isActive && 'font-medium! text-foreground!'
+  <div className="relative w-full">
+    <TmnButton
+      asChild
+      variant={isActive ? 'soft' : 'transparent'}
+      kind="default"
+      startIcon={item.icon}
+      title={trans(item.titleKey)}
+      className={cn(
+        'w-full! h-8! justify-start! gap-2! px-2! font-normal [&>svg]:size-4',
+        isActive && 'font-medium! text-foreground!'
+      )}
+    >
+      <Link to={item.to} aria-current={isActive ? 'page' : undefined} />
+    </TmnButton>
+    {item.badge && (
+      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+        {item.badge}
+      </span>
     )}
-  >
-    <Link to={item.to} aria-current={isActive ? 'page' : undefined} />
-  </TmnButton>
+  </div>
 );
 export default memo(MenuLink);

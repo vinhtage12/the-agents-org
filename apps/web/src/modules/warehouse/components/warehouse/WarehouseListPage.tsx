@@ -46,6 +46,7 @@ const WarehouseListPage = <TRow extends IWarehouseRow>({
   const openDialog = (item?: TRow) => {
     UIUtils.popup.open({
       name: WAREHOUSE_DIALOG,
+      title: trans(kind),
       size: 'xl',
       renderer,
       params: { item }
